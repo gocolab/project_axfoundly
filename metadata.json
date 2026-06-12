@@ -1,0 +1,6 @@
+{
+  "name": "액셀러레이터 허브",
+  "description": "B2B AI 빌더 및 스타트업 액셀러레이터, 부트캠프, 프로젝트 매칭 및 에셋 라이브러리 허브",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

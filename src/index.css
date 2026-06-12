@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Geist", system-ui, sans-serif;
+  --font-headline: "Geist", system-ui, sans-serif;
+
+  --color-brand-bg: #051424;
+  --color-brand-surface: #051424;
+  --color-brand-card: #122131;
+  --color-brand-border: #273647;
+  
+  --color-brand-surface-low: #0d1c2d;
+  --color-brand-surface-high: #1c2b3c;
+  --color-brand-surface-highest: #273647;
+  
+  --color-brand-primary: #c3c0ff;
+  --color-brand-primary-container: #4f46e5;
+  --color-brand-tertiary: #4edea3;
+  --color-brand-on-surface: #d4e4fa;
+  --color-brand-on-surface-variant: #c7c4d8;
+  
+  --color-success: #4edea3;
+  --color-error: #ffb4ab;
+}
+
+body {
+  background-color: #051424;
+  color: #d4e4fa;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Custom glassmorphism pane */
+.glass-panel {
+  background: rgba(18, 33, 49, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(39, 54, 71, 0.8);
+}
+
+.glass-panel-heavy {
+  background: rgba(18, 33, 49, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+}
+
+.ambient-shadow {
+  box-shadow: 0 10px 45px -10px rgba(79, 70, 229, 0.18);
+}
+
+.ambient-glow:hover {
+  box-shadow: 0 0 24px rgba(79, 70, 229, 0.35);
+  border-color: rgba(195, 192, 255, 0.6);
+}
+
+.pulse-indicator {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
+/* Custom elegant scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #051424;
+}
+::-webkit-scrollbar-thumb {
+  background: #1c2b3c;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #273647;
+}
+
+/* Base markdown styles for diagnostic results */
+.markdown-body h1, .markdown-body h2 {
+  color: #c3c0ff;
+  font-family: "Geist", system-ui, sans-serif;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.markdown-body h1 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid rgba(195, 192, 255, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.markdown-body h2 {
+  font-size: 1.25rem;
+}
+
+.markdown-body p {
+  line-height: 1.625;
+  margin-bottom: 1rem;
+  color: #d4e4fa;
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin-bottom: 1rem;
+  padding-left: 1.25rem;
+  list-style-type: decimal;
+}
+
+.markdown-body ul {
+  list-style-type: disc;
+}
+
+.markdown-body li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.markdown-body code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  background: rgba(79, 70, 229, 0.15);
+  color: #c3c0ff;
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+.markdown-body pre {
+  background: #0d1c2d;
+  border: 1px solid #1c2b3c;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow: auto;
+  margin-bottom: 1rem;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+  color: #d4e4fa;
+}
