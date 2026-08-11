@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="Malgun Gothic, AppleGothic, sans-serif">
+  <rect width="1280" height="800" fill="#FFFFFF"/>
+  <text x="20" y="28" font-size="15" font-weight="bold" fill="#334155">SCR-001 출결 현황 대시보드 ( / ) — 와이어프레임</text>
+
+  <!-- 사이드바 -->
+  <rect x="20" y="44" width="180" height="736" fill="#F1F5F9" stroke="#94A3B8"/>
+  <text x="40" y="82" font-size="16" font-weight="bold" fill="#334155">AutoGT</text>
+  <rect x="32" y="104" width="156" height="36" fill="#CBD5E1" stroke="#64748B"/>
+  <text x="48" y="127" font-size="13" font-weight="bold" fill="#1E293B">▣ 대시보드</text>
+  <rect x="32" y="148" width="156" height="36" fill="none" stroke="#94A3B8"/>
+  <text x="48" y="171" font-size="13" fill="#475569">▢ 알람</text>
+  <rect x="32" y="192" width="156" height="36" fill="none" stroke="#94A3B8"/>
+  <text x="48" y="215" font-size="13" fill="#475569">▢ 예외 등록</text>
+  <rect x="32" y="724" width="156" height="32" fill="none" stroke="#94A3B8" stroke-dasharray="4 3"/>
+  <text x="48" y="745" font-size="12" fill="#64748B">◐ 테마 토글</text>
+
+  <!-- 톱바 -->
+  <rect x="212" y="44" width="1048" height="48" fill="#F8FAFC" stroke="#94A3B8"/>
+  <text x="228" y="73" font-size="13" fill="#475569">2026-08-11 (월) 17:42:03</text>
+  <rect x="470" y="54" width="150" height="28" rx="14" fill="#CBD5E1" stroke="#64748B"/>
+  <text x="545" y="73" font-size="12.5" text-anchor="middle" font-weight="bold" fill="#1E293B">● 퇴실 감시 중</text>
+  <text x="700" y="73" font-size="12.5" fill="#475569">카메라: ●cam_12f_1 ●cam_12f_2 ○cam_1f</text>
+  <text x="1250" y="73" font-size="12.5" text-anchor="end" fill="#64748B">(API-001 5초 폴링)</text>
+
+  <!-- 요약 카드 4 -->
+  <g>
+    <rect x="212" y="104" width="250" height="84" fill="none" stroke="#94A3B8"/>
+    <text x="228" y="130" font-size="12.5" fill="#64748B">당일 입실</text>
+    <text x="228" y="168" font-size="26" font-weight="bold" fill="#1E293B">32명</text>
+    <rect x="478" y="104" width="250" height="84" fill="none" stroke="#64748B" stroke-width="2"/>
+    <text x="494" y="130" font-size="12.5" font-weight="bold" fill="#334155">미퇴실 (DB 잔존) ★</text>
+    <text x="494" y="168" font-size="26" font-weight="bold" fill="#1E293B">5명</text>
+    <rect x="744" y="104" width="250" height="84" fill="none" stroke="#94A3B8"/>
+    <text x="760" y="130" font-size="12.5" fill="#64748B">퇴실 완료</text>
+    <text x="760" y="168" font-size="26" font-weight="bold" fill="#1E293B">27명</text>
+    <rect x="1010" y="104" width="250" height="84" fill="none" stroke="#94A3B8"/>
+    <text x="1026" y="130" font-size="12.5" fill="#64748B">복귀 요청 문자</text>
+    <text x="1026" y="168" font-size="26" font-weight="bold" fill="#1E293B">2건</text>
+  </g>
+
+  <!-- 강의별 출석 칩 (LMS courseName별 출석 N / 정원 M, 클릭=미퇴실자 테이블 필터) -->
+  <g>
+    <rect x="212" y="196" width="150" height="28" rx="14" fill="#CBD5E1" stroke="#64748B"/>
+    <text x="287" y="215" font-size="12" text-anchor="middle" font-weight="bold" fill="#1E293B">AI솔루션 18/20</text>
+    <rect x="370" y="196" width="150" height="28" rx="14" fill="none" stroke="#94A3B8"/>
+    <text x="445" y="215" font-size="12" text-anchor="middle" fill="#475569">자바개발 10/18</text>
+    <rect x="528" y="196" width="150" height="28" rx="14" fill="none" stroke="#94A3B8"/>
+    <text x="603" y="215" font-size="12" text-anchor="middle" fill="#475569">디자인 4/12</text>
+    <text x="694" y="215" font-size="11" fill="#94A3B8">칩 클릭 = 강의 필터(예시: AI솔루션 선택됨) · 분모=LMS 정원</text>
+    <text x="1260" y="215" font-size="11" text-anchor="end" fill="#94A3B8">API-003 진입 조회 + API-008 WS 갱신</text>
+  </g>
+
+  <!-- 라이브 뷰 -->
+  <rect x="212" y="228" width="700" height="288" fill="none" stroke="#94A3B8"/>
+  <text x="228" y="252" font-size="13.5" font-weight="bold" fill="#334155">라이브 뷰 (API-002 MJPEG, max_fps=5·width=640)</text>
+  <g stroke="#94A3B8" fill="#F1F5F9">
+    <rect x="228" y="264" width="326" height="228"/>
+    <rect x="566" y="264" width="160" height="108"/>
+    <rect x="566" y="384" width="160" height="108"/>
+  </g>
+  <g stroke="#CBD5E1">
+    <line x1="228" y1="264" x2="554" y2="492"/><line x1="554" y1="264" x2="228" y2="492"/>
+    <line x1="566" y1="264" x2="726" y2="372"/><line x1="726" y1="264" x2="566" y2="372"/>
+  </g>
+  <rect x="566" y="384" width="160" height="108" fill="#E2E8F0" stroke="#94A3B8"/>
+  <text x="391" y="508" font-size="12" text-anchor="middle" fill="#475569">cam_12f_1 (주 화면 — 클릭으로 채널 전환)</text>
+  <text x="646" y="381" font-size="10.5" text-anchor="middle" fill="#475569">cam_12f_2</text>
+  <text x="646" y="436" font-size="11.5" text-anchor="middle" fill="#64748B">cam_1f 미연결</text>
+  <text x="646" y="454" font-size="10.5" text-anchor="middle" fill="#94A3B8">재연결 시도 중…</text>
+  <rect x="740" y="264" width="156" height="228" fill="none" stroke="#94A3B8" stroke-dasharray="4 3"/>
+  <text x="818" y="290" font-size="11.5" text-anchor="middle" fill="#64748B">채널 목록</text>
+  <text x="818" y="312" font-size="11" text-anchor="middle" fill="#94A3B8">(상태·FPS 표시)</text>
+
+  <!-- 이벤트 피드 -->
+  <rect x="924" y="228" width="336" height="288" fill="none" stroke="#94A3B8"/>
+  <text x="940" y="252" font-size="13.5" font-weight="bold" fill="#334155">실시간 이벤트 (API-008 WS)</text>
+  <g font-size="11.5" fill="#475569">
+    <text x="940" y="280">17:41  📸 cam_12f_1 포착 — 김OO (94.2%)</text>
+    <text x="940" y="304">17:41  ✉ 복귀 요청 문자 발송 — 김OO</text>
+    <text x="940" y="328">17:38  ✅ 퇴실 태그 — 박OO</text>
+    <text x="940" y="352">17:35  📸 cam_1f 포착 — 미매칭 (61.0%)</text>
+    <text x="940" y="376">…(최대 50건 유지, 시간 역순)</text>
+  </g>
+
+  <!-- 미퇴실자 테이블 -->
+  <rect x="212" y="532" width="1048" height="248" fill="none" stroke="#94A3B8"/>
+  <text x="228" y="558" font-size="13.5" font-weight="bold" fill="#334155">미퇴실자 목록 (daily_roster 잔존 — API-003, 강의별 칩 필터 연동)</text>
+  <rect x="228" y="572" width="1016" height="30" fill="#F1F5F9" stroke="#CBD5E1"/>
+  <g font-size="12" font-weight="bold" fill="#475569">
+    <text x="244" y="592">이름</text><text x="360" y="592">강의명</text><text x="520" y="592">입실 시각</text><text x="650" y="592">경과</text><text x="760" y="592">예외</text><text x="940" y="592">조치</text>
+  </g>
+  <g font-size="12" fill="#475569">
+    <text x="244" y="626">김OO</text><text x="360" y="626">AI솔루션</text><text x="520" y="626">08:52</text><text x="650" y="626">8h 50m</text><text x="760" y="626">—</text>
+    <text x="244" y="660">이OO</text><text x="360" y="660">자바개발</text><text x="520" y="660">09:01</text><text x="650" y="660">8h 41m</text><text x="760" y="660">외출(15~16시)</text>
+    <text x="244" y="694">최OO</text><text x="360" y="694">AI솔루션</text><text x="520" y="694">08:47</text><text x="650" y="694">8h 55m</text><text x="760" y="694">—</text>
+  </g>
+  <g>
+    <rect x="924" y="610" width="90" height="24" rx="4" fill="none" stroke="#64748B"/><text x="969" y="627" font-size="11.5" text-anchor="middle" fill="#475569">예외 등록</text>
+    <rect x="924" y="644" width="90" height="24" rx="4" fill="none" stroke="#64748B"/><text x="969" y="661" font-size="11.5" text-anchor="middle" fill="#475569">예외 등록</text>
+    <rect x="924" y="678" width="90" height="24" rx="4" fill="none" stroke="#64748B"/><text x="969" y="695" font-size="11.5" text-anchor="middle" fill="#475569">예외 등록</text>
+  </g>
+  <text x="228" y="768" font-size="11" fill="#94A3B8">[예외 등록] 클릭 → SCR-003 이동(학생 프리필) · 연락처는 화면에 표시하지 않음(개인정보)</text>
+</svg>
