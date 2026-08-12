@@ -1,0 +1,42 @@
+---
+name: playwright
+description: Playwright E2E 테스트 작성, 실행, 브라우저 자동화 및 화면/기능 검증 스킬
+---
+
+# Playwright Skill — E2E 테스트 및 브라우저 자동화
+
+이 스킬은 「AI로 창업하라」 (react-example) 프로젝트에서 Playwright를 사용하여 E2E(End-to-End) 테스트를 작성하고 실행하며 UI/API 통합 검증을 수행할 때 참조합니다.
+
+## 프로젝트 가동 환경 정보
+
+- **개발 서버 주소**: `http://localhost:3000` (Express + Vite 통합 서버)
+- **테스트 파일 위치**: `tests/e2e/*.spec.ts`
+- **설정 파일**: `playwright.config.ts`
+
+## 핵심 명령어
+
+```bash
+# E2E 테스트 실행 (Headless)
+npm run test:e2e
+
+# UI 모드로 테스트 실행
+npm run test:e2e:ui
+
+# 특정 테스트 파일만 실행
+npx playwright test tests/e2e/example.spec.ts
+
+# 브라우저 디버그 모드로 실행
+npx playwright test --debug
+```
+
+## E2E 테스트 작성지침
+
+1. **테스트 파일 작성 위치**: `tests/e2e/` 디렉토리 내에 `*.spec.ts` 확장자로 작성합니다.
+2. **페이지 기반 로케이터**: DOM 접근 시 `getByRole`, `getByText`, `getByTestId` 등 사용자 시각적 기준 로케이터를 최우선으로 사용합니다.
+3. **비동기 처리**: 모든 동작 및 단성에 `await`를 반드시 부여합니다.
+4. **서버 자동 가동**: `playwright.config.ts`에 설정된 `webServer`로 인해 테스트 시작 시 `http://localhost:3000` 서버가 자동 확인/시작됩니다.
+
+## 디버깅 및 리포트 관리
+
+- 실패 시 자동 생성되는 스크린샷 및 추적 기록(`test-results/`)을 활용하여 문제 원인을 파악합니다.
+- HTML 리포트 확인: `npx playwright show-report`
