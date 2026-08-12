@@ -1,82 +1,189 @@
 /**
- * Shared Type Definitions for the Accelerator Hub Applet
+ * Domain Type Definitions for "AI로 창업하라" Platform Mockup
  */
 
-export interface SurveyAnswers {
-  role: string;
-  focus: string;
-  stage: string;
-  team: string;
-  challenge: string;
-}
+// ── User / Auth ──
+export type UserRole = "student" | "instructor" | "investor" | "admin";
 
-export interface ActivityLog {
+export interface User {
   id: string;
-  title: string;
-  subtitle: string;
-  type: "video" | "feedback" | "discussion";
-  unread?: boolean;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar: string;
+  joinDate: string;
 }
 
-export interface ShowcaseProject {
+// ── Course ──
+export interface Course {
   id: string;
   title: string;
   description: string;
-  live: boolean;
-  likes: number;
-  comments: number;
+  category: "AI 모델링" | "비즈니스 기획" | "마케팅" | "개발" | "디자인";
+  instructor: string;
+  instructorAvatar: string;
+  price: number;
+  discountedPrice?: number;
+  thumbnail: string;
+  rating: number;
+  reviewCount: number;
+  studentCount: number;
+  status: "모집중" | "진행중" | "종료";
+  curriculum: CurriculumItem[];
+  reviews: Review[];
+  isEnrolled?: boolean;
+  progress?: number; // 0-100
+}
+
+export interface CurriculumItem {
+  week: number;
+  title: string;
+  description: string;
+  duration: string;
+}
+
+export interface Review {
+  id: string;
   author: string;
-  bgGradient: string;
+  avatar: string;
+  rating: number;
+  content: string;
+  date: string;
 }
 
-export interface AssetLibraryItem {
+// ── IR / Startup ──
+export interface IRProject {
   id: string;
-  filename: string;
-  description: string;
-  grade: "엘리트 등급" | "코어 등급" | "스탠다드 등급";
-  type: "json" | "yaml" | "py" | "md";
-}
-
-export interface ProjectMatchRequest {
-  id: string;
+  teamName: string;
   title: string;
+  oneLiner: string;
   description: string;
-  budget: "높음" | "중간" | "연구협력";
-  timeAgo: string;
-  isCustom?: boolean;
+  field: "AI/ML" | "핀테크" | "헬스케어" | "에듀테크" | "커머스" | "SaaS";
+  thumbnail: string;
+  members: TeamMember[];
+  businessModel: string;
+  problem: string;
+  solution: string;
+  isHiring: boolean;
+  hiringRoles?: string[];
+  bookmarked?: boolean;
+  investmentStage: "Pre-Seed" | "Seed" | "Series A";
 }
 
-export interface LiveScheduleItem {
-  id: string;
-  time: string;
-  title: string;
-  speaker: string;
+export interface TeamMember {
+  name: string;
   role: string;
-  type: "video" | "audio";
-  attendeesCount: number;
-  attendeeAvatars: string[];
+  avatar: string;
 }
 
-export interface B2BBootcamp {
+// ── Community / Board ──
+export type BoardType = "공지사항" | "팀빌딩" | "QnA";
+
+export interface BoardPost {
   id: string;
+  boardType: BoardType;
   title: string;
-  description: string;
-  startDate: string;
-  originalPrice: number;
-  discountedPrice: number;
-  deposit: number;
-  isRegistered: boolean;
-  bgPattern?: string;
+  content: string;
+  author: string;
+  authorAvatar: string;
+  createdAt: string;
+  viewCount: number;
+  commentCount: number;
+  isPinned?: boolean;
 }
 
-export interface InsightArticle {
+// ── Notification ──
+export interface Notification {
   id: string;
+  type: "course" | "team" | "investor" | "system";
   title: string;
-  description: string;
-  category: "에디토리얼 피쳐" | "스타트업 가이드" | "케이스 스터디" | "트렌드";
-  readTime?: string;
-  authorName?: string;
-  authorRole?: string;
-  authorAvatar?: string;
-  publishDate?: string;
+  message: string;
+  time: string;
+  isRead: boolean;
+}
+
+// ── Dashboard Stats (Admin) ──
+export interface DashboardStats {
+  dailySignups: number;
+  monthlySignups: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+  activeCourses: number;
+  teamMatchCount: number;
+  investmentMatchCount: number;
+}
+
+// ── Instructor ──
+export interface SettlementRecord {
+  id: string;
+  period: string;
+  totalRevenue: number;
+  pgFee: number;
+  platformFee: number;
+  netAmount: number;
+  status: "정산완료" | "정산대기" | "출금신청";
+}
+
+// ── Investor ──
+export interface InvestmentProposal {
+  id: string;
+  projectId: string;
+  projectName: string;
+  message: string;
+  sentDate: string;
+  status: "대기중" | "수락" | "거절";
+}
+
+export interface AIRecommendation {
+  projectId: string;
+  projectName: string;
+  matchScore: number;
+  matchReasons: string[];
+  field: string;
+}
+
+// ── Team Building ──
+export interface TeamBuildingRequest {
+  id: string;
+  type: "sent" | "received";
+  projectName: string;
+  fromUser: string;
+  toUser: string;
+  role: string;
+  message: string;
+  status: "대기중" | "수락" | "거절";
+  date: string;
+}
+
+// ── Payment / Enrollment ──
+export interface PaymentRecord {
+  id: string;
+  courseTitle: string;
+  amount: number;
+  date: string;
+  method: "카드" | "계좌이체";
+  status: "완료" | "환불";
+}
+
+// ── Admin Board Management ──
+export interface AdminBoard {
+  id: string;
+  name: string;
+  readPermission: "전체" | "회원" | "관리자";
+  writePermission: "전체" | "회원" | "관리자";
+  template: "일반형" | "갤러리형" | "카드형";
+  postCount: number;
+  createdAt: string;
+}
+
+// ── Admin Member Management ──
+export interface AdminMember {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  joinDate: string;
+  lastLogin: string;
+  status: "활성" | "정지" | "탈퇴";
+  courseCount: number;
 }
