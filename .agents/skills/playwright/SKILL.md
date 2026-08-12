@@ -40,3 +40,9 @@ npx playwright test --debug
 
 - 실패 시 자동 생성되는 스크린샷 및 추적 기록(`test-results/`)을 활용하여 문제 원인을 파악합니다.
 - HTML 리포트 확인: `npx playwright show-report`
+
+## E2E 자동화 연계 스킬 (Sub-Skills)
+
+- **`e2e-test-generator`**: 대상 페이지 접속 후 테스트 요소를 분석하여 자연어 마크다운 명세서(`./tests/`)로 생성하는 스킬
+- **`eze-test-generator`**: 명세를 바탕으로 Playwright E2E 테스트 코드를 자동 생성/실행하고, 실패 시 성공할 때까지 자동 개선하는 스킬
+
