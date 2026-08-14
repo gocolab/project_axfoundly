@@ -14,8 +14,8 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
     const modalHeader = page.locator('h2', { hasText: '로그인' });
     await expect(modalHeader).toBeVisible();
 
-    // 닫기 버튼 클릭
-    const closeButton = page.locator('button').filter({ has: page.locator('svg') }).first();
+    // 모달 내 닫기 버튼 클릭
+    const closeButton = page.locator('.glass-panel-heavy button').first();
     await closeButton.click();
     await expect(modalHeader).not.toBeVisible();
   });
@@ -27,9 +27,9 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
     const studentBtn = page.locator('button', { hasText: '수강생' }).first();
     await studentBtn.click();
 
-    // 대시보드 탭 이동
-    const dashboardTab = page.getByRole('button', { name: '대시보드' });
-    await dashboardTab.click();
+    // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
+    await page.locator('button', { hasText: '수강생' }).first().click();
+    await page.getByRole('button', { name: '마이페이지' }).click();
 
     // 수강생 대시보드 타이틀 확인
     await expect(page.locator('h1', { hasText: '수강생 대시보드' })).toBeVisible();
@@ -44,13 +44,13 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
     const instructorBtn = page.locator('button', { hasText: '강사' }).first();
     await instructorBtn.click();
 
-    // 대시보드 탭 이동
-    const dashboardTab = page.getByRole('button', { name: '대시보드' });
-    await dashboardTab.click();
+    // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
+    await page.locator('button', { hasText: '강사' }).first().click();
+    await page.getByRole('button', { name: '마이페이지' }).click();
 
     // 강사 대시보드 타이틀 및 버튼 확인
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '신규 강좌 개설' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '새 강의 등록' })).toBeVisible();
   });
 
   test('투자자(Investor) 역할로 빠른 로그인 시 투자자 대시보드가 정상 렌더링된다', async ({ page }) => {
@@ -60,28 +60,29 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
     const investorBtn = page.locator('button', { hasText: '투자자' }).first();
     await investorBtn.click();
 
-    // 대시보드 탭 이동
-    const dashboardTab = page.getByRole('button', { name: '대시보드' });
-    await dashboardTab.click();
+    // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
+    await page.locator('button', { hasText: '투자자' }).first().click();
+    await page.getByRole('button', { name: '마이페이지' }).click();
 
     // 투자자 대시보드 타이틀 확인
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
   });
 
-  test('관리자(Admin) 역할로 빠른 로그인 시 GNB에 관리자 메뉴가 표시되고 접근 가능하다', async ({ page }) => {
+  test('관리자(Admin) 역할로 빠른 로그인 시 GNB 드롭다운에 관리자 대시보드 메뉴가 표시되고 접근 가능하다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     
     // 관리자 빠른 로그인 클릭
     const adminBtn = page.locator('button', { hasText: '관리자' }).first();
     await adminBtn.click();
 
-    // GNB 내 관리자 탭 가시성 확인 및 클릭
-    const adminNavTab = page.getByRole('button', { name: '관리자' });
-    await expect(adminNavTab).toBeVisible();
-    await adminNavTab.click();
+    // 사용자 프로필 메뉴 클릭 후 관리자 대시보드 클릭
+    await page.locator('button', { hasText: '관리자' }).first().click();
+    const adminMenuBtn = page.getByRole('button', { name: '관리자 대시보드' });
+    await expect(adminMenuBtn).toBeVisible();
+    await adminMenuBtn.click();
 
     // 관리자 대시보드 타이틀 확인
-    await expect(page.locator('h1', { hasText: '플랫폼 관리자 대시보드' })).toBeVisible();
+    await expect(page.locator('h1', { hasText: '관리자 대시보드' })).toBeVisible();
   });
 
   test('로그아웃 시 비로그인 상태로 복귀하고 대시보드 접근 시 로그인 모달이 열린다', async ({ page }) => {
@@ -89,7 +90,8 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('button', { hasText: '수강생' }).first().click();
 
-    // 2. 로그아웃 버튼 클릭
+    // 2. 사용자 메뉴에서 로그아웃 클릭
+    await page.locator('button', { hasText: '수강생' }).first().click();
     const logoutBtn = page.getByRole('button', { name: '로그아웃' });
     await expect(logoutBtn).toBeVisible();
     await logoutBtn.click();

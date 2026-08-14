@@ -3,11 +3,11 @@ import { test, expect } from '@playwright/test';
 test.describe('E2E: IR 피칭 스타트업 탐색 및 팀원 모집 신청 흐름', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'IR 피칭', exact: true }).click();
+    await page.getByRole('button', { name: '스타트업/IR' }).click();
   });
 
-  test('IR 피칭 페이지 타이틀 및 스타트업 목록이 표시된다', async ({ page }) => {
-    await expect(page.locator('h1', { hasText: 'IR 피칭 & 스타트업' })).toBeVisible();
+  test('스타트업/IR 페이지 타이틀 및 스타트업 목록이 표시된다', async ({ page }) => {
+    await expect(page.locator('h1', { hasText: '스타트업 / IR' })).toBeVisible();
     await expect(page.locator('h3', { hasText: '뉴로플로우' })).toBeVisible();
     await expect(page.locator('h3', { hasText: '헬스브릿지' })).toBeVisible();
   });
@@ -25,25 +25,25 @@ test.describe('E2E: IR 피칭 스타트업 탐색 및 팀원 모집 신청 흐�
 
     // 상세 비즈니스 모델, 문제 및 솔루션 섹션 렌더링 확인
     await expect(page.locator('h1', { hasText: '뉴로플로우' })).toBeVisible();
-    await expect(page.locator('text=비즈니스 모델')).toBeVisible();
-    await expect(page.locator('text=해결하는 문제')).toBeVisible();
+    await expect(page.locator('h2', { hasText: '비즈니스 모델' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: '문제 (Problem)' })).toBeVisible();
   });
 
-  test('채용 중인 스타트업에서 [팀원 모집 신청] 클릭 시 팀빌딩 신청 모달이 렌더링된다', async ({ page }) => {
-    // 로그인 처리
+  test('투자자 역할 로그인 시 [투자 제안하기] 클릭으로 제안 모달이 오픈된다', async ({ page }) => {
+    // 투자자로 로그인 처리
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('button', { hasText: '수강생' }).first().click();
+    await page.locator('button', { hasText: '투자자' }).first().click();
 
-    // IR 페이지 이동 후 채용 중인 뉴로플로우 선택
-    await page.getByRole('button', { name: 'IR 피칭', exact: true }).click();
+    // IR 페이지 이동 후 뉴로플로우 선택
+    await page.getByRole('button', { name: '스타트업/IR' }).click();
     await page.locator('h3', { hasText: '뉴로플로우' }).click();
 
-    // 팀원 모집 신청 버튼 확인 및 클릭
-    const applyBtn = page.getByRole('button', { name: '팀원 모집 신청' });
-    await expect(applyBtn).toBeVisible();
-    await applyBtn.click();
+    // 투자 제안하기 버튼 확인 및 클릭
+    const proposeBtn = page.getByRole('button', { name: '투자 제안하기' });
+    await expect(proposeBtn).toBeVisible();
+    await proposeBtn.click();
 
-    // 신청 모달 오픈 확인
-    await expect(page.locator('h2', { hasText: '팀빌딩 지원하기' })).toBeVisible();
+    // 제안 모달 오픈 확인
+    await expect(page.locator('h3', { hasText: '투자 제안하기' })).toBeVisible();
   });
 });
