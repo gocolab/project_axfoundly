@@ -55,7 +55,7 @@
 
 ### AI 개발 시 테스트 규칙
 - 상태: ✅ 결정
-- 결정: 기능 변경 또는 신규 화면 추가 시 `tests/e2e_test_plan.md` 명세를 갱신하고, `playwright-test-healer` 원칙에 따라 테스트 실패 시 셀렉터 및 비동기 조건을 자가 치유(Self-Healing)하여 성공 확인
+- 결정: 기능 변경 또는 신규 화면 추가 시 `tests/e2e_test_plan.md` 명세를 갱신하고, `e2e-testing` 스킬(Heal 단계) 원칙에 따라 테스트 실패 시 셀렉터 및 비동기 조건을 자가 치유(Self-Healing)하여 성공 확인
 - 결정일: 2026-08-14
 
 ---
