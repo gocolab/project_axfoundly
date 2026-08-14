@@ -43,6 +43,27 @@ npx playwright test --debug
 
 ## E2E 자동화 연계 스킬 (Sub-Skills)
 
-- **`e2e-test-generator`**: 대상 페이지 접속 후 테스트 요소를 분석하여 자연어 마크다운 명세서(`./tests/`)로 생성하는 스킬
-- **`eze-test-generator`**: 명세를 바탕으로 Playwright E2E 테스트 코드를 자동 생성/실행하고, 실패 시 성공할 때까지 자동 개선하는 스킬
+아래 3개의 스킬이 **Plan → Generate → Heal** 파이프라인을 구성합니다.
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────────┐
+│  e2e-test-       │ ──▶ │  eze-test-       │ ──▶ │  playwright-test-    │
+│  generator       │     │  generator       │     │  healer              │
+│  (Plan)          │     │  (Generate)      │     │  (Heal)              │
+│                  │     │                  │     │                      │
+│  페이지 분석     │     │  코드 작성       │     │  실패 진단·수정      │
+│  → 명세서 생성   │     │  → 테스트 실행   │     │  → 통과까지 반복     │
+└─────────────────┘     └─────────────────┘     └─────────────────────┘
+```
+
+- **`e2e-test-generator`** (Plan): 대상 페이지 접속 후 테스트 요소를 분석하여 자연어 마크다운 명세서(`./tests/`)로 생성하는 스킬
+- **`eze-test-generator`** (Generate): 명세를 바탕으로 Playwright E2E 테스트 코드를 자동 생성·실행하는 스킬
+- **`playwright-test-healer`** (Heal): 실패한 테스트를 체계적으로 진단하고 자동 수정하여 통과시키는 스킬
+
+## 구동 프롬프트 예시 (전체 파이프라인)
+
+```
+http://localhost:3000/dashboard 페이지에 대해 E2E 테스트를 계획하고, 코드를 생성한 뒤, 모든 테스트가 통과할 때까지 자동 수정해줘
+```
+
 

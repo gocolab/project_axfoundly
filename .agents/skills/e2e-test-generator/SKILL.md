@@ -31,3 +31,29 @@ description: Playwright로 대상 페이지를 분석하여 E2E 테스트 대상
      - 대상 파일 위치 및 테스트 대상 페이지 URL
      - 테스트 항목별 역할 및 시나리오 (입력값, 조건, 기대 결과)
      - 권장 로케이터 전략 (`getByRole`, `getByText`, `getByTestId` 등)
+
+## 시나리오 설계 가이드라인 (Planner)
+
+테스트 계획서를 설계할 때 아래 단계를 순서대로 수행합니다.
+
+1. **탐색** — 대상 페이지에 접속하여 인터페이스를 둘러봅니다.
+2. **사용자 플로우 분석** — critical path를 식별합니다.
+3. **시나리오 설계** — happy path / edge case / 에러 핸들링 시나리오를 구분하여 설계합니다.
+4. **계획서 구조화** — 명확한 제목, 단계별 지침, 예상 결과를 포함합니다.
+5. **제출** — 완성된 계획서를 `./tests/` 디렉터리에 저장합니다.
+
+### 품질 기준
+
+- 누구나 따라할 수 있는 **구체적인 단계**로 기술
+- **negative 시나리오** 반드시 포함
+- 각 시나리오는 **독립적으로, 어떤 순서로도 실행 가능**하게 설계
+
+## 구동 프롬프트 예시
+
+```
+http://localhost:3000/login 페이지를 분석해서 E2E 테스트 명세서를 생성해줘
+```
+
+## 참조 문서
+
+- 원본: [`references/playwright-test-planner.md`](file:///apps/project_launch_bizs/.agents/skills/e2e-test-generator/references/playwright-test-planner.md)
