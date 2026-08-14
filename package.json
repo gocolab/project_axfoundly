@@ -10,7 +10,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "xvfb-run --auto-servernum playwright test --ui --host 0.0.0.0"
+    "test:e2e:ui": "xvfb-run --auto-servernum playwright test --ui --host 0.0.0.0",
+    "report": "playwright show-report --host 0.0.0.0 --port 9323"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

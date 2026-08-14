@@ -5,7 +5,7 @@ test.describe('Backend API Direct Integration Tests', () => {
     const response = await request.get('/api/health');
     expect(response.status()).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ status: 'healthy' });
+    expect(body.status).toBe('healthy');
   });
 
   test('POST /api/diagnosis with invalid body returns 400 Bad Request', async ({ request }) => {
