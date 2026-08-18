@@ -147,8 +147,18 @@ export interface IRProject {
   investmentStage: "Pre-Seed" | "Seed" | "Series A";
 }
 
-// ── Community / Board ──
+// ── Community / Board & Comments ──
 export type BoardType = "공지사항" | "팀빌딩" | "QnA";
+
+export interface Comment {
+  id: string;
+  postId: string;
+  author: string;
+  authorAvatar: string;
+  authorRole?: UserRole;
+  content: string;
+  createdAt: string;
+}
 
 export interface BoardPost {
   id: string;
@@ -162,6 +172,18 @@ export interface BoardPost {
   commentCount: number;
   isPinned?: boolean;
 }
+
+export interface JobApplication {
+  id: string;
+  projectId: string;
+  roleId?: string;
+  applicantName: string;
+  applicantEmail: string;
+  portfolioUrl?: string;
+  coverLetter: string;
+  createdAt: string;
+}
+
 
 // ── Notification ──
 export interface Notification {

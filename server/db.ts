@@ -1,0 +1,746 @@
+import fs from "fs";
+import path from "path";
+import type {
+  Course,
+  IRProject,
+  BoardPost,
+  Comment,
+  Notification,
+  TeamBuildingRequest,
+  PaymentRecord,
+  SettlementRecord,
+  InvestmentProposal,
+  AIRecommendation,
+  DashboardStats,
+  AdminMember,
+  AdminBoard,
+  CRMMessage,
+  JobApplication,
+} from "../src/types";
+
+export interface DatabaseSchema {
+  courses: Course[];
+  irProjects: IRProject[];
+  posts: BoardPost[];
+  comments: Comment[];
+  notifications: Notification[];
+  teamRequests: TeamBuildingRequest[];
+  payments: PaymentRecord[];
+  settlements: SettlementRecord[];
+  proposals: InvestmentProposal[];
+  recommendations: AIRecommendation[];
+  stats: DashboardStats;
+  members: AdminMember[];
+  boards: AdminBoard[];
+  crmMessages: CRMMessage[];
+  applications: JobApplication[];
+}
+
+const DATA_DIR = path.join(process.cwd(), "data");
+const DB_FILE = path.join(DATA_DIR, "db.json");
+
+// ──────────────────────── Seed Data ────────────────────────
+
+const SEED_COURSES: Course[] = [
+  {
+    id: "c1",
+    title: "AI 프로덕트 매니저 부트캠프",
+    description: "GPT·Claude·Gemini 등 LLM 활용 제품 기획부터 런칭까지. 실무 프로젝트 중심 6주 12회차 집중 과정.",
+    category: "AI 모델링",
+    instructor: "김소현",
+    instructorTitle: "전) 글로벌 테크 유니콘 AI PM 리드",
+    instructorAvatar: "",
+    price: 890000,
+    discountedPrice: 590000,
+    thumbnail: "",
+    rating: 4.9,
+    reviewCount: 127,
+    studentCount: 342,
+    status: "모집중",
+    isEnrolled: false,
+    progress: 0,
+    schedule: {
+      startDate: "2025-09-02",
+      endDate: "2025-10-14",
+      daysOfWeek: ["화", "목"],
+      timeSlot: "19:30 ~ 21:30",
+      totalSessions: 12,
+      scheduleType: "stepping_stone",
+    },
+    instructorProfile: {
+      id: "inst-1",
+      name: "김소현",
+      title: "전) 글로벌 유니콘 AI PM 디렉터 & 창업 멘토",
+      bio: "10년 이상의 프로덕트 매니지먼트 및 생성형 AI 제품 런칭 경험을 바탕으로, 비개발자도 시장에서 검증 가능한 AI 서비스를 기획하고 런칭할 수 있도록 돕습니다.",
+      avatar: "",
+      rating: 4.9,
+      reviewCount: 127,
+      totalStudents: 3420,
+      infographic: {
+        experienceYears: 11,
+        totalStudents: 3420,
+        satisfactionRate: 99,
+        topKeywords: ["AI 프로덕트", "프롬프트 체이닝", "린스타트업", "IR 피칭 덱", "RAG 아키텍처"],
+        careerHighlights: [
+          "전) 실리콘밸리 테크 유니콘 AI PM 총괄",
+          "누적 12개 AI SaaS 프로덕트 글로벌 런칭",
+          "스타트업 인큐베이팅 및 시리즈A 유치 멘토링 50+팀",
+        ],
+        certifiedBadge: "공식 최고 인증 마스터 강사",
+      },
+      careerHistory: [
+        "2022~현재: AI 비즈니스 랩 대표 디렉터",
+        "2018~2022: 글로벌 유니콘 플랫폼 수석 PM",
+        "2014~2018: 빅데이터 솔루션 기획 팀장",
+      ],
+      courses: [
+        { id: "c1", title: "AI 프로덕트 매니저 부트캠프", category: "AI 모델링", period: "2025.09~", studentCount: 342, rating: 4.9, status: "모집중" },
+        { id: "c-past1", title: "생성형 AI 비즈니스 기획 마스터클래스", category: "비즈니스 기획", period: "2024.10~2025.01", studentCount: 420, rating: 4.9, status: "종료" },
+        { id: "c-past2", title: "LLM 에이전트 구축 실무 워크숍", category: "개발", period: "2025.03~2025.05", studentCount: 290, rating: 4.8, status: "종료" },
+      ],
+      reviews: [
+        { id: "r1", author: "박지훈", avatar: "", rating: 5, content: "실무에서 바로 쓸 수 있는 내용이 가득합니다. 강사님의 현업 경험 공유가 특히 좋았어요.", date: "2025-07-28" },
+        { id: "r2", author: "이수진", avatar: "", rating: 5, content: "RAG 파이프라인 실습이 정말 도움됐습니다. 회사 프로젝트에 바로 적용했어요!", date: "2025-07-15" },
+        { id: "r3", author: "최민호", avatar: "", rating: 4, content: "전반적으로 훌륭한 강의입니다. 징검다리 일정 덕분에 복습할 시간이 충분했어요.", date: "2025-07-01" },
+      ],
+    },
+    curriculum: [
+      { week: 1, sessionNumber: 1, title: "AI 프로덕트 이해 & 가설 수립", description: "LLM 생태계와 비즈니스 기획 프레임워크", duration: "2시간", date: "2025-09-02", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+      { week: 1, sessionNumber: 2, title: "프롬프트 엔지니어링 실전", description: "효과적인 프롬프트 설계와 체인 구축", duration: "2시간", date: "2025-09-04", dayOfWeek: "목", time: "19:30 ~ 21:30" },
+      { week: 2, sessionNumber: 3, title: "RAG 파이프라인 아키텍처", description: "검색 증강 생성 시스템 설계 실습", duration: "2시간", date: "2025-09-09", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+      { week: 2, sessionNumber: 4, title: "파인튜닝 & 커스텀 모델", description: "데이터셋 구축과 평가 지표 설정", duration: "2시간", date: "2025-09-11", dayOfWeek: "목", time: "19:30 ~ 21:30" },
+      { week: 3, sessionNumber: 5, title: "멀티모달 AI 솔루션", description: "이미지·음성·텍스트 통합 프로덕트", duration: "2시간", date: "2025-09-16", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+      { week: 3, sessionNumber: 6, title: "자율 AI 에이전트 구축", description: "도구 호출과 자율 의사결정 체계", duration: "2시간", date: "2025-09-18", dayOfWeek: "목", time: "19:30 ~ 21:30" },
+    ],
+    reviews: [
+      { id: "r1", author: "박지훈", avatar: "", rating: 5, content: "실무에서 바로 쓸 수 있는 내용이 가득합니다. 강사님의 현업 경험 공유가 특히 좋았어요.", date: "2025-07-28" },
+      { id: "r2", author: "이수진", avatar: "", rating: 5, content: "RAG 파이프라인 실습이 정말 도움됐습니다. 회사 프로젝트에 바로 적용했어요!", date: "2025-07-15" },
+      { id: "r3", author: "최민호", avatar: "", rating: 4, content: "전반적으로 훌륭한 강의입니다. 다만 에이전트 파트가 좀 더 깊었으면 합니다.", date: "2025-07-01" },
+    ],
+  },
+  {
+    id: "c2",
+    title: "스타트업 비즈니스 모델 설계",
+    description: "린 캔버스부터 유닛 이코노믹스까지. 투자자를 설득하는 비즈니스 모델 완성 4주 8회차 과정.",
+    category: "비즈니스 기획",
+    instructor: "정우석",
+    instructorTitle: "전) 시드 VC 심사역 & 엑셀러레이터 대표",
+    instructorAvatar: "",
+    price: 490000,
+    thumbnail: "",
+    rating: 4.7,
+    reviewCount: 89,
+    studentCount: 215,
+    status: "진행중",
+    isEnrolled: true,
+    progress: 60,
+    schedule: {
+      startDate: "2025-08-18",
+      endDate: "2025-09-12",
+      daysOfWeek: ["월", "수"],
+      timeSlot: "20:00 ~ 22:00",
+      totalSessions: 8,
+      scheduleType: "stepping_stone",
+    },
+    curriculum: [
+      { week: 1, sessionNumber: 1, title: "린 캔버스 작성 실습", description: "비즈니스 모델 가설 수립", duration: "2시간", date: "2025-08-18", dayOfWeek: "월", time: "20:00 ~ 22:00" },
+      { week: 1, sessionNumber: 2, title: "시장 분석 & TAM/SAM/SOM", description: "시장 규모 추정 및 타깃 정의", duration: "2시간", date: "2025-08-20", dayOfWeek: "수", time: "20:00 ~ 22:00" },
+      { week: 2, sessionNumber: 3, title: "포지셔닝 맵 & 차별화", description: "경쟁사 대비 핵심 가치 제안", duration: "2시간", date: "2025-08-25", dayOfWeek: "월", time: "20:00 ~ 22:00" },
+      { week: 2, sessionNumber: 4, title: "유닛 이코노믹스 & LTV/CAC", description: "지속 가능한 수익 구조 설계", duration: "2시간", date: "2025-08-27", dayOfWeek: "수", time: "20:00 ~ 22:00" },
+    ],
+    reviews: [
+      { id: "r4", author: "김하은", avatar: "", rating: 5, content: "IR 피칭 준비할 때 정말 큰 도움이 됐습니다.", date: "2025-08-01" },
+    ],
+  },
+  {
+    id: "c3",
+    title: "그로스 해킹 마스터클래스",
+    description: "데이터 기반 성장 전략. 퍼널 분석, A/B 테스트, 바이럴 루프 설계 실전 6주.",
+    category: "마케팅",
+    instructor: "한지민",
+    instructorAvatar: "",
+    price: 390000,
+    discountedPrice: 290000,
+    thumbnail: "",
+    rating: 4.8,
+    reviewCount: 64,
+    studentCount: 178,
+    status: "모집중",
+    isEnrolled: false,
+    progress: 0,
+    schedule: {
+      startDate: "2025-09-15",
+      endDate: "2025-10-27",
+      daysOfWeek: ["월", "수"],
+      timeSlot: "19:00 ~ 21:00",
+      totalSessions: 12,
+      scheduleType: "stepping_stone",
+    },
+    curriculum: [
+      { week: 1, sessionNumber: 1, title: "그로스 퍼널 기본 프레임워크", description: "AARRR 모델 완벽 분석", duration: "2시간" },
+      { week: 1, sessionNumber: 2, title: "정량 데이터 트래킹 세팅", description: "GA4 및 믹스패널 이벤트 정의", duration: "2시간" },
+    ],
+    reviews: [],
+  },
+  {
+    id: "c4",
+    title: "풀스택 AI 웹앱 개발",
+    description: "Next.js 15, FastAPI, LangChain을 활용한 상용 수준의 AI 웹 서비스 풀스택 구축.",
+    category: "개발",
+    instructor: "강민수",
+    instructorAvatar: "",
+    price: 790000,
+    thumbnail: "",
+    rating: 4.9,
+    reviewCount: 203,
+    studentCount: 412,
+    status: "모집중",
+    isEnrolled: false,
+    progress: 0,
+    schedule: {
+      startDate: "2025-09-05",
+      endDate: "2025-10-24",
+      daysOfWeek: ["금"],
+      timeSlot: "19:00 ~ 22:00",
+      totalSessions: 8,
+      scheduleType: "regular",
+    },
+    curriculum: [
+      { week: 1, sessionNumber: 1, title: "Next.js App Router & 서버 컴포넌트", description: "모던 프론트엔드 아키텍처", duration: "3시간" },
+      { week: 2, sessionNumber: 2, title: "FastAPI 비동기 API 서버 구축", description: "고성능 백엔드 엔드포인트 설계", duration: "3시간" },
+    ],
+    reviews: [],
+  },
+  {
+    id: "c5",
+    title: "AI 네이티브 UI/UX 디자인",
+    description: "생성형 AI 인터페이스(CUI, Agent UI) 디자인 패턴과 Figma 실전 프로토타이핑.",
+    category: "디자인",
+    instructor: "윤서연",
+    instructorAvatar: "",
+    price: 450000,
+    thumbnail: "",
+    rating: 4.6,
+    reviewCount: 42,
+    studentCount: 120,
+    status: "진행중",
+    isEnrolled: false,
+    progress: 0,
+    schedule: {
+      startDate: "2025-08-20",
+      endDate: "2025-09-17",
+      daysOfWeek: ["수"],
+      timeSlot: "19:30 ~ 21:30",
+      totalSessions: 5,
+      scheduleType: "regular",
+    },
+    curriculum: [
+      { week: 1, sessionNumber: 1, title: "생성형 AI 인터랙션의 특징", description: "비결정적 UX 설계 원칙", duration: "2시간" },
+    ],
+    reviews: [],
+  },
+  {
+    id: "c6",
+    title: "LLM 에이전트 & 멀티에이전트 시스템",
+    description: "AutoGen, CrewAI를 활용한 복합 업무 자동화 에이전트 오케스트레이션 실전.",
+    category: "AI 모델링",
+    instructor: "김소현",
+    instructorAvatar: "",
+    price: 690000,
+    discountedPrice: 490000,
+    thumbnail: "",
+    rating: 4.9,
+    reviewCount: 95,
+    studentCount: 260,
+    status: "모집중",
+    isEnrolled: false,
+    progress: 0,
+    schedule: {
+      startDate: "2025-09-20",
+      endDate: "2025-11-01",
+      daysOfWeek: ["토"],
+      timeSlot: "14:00 ~ 18:00",
+      totalSessions: 6,
+      scheduleType: "regular",
+    },
+    curriculum: [
+      { week: 1, sessionNumber: 1, title: "멀티 에이전트 아키텍처 개요", description: "협업과 피드백 루프 설계", duration: "4시간" },
+    ],
+    reviews: [],
+  },
+];
+
+const SEED_IR_PROJECTS: IRProject[] = [
+  {
+    id: "p1",
+    teamName: "DocuMind AI",
+    anonymousTeamName: "⚡ 캡틴 AI (스텔스)",
+    title: "법률·금융 문서를 위한 초정밀 RAG 분석 엔진",
+    oneLiner: "복잡한 500페이지 계약서·규제 문서를 3초 만에 검토하고 리스크를 탐지하는 AI",
+    description: "복잡한 법률·금융 규제 문서를 고도화된 계층형 RAG와 멀티모달 OCR로 3초 만에 분석하여 계약 리스크와 위반 조항을 즉각 리포팅합니다.",
+    field: "AI/ML",
+    thumbnail: "",
+    demoVideoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    isAnonymous: false,
+    businessModel: "B2B SaaS (월 $499 ~ $2,999 티어 요금제) + 커스텀 온프레미스 엔터프라이즈 라이선스",
+    problem: "법무/금융팀의 계약서 검토에 건당 평균 4.2시간 소요되며, 담당자 피로도로 인한 조항 누락 리스크 상존",
+    solution: "특허 출원한 도메인 특화 RAG 엔진으로 정확도 99.4% 달성 및 검토 시간 85% 단축",
+    isHiring: true,
+    hiringRoles: ["프론트엔드 (React)", "AI/ML 엔지니어"],
+    hiringDetails: [
+      {
+        id: "hr-1",
+        role: "시니어 프론트엔드 개발자 (React/Next.js)",
+        type: "풀타임",
+        compensation: "연봉 6,000 ~ 8,500만원",
+        equity: "0.5% ~ 2.0%",
+        skills: ["React", "TypeScript", "TailwindCSS", "Next.js", "Zustand"],
+        applyMethod: "internal",
+        description: "복잡한 문서 뷰어 및 실시간 AI 협업 인터페이스를 설계하고 개발합니다.",
+      },
+      {
+        id: "hr-2",
+        role: "LLM / RAG 엔지니어 (Co-founder 레벨)",
+        type: "코파운더",
+        compensation: "월 300만원 + 지분 협의",
+        equity: "5.0% ~ 15.0%",
+        skills: ["Python", "LangChain", "pgvector", "vLLM", "Docker"],
+        applyMethod: "link",
+        externalLink: "https://wanted.co.kr",
+        description: "자체 도메인 모델 파인튜닝 및 벡터 파이프라인 최적화를 리드합니다.",
+      },
+    ],
+    members: [
+      { name: "이지훈", role: "CEO / AI Researcher", avatar: "", anonymousName: "⚡ 캡틴 AI", anonymousRole: "CEO (스텔스)", bio: "전) 글로벌 AI 연구소 연구원", socialLink: "https://linkedin.com" },
+      { name: "최수아", role: "CTO / Backend", avatar: "", anonymousName: "🤖 코드 마스터", anonymousRole: "CTO (스텔스)", bio: "대용량 트래픽 분산처리 8년차", socialLink: "https://github.com" },
+      { name: "정민우", role: "Product Lead", avatar: "", anonymousName: "🎯 그로스 해커", anonymousRole: "PM (스텔스)", bio: "핀테크 유니콘 출신 PM" },
+    ],
+    bookmarked: true,
+    investmentStage: "Seed",
+  },
+  {
+    id: "p2",
+    teamName: "VoiceFlow KR",
+    anonymousTeamName: "🎙 사운드웨이브 랩",
+    title: "감정 반응형 한국어 초저지연 음성 AI 에이전트",
+    oneLiner: "고객 감정을 실시간 감지하여 톤을 조절하는 B2B CS/아웃바운드 음성 AI 솔루션",
+    description: "200ms 미만의 초저지연 실시간 음성 대화 파이프라인과 감정 인식 알고리즘을 결합한 지능형 컨택센터 솔루션입니다.",
+    field: "AI/ML",
+    thumbnail: "",
+    isAnonymous: true,
+    businessModel: "통화 시간당 종량 과금(분당 120원) + 월 기본 구독료",
+    problem: "콜센터 인력 부족과 높은 이직률, 기존 ARS/단순 챗봇의 낮은 고객 만족도",
+    solution: "사람 수준의 자연스러운 대화 호흡과 감정 케어로 상담사 업무 70% 자동화",
+    isHiring: true,
+    hiringRoles: ["보이스/오디오 ML 엔지니어", "B2B 세일즈 리드"],
+    hiringDetails: [
+      {
+        id: "hr-3",
+        role: "음성 합성/인식(TTS/STT) ML 엔지니어",
+        type: "풀타임",
+        compensation: "연봉 7,000 ~ 9,000만원",
+        equity: "1.0% ~ 3.0%",
+        skills: ["Python", "PyTorch", "Whisper", "WebRTC", "CUDA"],
+        applyMethod: "internal",
+        description: "실시간 음성 스트리밍 파이프라인 및 경량화 모델 서빙을 담당합니다.",
+      },
+    ],
+    members: [
+      { name: "강현우", role: "Co-founder", avatar: "", anonymousName: "🎙 보이스 마스터", anonymousRole: "Founder", bio: "음성 AI 스타트업 2회 창업" },
+    ],
+    bookmarked: false,
+    investmentStage: "Pre-Seed",
+  },
+  {
+    id: "p3",
+    teamName: "MedScan AI",
+    anonymousTeamName: "🧬 헬스 퓨처스",
+    title: "1차 병원용 피부 병변 3초 스크리닝 보조 솔루션",
+    oneLiner: "스마트폰 카메라로 촬영한 피부 질환을 98% 정확도로 1차 판독하는 의사용 AI 보조 툴",
+    description: "스마트폰 및 전용 렌즈로 촬영한 이미지를 딥러닝 비전 알고리즘으로 분석하여 의사의 1차 진료를 보조합니다.",
+    field: "헬스케어",
+    thumbnail: "",
+    isAnonymous: false,
+    businessModel: "병원당 월 구독료(50만원) + 분석 건당 마이크로 과금",
+    problem: "비전문의 1차 진료 시 피부암 등 중증 질환 조기 발견 지연 및 오진 가능성",
+    solution: "10만 건 이상의 전문의 라벨링 데이터 기반 3초 판독 및 의사 진단서 자동 생성",
+    isHiring: false,
+    members: [
+      { name: "박서준", role: "대표 / 피부과 전문의", avatar: "", bio: "서울대 의대 졸업, 현직 피부과 원장" },
+      { name: "임도윤", role: "AI 총괄", avatar: "", bio: "의료영상 딥러닝 박사" },
+    ],
+    bookmarked: true,
+    investmentStage: "Seed",
+  },
+  {
+    id: "p4",
+    teamName: "EduCraft",
+    title: "생성형 AI 기반 맞춤형 수학 문제 생성 & 튜터",
+    oneLiner: "학생의 취약 개념을 실시간 추적하여 1초 만에 맞춤 변형 문제를 생성하는 에듀테크",
+    description: "초중고 학생의 오답 데이터를 학습하여 취약한 수학 개념을 정밀 타깃팅하는 문제 생성 엔진입니다.",
+    field: "에듀테크",
+    thumbnail: "",
+    isAnonymous: false,
+    businessModel: "B2C 학부모 구독(월 39,000원) / B2B 학원 솔루션(학생당 월 15,000원)",
+    problem: "기존 문제집의 획일적 구성과 일대일 과외의 비싼 비용 부담",
+    solution: "학생별 오답 원인을 그래프 구조로 분석하여 최적의 단계별 유사/변형 문제 무한 생성",
+    isHiring: true,
+    hiringRoles: ["풀스택 개발자", "교육 콘텐츠 기획자"],
+    members: [
+      { name: "윤아름", role: "CEO", avatar: "", bio: "대치동 수학 강사 7년차" },
+    ],
+    bookmarked: false,
+    investmentStage: "Pre-Seed",
+  },
+  {
+    id: "p5",
+    teamName: "SupplyGenius",
+    title: "중소 이커머스를 위한 AI 수요예측 & 자동 발주",
+    oneLiner: "트렌드·날씨·이벤트를 종합 분석해 재고 폐기율을 40% 줄여주는 공급망 AI",
+    description: "중소 셀러들의 주문 데이터와 외부 트렌드 신호를 결합하여 안전재고를 계산하고 발주를 자동화합니다.",
+    field: "커머스",
+    thumbnail: "",
+    isAnonymous: false,
+    businessModel: "스마트스토어/쿠팡 연동 월 구독료(월 99,000원) + 재고 절감 성과보수",
+    problem: "수동 엑셀 발주로 인한 잦은 품절 및 악성 재고 누적",
+    solution: "다변량 시계열 AI 모델로 상품별 최적 발주일/수량 자동 계산 및 원클릭 발주서 전송",
+    isHiring: false,
+    members: [
+      { name: "송태양", role: "CEO / 데이터 사이언티스트", avatar: "", bio: "쿠팡 물류 데이터 엔지니어 출신" },
+    ],
+    bookmarked: false,
+    investmentStage: "Series A",
+  },
+];
+
+const SEED_POSTS: BoardPost[] = [
+  {
+    id: "p-1",
+    boardType: "공지사항",
+    title: "🚀 [공지] 2025년 하반기 AI 스타트업 배치 3기 모집 안내",
+    content: "총 상금 5,000만원 및 Seed 투자 연계! AI로 창업하라 3기 모집이 시작되었습니다. 마감일: 2025.09.30까지.",
+    author: "관리자",
+    authorAvatar: "",
+    createdAt: "2025-08-10",
+    viewCount: 1420,
+    commentCount: 8,
+    isPinned: true,
+  },
+  {
+    id: "p-2",
+    boardType: "팀빌딩",
+    title: "⚡ [팀빌딩] B2B 법률 AI SaaS 프론트엔드 리드 개발자 모십니다 (지분 2~5%)",
+    content: "DocuMind 팀에서 LLM 인터페이스와 복잡한 문서 뷰어를 함께 만들 풀스택/프론트엔드 팀원을 찾습니다. React/TypeScript 경험자 우대합니다.",
+    author: "이지훈",
+    authorAvatar: "",
+    createdAt: "2025-08-12",
+    viewCount: 380,
+    commentCount: 3,
+    isPinned: false,
+  },
+  {
+    id: "p-3",
+    boardType: "QnA",
+    title: "❓ FastAPI와 Gemini 1.5 Flash 연동 시 스트리밍 응답 팁 공유",
+    content: "SSE(Server-Sent Events)를 활용하여 지연시간을 50% 줄인 경험을 공유합니다. 질문 있으시면 댓글 남겨주세요!",
+    author: "최수아",
+    authorAvatar: "",
+    createdAt: "2025-08-11",
+    viewCount: 520,
+    commentCount: 4,
+    isPinned: false,
+  },
+  {
+    id: "p-4",
+    boardType: "팀빌딩",
+    title: "💡 [팀빌딩] 헬스케어 AI 비전 엔지니어 & UI 디자이너 코파운더 모십니다",
+    content: "병원 진료 보조 솔루션 MedScan 팀입니다. 초기 멤버로 조인하실 비전 모델 개발자 및 프로덕트 디자이너 분 커피챗 제안 환영합니다.",
+    author: "박서준",
+    authorAvatar: "",
+    createdAt: "2025-08-09",
+    viewCount: 290,
+    commentCount: 2,
+    isPinned: false,
+  },
+  {
+    id: "p-5",
+    boardType: "QnA",
+    title: "❓ 초기 시드 투자 IR 피칭 덱 작성 시 유닛 이코노믹스 작성 팁이 있을까요?",
+    content: "비즈니스 모델 수업을 듣고 있는데, B2B SaaS의 CAC 산정 기준이 궁금합니다.",
+    author: "김수강생",
+    authorAvatar: "",
+    createdAt: "2025-08-08",
+    viewCount: 195,
+    commentCount: 2,
+    isPinned: false,
+  },
+];
+
+const SEED_COMMENTS: Comment[] = [
+  {
+    id: "c-1",
+    postId: "p-1",
+    author: "이지훈",
+    authorAvatar: "",
+    authorRole: "student",
+    content: "이번 3기 프로그램에 저희 팀도 꼭 지원하겠습니다! 선발 절차가 어떻게 되나요?",
+    createdAt: "2025-08-10 14:20",
+  },
+  {
+    id: "c-2",
+    postId: "p-1",
+    author: "관리자",
+    authorAvatar: "",
+    authorRole: "admin",
+    content: "1차 서류 심사 후 2차 비대면 피칭 인터뷰로 최종 10팀을 선발합니다.",
+    createdAt: "2025-08-10 14:45",
+  },
+  {
+    id: "c-3",
+    postId: "p-2",
+    author: "김수강생",
+    authorAvatar: "",
+    authorRole: "student",
+    content: "안녕하세요! React와 Next.js 3년차입니다. 포트폴리오 전달드릴 수 있을까요?",
+    createdAt: "2025-08-12 16:30",
+  },
+  {
+    id: "c-4",
+    postId: "p-3",
+    author: "강민수",
+    authorAvatar: "",
+    authorRole: "instructor",
+    content: "SSE 연결 시 타임아웃 처리와 재연결 로직도 신경쓰시면 프로덕션 안정성이 올라갑니다!",
+    createdAt: "2025-08-11 20:10",
+  },
+  {
+    id: "c-5",
+    postId: "p-5",
+    author: "정우석",
+    authorAvatar: "",
+    authorRole: "instructor",
+    content: "초기 단계에서는 마케팅비 외에 대표의 세일즈 인건비와 POC 전환율을 감안한 블렌디드 CAC로 산출하는 것이 설득력 있습니다.",
+    createdAt: "2025-08-08 21:00",
+  },
+];
+
+const SEED_NOTIFICATIONS: Notification[] = [
+  {
+    id: "n1",
+    type: "instructor_msg",
+    title: "[김소현 강사] 2회차 과제 피드백이 등록되었습니다",
+    message: "작성해주신 프롬프트 체이닝 구조도가 매우 우수합니다. 에러 핸들링 폴백만 보완해보세요.",
+    time: "10분 전",
+    isRead: false,
+    sender: "김소현 강사",
+    courseTitle: "AI 프로덕트 매니저 부트캠프",
+  },
+  {
+    id: "n2",
+    type: "course",
+    title: "내일 19:30 라이브 세션 안내",
+    message: "3회차 'RAG 파이프라인 아키텍처' 라이브 수업이 내일 19:30에 시작됩니다.",
+    time: "2시간 전",
+    isRead: false,
+    courseTitle: "AI 프로덕트 매니저 부트캠프",
+  },
+  {
+    id: "n3",
+    type: "team",
+    title: "팀 빌딩 합류 제안 도착",
+    message: "'VoiceFlow KR' 프로젝트로부터 프론트엔드 포지션 제안이 도착했습니다.",
+    time: "1일 전",
+    isRead: true,
+  },
+  {
+    id: "n4",
+    type: "investor",
+    title: "투자자 관심 알림",
+    message: "넥서스벤처스 한승우 심사역님이 회원님의 프로젝트를 북마크했습니다.",
+    time: "2일 전",
+    isRead: true,
+  },
+];
+
+const SEED_TEAM_REQUESTS: TeamBuildingRequest[] = [
+  {
+    id: "tr1",
+    type: "received",
+    projectName: "DocuMind AI",
+    fromUser: "이지훈 (대표)",
+    toUser: "김수강생",
+    role: "프론트엔드 리드",
+    message: "수강생 대시보드 및 프로덕트 구현 포트폴리오를 인상깊게 보았습니다. 커피챗 가능하실까요?",
+    status: "대기중",
+    date: "2025-08-12",
+  },
+  {
+    id: "tr2",
+    type: "sent",
+    projectName: "VoiceFlow KR",
+    fromUser: "김수강생",
+    toUser: "강현우 (대표)",
+    role: "UI/UX 디자이너",
+    message: "음성 인터랙션 UI 디자인에 관심이 많습니다. 함께하고 싶습니다.",
+    status: "수락",
+    date: "2025-08-05",
+  },
+];
+
+const SEED_PAYMENTS: PaymentRecord[] = [
+  {
+    id: "pay-1",
+    courseTitle: "AI 프로덕트 매니저 부트캠프",
+    amount: 590000,
+    date: "2025-08-01",
+    method: "카드",
+    status: "완료",
+  },
+  {
+    id: "pay-2",
+    courseTitle: "스타트업 비즈니스 모델 설계",
+    amount: 490000,
+    date: "2025-07-15",
+    method: "카드",
+    status: "완료",
+  },
+];
+
+const SEED_SETTLEMENTS: SettlementRecord[] = [
+  { id: "s1", period: "2025년 8월", totalRevenue: 14750000, pgFee: 486750, platformFee: 2212500, netAmount: 12050750, status: "출금신청" },
+  { id: "s2", period: "2025년 7월", totalRevenue: 18200000, pgFee: 600600, platformFee: 2730000, netAmount: 14869400, status: "정산완료" },
+  { id: "s3", period: "2025년 6월", totalRevenue: 12400000, pgFee: 409200, platformFee: 1860000, netAmount: 10130800, status: "정산완료" },
+];
+
+const SEED_PROPOSALS: InvestmentProposal[] = [
+  { id: "prop-1", projectId: "p1", projectName: "DocuMind AI", message: "시드 라운드 3억원 투자 및 미국 시장 진출 멘토링을 제안합니다.", sentDate: "2025-08-10", status: "대기중" },
+  { id: "prop-2", projectId: "p3", projectName: "MedScan AI", message: "의료 AI 전문 펀드 5억원 팔로온 투자 검토를 위한 미팅을 요청드립니다.", sentDate: "2025-08-05", status: "수락" },
+];
+
+const SEED_RECOMMENDATIONS: AIRecommendation[] = [
+  { projectId: "p1", projectName: "DocuMind AI", matchScore: 96, matchReasons: ["B2B SaaS 선호 조건 일치", "특허 기반 진입장벽", "팀원 전문성 상위 1%"], field: "AI/ML" },
+  { projectId: "p2", projectName: "VoiceFlow KR", matchScore: 91, matchReasons: ["초저지연 음성 AI 시장 급성장", "연쇄 창업자 팀"], field: "AI/ML" },
+  { projectId: "p5", projectName: "SupplyGenius", matchScore: 85, matchReasons: ["이커머스 물류 시장 검증", "데이터 파이프라인 우수"], field: "커머스" },
+];
+
+const SEED_STATS: DashboardStats = {
+  dailySignups: 42,
+  monthlySignups: 1280,
+  totalRevenue: 84200000,
+  monthlyRevenue: 28400000,
+  activeCourses: 6,
+  teamMatchCount: 38,
+  investmentMatchCount: 12,
+};
+
+const SEED_MEMBERS: AdminMember[] = [
+  { id: "m1", name: "김수강생", email: "student@mail.com", role: "student", joinDate: "2025-01-15", lastLogin: "2025-08-12", status: "활성", courseCount: 2 },
+  { id: "m2", name: "김소현", email: "sohyun.kim@mail.com", role: "instructor", joinDate: "2024-03-01", lastLogin: "2025-08-12", status: "활성", courseCount: 3 },
+  { id: "m3", name: "이지훈", email: "jh.lee@documind.ai", role: "student", joinDate: "2025-04-10", lastLogin: "2025-08-11", status: "활성", courseCount: 1 },
+  { id: "m4", name: "정우석", email: "ws.jung@mail.com", role: "instructor", joinDate: "2024-06-01", lastLogin: "2025-08-10", status: "활성", courseCount: 2 },
+  { id: "m5", name: "한승우", email: "sw.han@nexusvc.com", role: "investor", joinDate: "2024-11-10", lastLogin: "2025-08-12", status: "활성", courseCount: 0 },
+  { id: "m6", name: "오세진", email: "sj.oh@mail.com", role: "student", joinDate: "2025-05-20", lastLogin: "2025-07-15", status: "정지", courseCount: 1 },
+  { id: "m7", name: "강민수", email: "ms.kang@mail.com", role: "instructor", joinDate: "2024-09-01", lastLogin: "2025-08-10", status: "활성", courseCount: 1 },
+];
+
+const SEED_BOARDS: AdminBoard[] = [
+  { id: "b1", name: "공지사항", readPermission: "전체", writePermission: "관리자", template: "일반형", postCount: 45, createdAt: "2024-01-01" },
+  { id: "b2", name: "팀 빌딩 (Co-founder)", readPermission: "회원", writePermission: "회원", template: "카드형", postCount: 128, createdAt: "2024-01-01" },
+  { id: "b3", name: "Q&A 자유게시판", readPermission: "전체", writePermission: "회원", template: "일반형", postCount: 312, createdAt: "2024-01-01" },
+];
+
+const SEED_CRM_MESSAGES: CRMMessage[] = [
+  {
+    id: "crm-1",
+    courseId: "c1",
+    courseTitle: "AI 프로덕트 매니저 부트캠프",
+    targetType: "all",
+    targetCount: 42,
+    title: "1주차 복습 영상 및 실습 파일 업로드 안내",
+    content: "수강생 여러분, 1주차 강의 VOD와 실습 프롬프트 템플릿이 자료실에 업로드되었습니다.",
+    channels: ["inapp", "email"],
+    sentAt: "2025-08-10 18:00",
+  },
+];
+
+// ──────────────────────── Database Class ────────────────────────
+
+class Database {
+  private data: DatabaseSchema;
+
+  constructor() {
+    this.ensureDataDir();
+    this.data = this.load();
+  }
+
+  private ensureDataDir() {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  }
+
+  private load(): DatabaseSchema {
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const raw = fs.readFileSync(DB_FILE, "utf-8");
+        return JSON.parse(raw);
+      }
+    } catch (e) {
+      console.error("Failed to load db.json, fallback to seed data", e);
+    }
+
+    const initialData: DatabaseSchema = {
+      courses: SEED_COURSES,
+      irProjects: SEED_IR_PROJECTS,
+      posts: SEED_POSTS,
+      comments: SEED_COMMENTS,
+      notifications: SEED_NOTIFICATIONS,
+      teamRequests: SEED_TEAM_REQUESTS,
+      payments: SEED_PAYMENTS,
+      settlements: SEED_SETTLEMENTS,
+      proposals: SEED_PROPOSALS,
+      recommendations: SEED_RECOMMENDATIONS,
+      stats: SEED_STATS,
+      members: SEED_MEMBERS,
+      boards: SEED_BOARDS,
+      crmMessages: SEED_CRM_MESSAGES,
+      applications: [],
+    };
+
+    this.saveData(initialData);
+    return initialData;
+  }
+
+  private saveData(data: DatabaseSchema) {
+    try {
+      this.ensureDataDir();
+      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Failed to write to db.json", e);
+    }
+  }
+
+  public persist() {
+    this.saveData(this.data);
+  }
+
+  public get<K extends keyof DatabaseSchema>(key: K): DatabaseSchema[K] {
+    return this.data[key];
+  }
+
+  public set<K extends keyof DatabaseSchema>(key: K, value: DatabaseSchema[K]) {
+    this.data[key] = value;
+    this.persist();
+  }
+
+  public update<K extends keyof DatabaseSchema>(
+    key: K,
+    updater: (prev: DatabaseSchema[K]) => DatabaseSchema[K]
+  ) {
+    this.data[key] = updater(this.data[key]);
+    this.persist();
+    return this.data[key];
+  }
+}
+
+export const db = new Database();

@@ -15,15 +15,24 @@ import {
   CreditCard,
   MessageSquare,
   Sparkles,
+  Plus,
+  Receipt,
+  ExternalLink,
 } from "lucide-react";
-import type { Course, TeamBuildingRequest, PaymentRecord, Notification } from "../types";
+import type { Course, TeamBuildingRequest, PaymentRecord, Notification, IRProject } from "../types";
+import ProjectCreateEditModal from "./ProjectCreateEditModal";
+import PaymentReceiptModal from "./PaymentReceiptModal";
 
 interface StudentDashboardProps {
   enrolledCourses: Course[];
   teamRequests: TeamBuildingRequest[];
   payments: PaymentRecord[];
   notifications: Notification[];
+  myProjects?: IRProject[];
   onViewCourse: (id: string) => void;
+  onSaveProject?: (project: IRProject) => void;
+  onRefundPayment?: (updatedPayment: PaymentRecord) => void;
+  onUpdateTeamRequest?: (id: string, status: "수락" | "거절") => void;
 }
 
 export default function StudentDashboard({
@@ -31,9 +40,18 @@ export default function StudentDashboard({
   teamRequests,
   payments,
   notifications,
+  myProjects = [],
   onViewCourse,
+  onSaveProject,
+  onRefundPayment,
+  onUpdateTeamRequest,
 }: StudentDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"courses" | "projects" | "notifications">("courses");
+
+  // Modals
+  const [showProjectModal, setShowProjectModal] = React.useState(false);
+  const [editingProject, setEditingProject] = React.useState<IRProject | null>(null);
+  const [selectedPayment, setSelectedPayment] = React.useState<PaymentRecord | null>(null);
 
   const tabs = [
     { id: "courses" as const, label: "내 강의실 (수강 관리)", icon: <BookOpen size={14} /> },
@@ -98,52 +116,61 @@ export default function StudentDashboard({
                         <div>
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <span className="text-[9px] font-mono text-brand-on-surface-variant">
+                              <span className="text-[10px] text-brand-primary font-mono font-bold">
                                 {course.category}
                               </span>
-                              <h3 className="text-sm font-bold text-white mt-0.5">{course.title}</h3>
-                              <p className="text-[10px] text-brand-on-surface-variant mt-0.5">
-                                {course.instructor} 강사
-                              </p>
+                              <h3 className="text-sm font-bold text-white mt-0.5 line-clamp-1">
+                                {course.title}
+                              </h3>
                             </div>
-                            <ChevronRight size={14} className="text-brand-on-surface-variant mt-1" />
-                          </div>
-
-                          {/* Schedule badge */}
-                          <div className="p-2 bg-brand-surface-low rounded-lg border border-brand-border/30 mb-3 text-[10px]">
-                            <div className="flex items-center justify-between text-brand-tertiary font-semibold">
-                              <span className="flex items-center gap-1">
-                                <CalendarIcon size={10} />
-                                {schedule?.startDate} ~ {schedule?.endDate}
-                              </span>
-                              <span>매주 {schedule?.daysOfWeek?.join("·")}</span>
-                            </div>
-                            <div className="text-brand-on-surface-variant mt-0.5 font-mono">
-                              시간: {schedule?.timeSlot}
-                            </div>
-                          </div>
-
-                          {/* Progress */}
-                          <div className="progress-bar">
-                            <div className="progress-bar-fill" style={{ width: `${course.progress || 0}%` }} />
-                          </div>
-                          <div className="flex justify-between mt-1.5 mb-3">
-                            <span className="text-[10px] text-brand-on-surface-variant">진도율</span>
-                            <span className="text-[10px] font-bold text-brand-primary">
-                              {course.progress || 0}%
+                            <span className="text-[10px] bg-brand-tertiary/10 text-brand-tertiary font-bold px-2 py-0.5 rounded-full border border-brand-tertiary/30">
+                              {course.status}
                             </span>
+                          </div>
+
+                          <p className="text-xs text-brand-on-surface-variant line-clamp-2 mb-3">
+                            {course.description}
+                          </p>
+
+                          {/* 일정 배지 */}
+                          <div className="bg-brand-surface-low/80 p-2.5 rounded-lg border border-brand-border/30 mb-3 space-y-1">
+                            <div className="flex items-center gap-1.5 text-[10px] text-brand-on-surface-variant">
+                              <CalendarIcon size={11} className="text-brand-primary" />
+                              <span>{schedule.startDate} ~ {schedule.endDate}</span>
+                              <span className="font-bold text-brand-tertiary">({schedule.totalSessions}회차)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-brand-on-surface-variant">
+                              <Clock size={11} className="text-brand-primary" />
+                              <span>매주 [{schedule.daysOfWeek.join(", ")}] {schedule.timeSlot}</span>
+                            </div>
+                          </div>
+
+                          {/* 진도율 바 */}
+                          <div className="space-y-1 mb-3">
+                            <div className="flex justify-between text-[10px]">
+                              <span className="text-brand-on-surface-variant">학습 진도율</span>
+                              <span className="text-brand-primary font-mono font-bold">
+                                {course.progress || 0}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-brand-surface-high rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-brand-primary-container to-brand-secondary rounded-full transition-all duration-500"
+                                style={{ width: `${course.progress || 0}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        <div className="flex gap-2 pt-2 border-t border-brand-border/20">
+                        <div className="flex gap-2 pt-2 border-t border-brand-border/30">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onViewCourse(course.id);
                             }}
-                            className="flex-1 text-[10px] bg-brand-primary-container/15 text-brand-primary py-2 rounded-lg border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1 font-bold"
+                            className="flex-1 text-[11px] font-bold bg-brand-primary-container text-white py-2 rounded-lg hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1"
                           >
-                            <Play size={10} /> VOD 재생 & 커리큘럼
+                            <Play size={11} /> 강의실 입장
                           </button>
                           <button
                             onClick={(e) => {
@@ -162,18 +189,19 @@ export default function StudentDashboard({
             </div>
           </section>
 
-          {/* 수강 내역 / 결제 내역 */}
+          {/* 수강 내역 / 결제 영수증 */}
           <section>
             <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
               <CreditCard size={15} className="text-brand-accent-orange" />
               수강 및 결제 영수증 내역
             </h2>
             <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
-              <div className="grid grid-cols-5 gap-2 px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
-                <span className="col-span-2">강의명</span>
-                <span>결제 금액</span>
-                <span>결제일</span>
-                <span className="text-right">결제 상태</span>
+              <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
+                <span className="col-span-5">강의명</span>
+                <span className="col-span-2">결제 금액</span>
+                <span className="col-span-2">결제일</span>
+                <span className="col-span-1">상태</span>
+                <span className="col-span-2 text-right">영수증/환불</span>
               </div>
               {payments.length === 0 ? (
                 <p className="px-5 py-8 text-center text-xs text-brand-on-surface-variant">
@@ -183,21 +211,33 @@ export default function StudentDashboard({
                 payments.map((p) => (
                   <div
                     key={p.id}
-                    className="grid grid-cols-5 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors"
+                    className="grid grid-cols-12 gap-2 px-5 py-3.5 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors"
                   >
-                    <span className="col-span-2 text-xs text-white truncate font-medium">
+                    <span className="col-span-5 text-xs text-white truncate font-medium">
                       {p.courseTitle}
                     </span>
-                    <span className="text-xs text-brand-on-surface-variant">
+                    <span className="col-span-2 text-xs text-brand-on-surface-variant font-mono">
                       ₩{p.amount.toLocaleString()}
                     </span>
-                    <span className="text-[10px] text-brand-on-surface-variant">{p.date}</span>
-                    <span
-                      className={`text-[10px] font-bold text-right ${
-                        p.status === "완료" ? "text-brand-tertiary" : "text-error"
-                      }`}
-                    >
-                      {p.status}
+                    <span className="col-span-2 text-[10px] text-brand-on-surface-variant">{p.date}</span>
+                    <span className="col-span-1">
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          p.status === "완료"
+                            ? "bg-brand-tertiary/15 text-brand-tertiary"
+                            : "bg-red-500/15 text-red-400"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </span>
+                    <span className="col-span-2 text-right">
+                      <button
+                        onClick={() => setSelectedPayment(p)}
+                        className="text-[10px] px-2.5 py-1 rounded bg-brand-surface-high hover:bg-brand-surface-highest text-white border border-brand-border/40 transition-colors cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Receipt size={10} /> 영수증 조회
+                      </button>
                     </span>
                   </div>
                 ))
@@ -212,24 +252,81 @@ export default function StudentDashboard({
         <div className="flex flex-col gap-6 animate-fadeIn">
           {/* 내 프로젝트 */}
           <section>
-            <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-              <Briefcase size={15} className="text-brand-primary" />
-              내 창업 아이템 & IR 프로젝트
-            </h2>
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md text-center">
-              <div className="w-12 h-12 rounded-full bg-brand-surface-low mx-auto flex items-center justify-center mb-3">
-                <Briefcase size={20} className="text-brand-on-surface-variant" />
-              </div>
-              <p className="text-xs text-brand-on-surface-variant">
-                기획 중인 창업 아이템을 등록하고 IR 및 팀 빌딩을 시작하세요
-              </p>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Briefcase size={15} className="text-brand-primary" />
+                내 창업 아이템 & IR 프로젝트
+              </h2>
               <button
-                onClick={() => alert("새 프로젝트 등록 화면으로 이동합니다.")}
-                className="mt-3 text-xs bg-brand-primary-container/20 text-brand-primary py-2 px-4 rounded-xl border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer font-bold"
+                onClick={() => {
+                  setEditingProject(null);
+                  setShowProjectModal(true);
+                }}
+                className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-1.5 px-3 rounded-lg hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1 shadow-sm"
               >
-                + 새 프로젝트 등록하기
+                <Plus size={13} /> 새 프로젝트 등록
               </button>
             </div>
+
+            {myProjects.length === 0 ? (
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 shadow-md text-center">
+                <div className="w-12 h-12 rounded-full bg-brand-surface-low mx-auto flex items-center justify-center mb-3">
+                  <Briefcase size={20} className="text-brand-on-surface-variant" />
+                </div>
+                <p className="text-xs text-brand-on-surface-variant">
+                  기획 중인 창업 아이템을 등록하고 IR 및 팀 빌딩을 시작하세요
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingProject(null);
+                    setShowProjectModal(true);
+                  }}
+                  className="mt-4 text-xs bg-brand-primary-container/20 text-brand-primary py-2 px-4 rounded-xl border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer font-bold inline-flex items-center gap-1.5"
+                >
+                  <Plus size={13} /> 새 프로젝트 등록하기
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {myProjects.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <span className="text-[10px] text-brand-tertiary font-bold">{p.field}</span>
+                          <h3 className="text-sm font-bold text-white mt-0.5">{p.teamName}</h3>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-brand-primary-container/15 text-brand-primary font-bold">
+                          {p.investmentStage}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-white mb-1">{p.title}</p>
+                      <p className="text-xs text-brand-on-surface-variant line-clamp-2 mb-3">
+                        {p.oneLiner}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-brand-border/30 flex justify-between items-center">
+                      <span className="text-[10px] text-brand-on-surface-variant">
+                        {p.isAnonymous ? "🔒 스텔스 모드 적용됨" : "🌐 실명 모드"}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingProject(p);
+                          setShowProjectModal(true);
+                        }}
+                        className="text-xs text-brand-primary hover:underline font-bold"
+                      >
+                        프로젝트 수정 →
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* 팀 빌딩 현황 */}
@@ -247,35 +344,59 @@ export default function StudentDashboard({
                 teamRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="bg-brand-card border border-brand-border/60 rounded-xl p-4 flex items-center justify-between shadow-md"
+                    className="bg-brand-card border border-brand-border/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                          req.type === "sent" ? "bg-brand-primary-container" : "bg-brand-tertiary/30"
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            req.type === "received"
+                              ? "bg-brand-tertiary/10 text-brand-tertiary"
+                              : "bg-brand-primary-container/10 text-brand-primary"
+                          }`}
+                        >
+                          {req.type === "received" ? "받은 제안" : "보낸 제안"}
+                        </span>
+                        <span className="text-xs font-bold text-white">{req.projectName}</span>
+                        <span className="text-[10px] text-brand-on-surface-variant">포지션: {req.role}</span>
+                      </div>
+                      <p className="text-xs text-brand-on-surface-variant pl-0 sm:pl-2">
+                        {req.message}
+                      </p>
+                      <span className="text-[9px] text-brand-on-surface-variant/60 mt-1 block">
+                        {req.date} | {req.fromUser} → {req.toUser}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          req.status === "수락"
+                            ? "bg-brand-tertiary/20 text-brand-tertiary"
+                            : req.status === "거절"
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-brand-surface-high text-brand-on-surface-variant"
                         }`}
                       >
-                        {req.type === "sent" ? <Send size={12} /> : <Users size={12} />}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-white">{req.projectName}</p>
-                        <p className="text-[10px] text-brand-on-surface-variant">
-                          {req.type === "sent" ? `${req.toUser}에게 보냄` : `${req.fromUser}로부터 받음`}
-                          {" · "}{req.role} 역할 · {req.date}
-                        </p>
-                      </div>
+                        {req.status}
+                      </span>
+                      {req.status === "대기중" && req.type === "received" && onUpdateTeamRequest && (
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => onUpdateTeamRequest(req.id, "수락")}
+                            className="px-2.5 py-1 rounded bg-brand-tertiary text-white text-[11px] font-bold hover:opacity-90"
+                          >
+                            수락
+                          </button>
+                          <button
+                            onClick={() => onUpdateTeamRequest(req.id, "거절")}
+                            className="px-2.5 py-1 rounded border border-brand-border text-brand-on-surface-variant text-[11px] hover:text-white"
+                          >
+                            거절
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        req.status === "대기중"
-                          ? "badge-progress"
-                          : req.status === "수락"
-                          ? "badge-recruiting"
-                          : "badge-closed"
-                      }`}
-                    >
-                      {req.status}
-                    </span>
                   </div>
                 ))
               )}
@@ -284,65 +405,68 @@ export default function StudentDashboard({
         </div>
       )}
 
-      {/* ── 3. 알림 및 강사 메시지함 ── */}
+      {/* ── 3. 알림 & 강사 메시지함 ── */}
       {activeTab === "notifications" && (
-        <div className="animate-fadeIn flex flex-col gap-5">
-          {/* Instructor Direct Messages Banner */}
-          <div className="bg-gradient-to-r from-brand-primary-container/20 via-brand-surface-low to-brand-card p-4 rounded-xl border border-brand-primary/30">
-            <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-              <MessageSquare size={15} className="text-brand-primary" />
-              강사 메시지 & 1:1 공지함
-            </h3>
-            <p className="text-[11px] text-brand-on-surface-variant mt-0.5">
-              수강 중인 강의의 강사님이 보낸 학습 가이드와 1:1 메시지입니다.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {notifications.map((n) => (
+        <div className="flex flex-col gap-4 animate-fadeIn">
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <MessageSquare size={15} className="text-brand-primary" />
+            강사 1:1 피드백 & 공지 메시지 ({instructorMessages.length}개)
+          </h2>
+          {instructorMessages.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">수신된 강사 메시지가 없습니다</p>
+            </div>
+          ) : (
+            instructorMessages.map((msg) => (
               <div
-                key={n.id}
-                className={`bg-brand-card border border-brand-border/60 rounded-xl p-4 flex items-start gap-3.5 shadow-md ${
-                  !n.isRead ? "border-l-4 border-l-brand-primary" : ""
+                key={msg.id}
+                className={`bg-brand-card border rounded-xl p-4 shadow-md transition-colors ${
+                  !msg.isRead
+                    ? "border-brand-primary-container/40 bg-brand-primary-container/5"
+                    : "border-brand-border/60"
                 }`}
               >
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    n.type === "course" || n.type === "instructor_msg"
-                      ? "bg-brand-primary-container/20 text-brand-primary"
-                      : n.type === "team"
-                      ? "bg-brand-tertiary/15 text-brand-tertiary"
-                      : n.type === "investor"
-                      ? "bg-brand-accent-orange/15 text-brand-accent-orange"
-                      : "bg-brand-surface-high text-brand-on-surface-variant"
-                  }`}
-                >
-                  {n.type === "course" || n.type === "instructor_msg" ? (
-                    <BookOpen size={16} />
-                  ) : n.type === "team" ? (
-                    <Users size={16} />
-                  ) : n.type === "investor" ? (
-                    <FileText size={16} />
-                  ) : (
-                    <Bell size={16} />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-white">{n.title}</p>
-                    <span className="text-[9px] text-brand-on-surface-variant font-mono">{n.time}</span>
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    {!msg.isRead && <span className="notification-dot" />}
+                    <span className="text-xs font-bold text-white">{msg.title}</span>
                   </div>
-                  <p className="text-xs text-brand-on-surface-variant mt-1 leading-relaxed">{n.message}</p>
-                  {n.sender && (
-                    <p className="text-[10px] text-brand-primary font-semibold mt-1">
-                      보낸 사람: {n.sender} {n.courseTitle ? `(${n.courseTitle})` : ""}
-                    </p>
-                  )}
+                  <span className="text-[10px] text-brand-on-surface-variant">{msg.time}</span>
                 </div>
+                <p className="text-xs text-brand-on-surface-variant leading-relaxed pl-3 border-l-2 border-brand-primary-container/40">
+                  {msg.message}
+                </p>
+                {msg.courseTitle && (
+                  <p className="text-[10px] text-brand-primary font-mono mt-2">
+                    연관 강의: {msg.courseTitle}
+                  </p>
+                )}
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
+      )}
+
+      {/* Project Modal */}
+      <ProjectCreateEditModal
+        isOpen={showProjectModal}
+        initialProject={editingProject}
+        onClose={() => setShowProjectModal(false)}
+        onSave={(project) => {
+          if (onSaveProject) onSaveProject(project);
+        }}
+      />
+
+      {/* Payment Receipt Modal */}
+      {selectedPayment && (
+        <PaymentReceiptModal
+          payment={selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+          onRefundCompleted={(updatedPayment) => {
+            setSelectedPayment(null);
+            if (onRefundPayment) onRefundPayment(updatedPayment);
+          }}
+        />
       )}
     </div>
   );

@@ -11,23 +11,35 @@ import {
   Send,
   Search,
 } from "lucide-react";
-import type { BoardPost, BoardType } from "../types";
+import type { BoardPost, BoardType, UserRole } from "../types";
 import Pagination from "./common/Pagination";
+import CommunityPostDetailModal from "./CommunityPostDetailModal";
 
 interface CommunityPageProps {
   posts: BoardPost[];
   onAddPost: (post: Omit<BoardPost, "id" | "viewCount" | "commentCount" | "authorAvatar">) => void;
   isLoggedIn: boolean;
+  userRole?: UserRole;
+  userName?: string;
   onLoginClick: () => void;
 }
 
-export default function CommunityPage({ posts, onAddPost, isLoggedIn, onLoginClick }: CommunityPageProps) {
+export default function CommunityPage({
+  posts,
+  onAddPost,
+  isLoggedIn,
+  userRole = "student",
+  userName = "김수강생",
+  onLoginClick,
+}: CommunityPageProps) {
   const [activeBoard, setActiveBoard] = React.useState<BoardType | "전체">("전체");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
 
+  const [selectedPost, setSelectedPost] = React.useState<BoardPost | null>(null);
   const [showWriteModal, setShowWriteModal] = React.useState(false);
+
   const [newTitle, setNewTitle] = React.useState("");
   const [newContent, setNewContent] = React.useState("");
   const [newBoardType, setNewBoardType] = React.useState<BoardType>("QnA");
@@ -154,6 +166,7 @@ export default function CommunityPage({ posts, onAddPost, isLoggedIn, onLoginCli
           paginatedPosts.map((post, idx) => (
             <div
               key={post.id}
+              onClick={() => setSelectedPost(post)}
               className={`grid grid-cols-12 gap-2 px-5 py-3.5 items-center hover:bg-brand-surface-low transition-colors cursor-pointer ${
                 idx < paginatedPosts.length - 1 ? "border-b border-brand-border/20" : ""
               } ${post.isPinned ? "bg-brand-primary-container/5" : ""}`}
@@ -173,7 +186,9 @@ export default function CommunityPage({ posts, onAddPost, isLoggedIn, onLoginCli
               </div>
               <div className="col-span-6 sm:col-span-6 flex items-center gap-1.5 min-w-0">
                 {post.isPinned && <Pin size={11} className="text-brand-accent-rose flex-shrink-0" />}
-                <span className="text-xs text-white truncate font-medium">{post.title}</span>
+                <span className="text-xs text-white truncate font-medium hover:text-brand-primary transition-colors">
+                  {post.title}
+                </span>
                 {post.commentCount > 0 && (
                   <span className="text-[9px] text-brand-primary flex-shrink-0 font-mono">
                     [{post.commentCount}]
@@ -207,6 +222,22 @@ export default function CommunityPage({ posts, onAddPost, isLoggedIn, onLoginCli
         totalItems={filtered.length}
         itemsPerPage={itemsPerPage}
       />
+
+      {/* Post Detail & Comments Modal */}
+      {selectedPost && (
+        <CommunityPostDetailModal
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          isLoggedIn={isLoggedIn}
+          userRole={userRole}
+          userName={userName}
+          onLoginClick={onLoginClick}
+          onCommentAdded={(newComment) => {
+            // Update local post commentCount
+            setSelectedPost((prev) => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : null));
+          }}
+        />
+      )}
 
       {/* Write Post Modal */}
       {showWriteModal && (
@@ -288,3 +319,4 @@ export default function CommunityPage({ posts, onAddPost, isLoggedIn, onLoginCli
     </div>
   );
 }
+

@@ -22,13 +22,13 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
 
   test('수강생(Student) 역할로 빠른 로그인 시 수강생 대시보드가 정상 렌더링된다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    
+
     // 수강생 빠른 로그인 클릭
     const studentBtn = page.locator('button', { hasText: '수강생' }).first();
     await studentBtn.click();
 
     // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
-    await page.locator('button', { hasText: '수강생' }).first().click();
+    await page.locator('button', { hasText: '김수강생' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
     // 수강생 대시보드 타이틀 확인
@@ -39,64 +39,65 @@ test.describe('E2E: 인증 모달 및 역할별(4종) 대시보드 접근 권한
 
   test('강사(Instructor) 역할로 빠른 로그인 시 강사 대시보드가 정상 렌더링된다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    
+
     // 강사 빠른 로그인 클릭
     const instructorBtn = page.locator('button', { hasText: '강사' }).first();
     await instructorBtn.click();
 
     // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
-    await page.locator('button', { hasText: '강사' }).first().click();
+    await page.locator('button', { hasText: '김소현' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
-    // 강사 대시보드 타이틀 및 버튼 확인
+    // 강사 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '새 강의 등록' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '강의 관리 & AI 개설' })).toBeVisible();
   });
 
   test('투자자(Investor) 역할로 빠른 로그인 시 투자자 대시보드가 정상 렌더링된다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    
+
     // 투자자 빠른 로그인 클릭
     const investorBtn = page.locator('button', { hasText: '투자자' }).first();
     await investorBtn.click();
 
     // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
-    await page.locator('button', { hasText: '투자자' }).first().click();
+    await page.locator('button', { hasText: '한승우' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
-    // 투자자 대시보드 타이틀 확인
+    // 투자자 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '관심 스타트업' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'AI 추천 매칭' })).toBeVisible();
   });
 
   test('관리자(Admin) 역할로 빠른 로그인 시 GNB 드롭다운에 관리자 대시보드 메뉴가 표시되고 접근 가능하다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    
+
     // 관리자 빠른 로그인 클릭
-    const adminBtn = page.locator('button', { hasText: '관리자' }).first();
+    const adminBtn = page.locator('button', { hasText: '최고 관리자' }).first();
     await adminBtn.click();
 
-    // 사용자 프로필 메뉴 클릭 후 관리자 대시보드 클릭
+    // 사용자 메뉴 열기
     await page.locator('button', { hasText: '관리자' }).first().click();
-    const adminMenuBtn = page.getByRole('button', { name: '관리자 대시보드' });
-    await expect(adminMenuBtn).toBeVisible();
-    await adminMenuBtn.click();
+
+    // 관리자 대시보드 메뉴 확인 및 클릭
+    const adminMenu = page.getByRole('button', { name: '관리자 대시보드' });
+    await expect(adminMenu).toBeVisible();
+    await adminMenu.click();
 
     // 관리자 대시보드 타이틀 확인
     await expect(page.locator('h1', { hasText: '관리자 대시보드' })).toBeVisible();
   });
 
   test('로그아웃 시 비로그인 상태로 복귀하고 대시보드 접근 시 로그인 모달이 열린다', async ({ page }) => {
-    // 1. 수강생으로 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('button', { hasText: '수강생' }).first().click();
 
-    // 2. 사용자 메뉴에서 로그아웃 클릭
-    await page.locator('button', { hasText: '수강생' }).first().click();
-    const logoutBtn = page.getByRole('button', { name: '로그아웃' });
-    await expect(logoutBtn).toBeVisible();
-    await logoutBtn.click();
+    // 사용자 메뉴에서 로그아웃 클릭
+    await page.locator('button', { hasText: '김수강생' }).click();
+    await page.getByRole('button', { name: '로그아웃' }).click();
 
-    // 3. 로그아웃 후 다시 [로그인] 버튼 가시성 확인
+    // 로그인 버튼 다시 노출 확인
     await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
   });
 });

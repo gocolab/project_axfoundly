@@ -22,8 +22,10 @@ import {
   Share2,
   Lock,
 } from "lucide-react";
-import type { IRProject, UserRole, HiringRoleDetail } from "../types";
+import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal } from "../types";
 import Pagination from "./common/Pagination";
+import InvestmentProposalModal from "./InvestmentProposalModal";
+import { api } from "../lib/api";
 
 interface IRPageProps {
   projects: IRProject[];
@@ -31,7 +33,9 @@ interface IRPageProps {
   isLoggedIn: boolean;
   onLoginClick: () => void;
   onToggleBookmark: (id: string) => void;
+  onSendProposal?: (proposal: InvestmentProposal) => void;
 }
+
 
 export default function IRPage({
   projects,
@@ -39,7 +43,9 @@ export default function IRPage({
   isLoggedIn,
   onLoginClick,
   onToggleBookmark,
+  onSendProposal,
 }: IRPageProps) {
+
   const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(null);
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [searchText, setSearchText] = React.useState("");
@@ -587,10 +593,21 @@ export default function IRPage({
                   취소
                 </button>
                 <button
-                  onClick={() => {
-                    setShowApplyModal(false);
-                    setApplicantNote("");
-                    alert("지원이 성공적으로 접수되었습니다. 창업팀이 확인 후 연락드릴 예정입니다.");
+                  onClick={async () => {
+                    try {
+                      await api.applyForJob(selectedProject.id, {
+                        roleId: selectedHiringRole.id,
+                        applicantName: "김수강생",
+                        applicantEmail: "student@mail.com",
+                        coverLetter: applicantNote,
+                      });
+                      setShowApplyModal(false);
+                      setApplicantNote("");
+                      alert("지원이 성공적으로 접수되었습니다. 창업팀이 확인 후 연락드릴 예정입니다.");
+                    } catch (err) {
+                      console.error("Apply failed", err);
+                      alert("지원서 접수에 실패했습니다.");
+                    }
                   }}
                   className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2 rounded-xl text-xs hover:opacity-90 cursor-pointer shadow-md"
                 >
@@ -602,43 +619,19 @@ export default function IRPage({
         )}
 
         {/* ── Modal 4: Investment Proposal Modal ── */}
-        {showProposalModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
-              <h3 className="font-display text-lg font-bold text-white mb-2">투자 제안하기</h3>
-              <p className="text-xs text-brand-on-surface-variant mb-4">
-                {selectedProject.teamName}에 공식 투자 제안 및 미팅 요청 메시지를 보냅니다.
-              </p>
-              <textarea
-                value={proposalMessage}
-                onChange={(e) => setProposalMessage(e.target.value)}
-                placeholder="투자 의향, 라운드 조건 및 미팅 제안 메시지를 작성하세요..."
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors h-28 resize-none"
-              />
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => setShowProposalModal(false)}
-                  className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={() => {
-                    setShowProposalModal(false);
-                    setProposalSent(true);
-                    setProposalMessage("");
-                  }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs shadow-md"
-                >
-                  제안 보내기
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <InvestmentProposalModal
+          project={selectedProject}
+          isOpen={showProposalModal}
+          onClose={() => setShowProposalModal(false)}
+          onProposalSent={(proposal) => {
+            setProposalSent(true);
+            if (onSendProposal) onSendProposal(proposal);
+          }}
+        />
       </div>
     );
   }
+
 
   // ── IR List View ──
   return (

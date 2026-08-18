@@ -25,8 +25,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { Course, SettlementRecord, CurriculumItem, CourseSchedule, CRMMessage } from "../types";
+import { api } from "../lib/api";
 
 interface InstructorDashboardProps {
+
   myCourses: Course[];
   settlements: SettlementRecord[];
   onSaveCourse?: (course: Course) => void;
@@ -120,7 +122,7 @@ export default function InstructorDashboard({
   const totalRevenue = settlements.reduce((sum, s) => sum + s.netAmount, 0);
 
   // ── AI Chat Draft Generation Handler ──
-  const handleGenerateFromAi = () => {
+  const handleGenerateFromAi = async () => {
     if (!aiPrompt.trim()) return;
 
     const userText = aiPrompt;
@@ -128,28 +130,30 @@ export default function InstructorDashboard({
     setAiChatMessages((prev) => [...prev, { sender: "user", text: userText }]);
     setIsAiGenerating(true);
 
-    setTimeout(() => {
+    try {
+      const res = await api.generateCourseDraft({
+        topic: userText,
+        totalSessions: 12,
+      });
+
+      const draft = res.draft;
       const generatedDraft: Partial<Course> = {
-        title: `실전 생성형 AI & ${userText.slice(0, 15)} 비즈니스 완성반`,
-        category: "AI 모델링",
-        description: `${userText}을(를) 완벽히 마스터하여 실제 동작하는 창업 프로덕트를 구현하고 비즈니스 모델을 검증하는 징검다리 실전 집중 코스입니다.`,
-        price: 690000,
-        discountedPrice: 490000,
+        title: draft.title || `실전 ${userText.slice(0, 15)} 완성반`,
+        category: (draft.category as Course["category"]) || "AI 모델링",
+        description: draft.description || `${userText} 실전 마스터 코스`,
+        price: draft.price || 690000,
+        discountedPrice: draft.discountedPrice || 490000,
         schedule: {
           startDate: "2025-09-02",
           endDate: "2025-10-14",
           daysOfWeek: ["화", "목"],
           timeSlot: "19:30 ~ 21:30",
-          totalSessions: 12,
+          totalSessions: draft.curriculum?.length || 12,
           scheduleType: "stepping_stone",
         },
-        curriculum: [
-          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 세팅", description: "시장 가설 수립 및 LLM API 개발 환경 구성", duration: "2시간", date: "2025-09-02", dayOfWeek: "화", time: "19:30 ~ 21:30" },
-          { week: 1, sessionNumber: 2, title: "프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 구현", duration: "2시간", date: "2025-09-04", dayOfWeek: "목", time: "19:30 ~ 21:30" },
-          { week: 2, sessionNumber: 3, title: "멀티모달 에이전트 구축", description: "비전 및 함수 호출(Function Calling) 결합", duration: "2시간", date: "2025-09-09", dayOfWeek: "화", time: "19:30 ~ 21:30" },
-          { week: 2, sessionNumber: 4, title: "MVP 웹 인터페이스 구현", description: "React + Tailwind 프론트엔드 연동", duration: "2시간", date: "2025-09-11", dayOfWeek: "목", time: "19:30 ~ 21:30" },
-          { week: 3, sessionNumber: 5, title: "수익 모델 연동 및 PG 결제", description: "B2B SaaS 과금 체계 구축", duration: "2시간", date: "2025-09-16", dayOfWeek: "화", time: "19:30 ~ 21:30" },
-          { week: 3, sessionNumber: 6, title: "투자자 IR 피칭 덱 & 데모 완성", description: "모의 데모데이 피칭 및 최종 피드백", duration: "2시간", date: "2025-09-18", dayOfWeek: "목", time: "19:30 ~ 21:30" },
+        curriculum: draft.curriculum || [
+          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 세팅", description: "시장 가설 수립 및 개발 환경 구성", duration: "2시간" },
+          { week: 1, sessionNumber: 2, title: "프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 구현", duration: "2시간" },
         ],
       };
 
@@ -157,13 +161,17 @@ export default function InstructorDashboard({
         ...prev,
         {
           sender: "ai",
-          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** 강의 초안과 6회차 징검다리(화/목) 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 달력 연계 및 회차 일정을 자유롭게 추가 조정할 수 있습니다.`,
+          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** 강의 초안과 징검다리 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 달력 연계 및 회차 일정을 자유롭게 추가 조정할 수 있습니다.`,
           generatedDraft,
         },
       ]);
+    } catch (err) {
+      console.error("AI Generation failed", err);
+    } finally {
       setIsAiGenerating(false);
-    }, 1200);
+    }
   };
+
 
   // Apply draft to form
   const handleApplyDraft = (draft: Partial<Course>) => {
