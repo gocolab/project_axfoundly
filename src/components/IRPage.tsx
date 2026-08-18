@@ -188,22 +188,17 @@ export default function IRPage({
 
                   {/* Real-Name vs Anonymous Toggle Switch */}
                   <div className="flex items-center gap-2 bg-brand-surface-low px-3 py-1.5 rounded-xl border border-brand-border/40">
-                    <span className="text-xs text-brand-on-surface-variant flex items-center gap-1">
-                      {isAnonymousMode ? <EyeOff size={13} className="text-brand-tertiary" /> : <Eye size={13} />}
-                      {isAnonymousMode ? "비실명" : "실명"}
-                    </span>
                     <button
                       onClick={() => setIsAnonymousMode(!isAnonymousMode)}
-                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                        isAnonymousMode ? "bg-brand-tertiary" : "bg-brand-surface-highest"
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                        isAnonymousMode
+                          ? "bg-brand-tertiary/20 text-brand-tertiary border border-brand-tertiary/40"
+                          : "bg-brand-surface-high text-brand-on-surface-variant border border-brand-border/40 hover:text-white"
                       }`}
                       title="실명 / 비실명 표시 방식 전환"
                     >
-                      <div
-                        className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-0.5 ${
-                          isAnonymousMode ? "left-4.5" : "left-0.5"
-                        }`}
-                      />
+                      <Lock size={12} />
+                      <span>스텔스 모드 {isAnonymousMode ? "ON" : "OFF"}</span>
                     </button>
                   </div>
                 </div>
@@ -265,7 +260,7 @@ export default function IRPage({
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
               <h2 className="font-display text-lg font-bold text-white flex items-center gap-2 mb-3">
                 <Target size={18} className="text-brand-primary" />
-                비즈니스 모델 (BM)
+                비즈니스 모델
               </h2>
               <p className="text-sm text-brand-on-surface-variant leading-relaxed">
                 {selectedProject.businessModel}
@@ -276,7 +271,7 @@ export default function IRPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md">
                 <h3 className="text-sm font-bold text-brand-accent-rose flex items-center gap-1.5 mb-2.5">
-                  <Target size={15} /> 문제 정의 (Problem)
+                  <Target size={15} /> 문제 (Problem)
                 </h3>
                 <p className="text-xs text-brand-on-surface-variant leading-relaxed">
                   {selectedProject.problem}
@@ -284,13 +279,14 @@ export default function IRPage({
               </div>
               <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md">
                 <h3 className="text-sm font-bold text-brand-tertiary flex items-center gap-1.5 mb-2.5">
-                  <Lightbulb size={15} /> 해결 방안 (Solution)
+                  <Lightbulb size={15} /> 솔루션 (Solution)
                 </h3>
                 <p className="text-xs text-brand-on-surface-variant leading-relaxed">
                   {selectedProject.solution}
                 </p>
               </div>
             </div>
+
 
             {/* ── Hiring Roles with Option Inputs & Link Switching ── */}
             {selectedProject.isHiring && (
@@ -367,8 +363,9 @@ export default function IRPage({
                             }}
                             className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 shadow-sm"
                           >
-                            원클릭 지원하기 →
+                            지원하기
                           </button>
+
                         )}
                       </div>
                     </div>
@@ -441,8 +438,9 @@ export default function IRPage({
                       className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
                     >
                       <Send size={15} />
-                      투자 제안하기 (IR 미팅 요청)
+                      투자 제안하기
                     </button>
+
                   )}
                 </>
               ) : (
@@ -567,9 +565,10 @@ export default function IRPage({
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
             <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
               <h3 className="font-display text-base font-bold text-white mb-1">
-                [{selectedHiringRole.role}] 포지션 지원
+                팀 합류 지원하기: [{selectedHiringRole.role}]
               </h3>
               <p className="text-xs text-brand-on-surface-variant mb-4">
+
                 {selectedProject.teamName} 팀에 본인 프로필과 한 줄 소개를 전달합니다.
               </p>
 
@@ -637,11 +636,12 @@ export default function IRPage({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-white">스타트업 / IR</h1>
+        <h1 className="font-display text-2xl font-bold text-white">스타트업 & IR 피칭</h1>
         <p className="text-sm text-brand-on-surface-variant mt-1">
           수강생이 런칭한 혁신 프로젝트와 구인/투자 기회를 탐색하세요
         </p>
       </div>
+
 
       {/* Filter & Search Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

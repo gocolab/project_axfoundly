@@ -137,6 +137,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
                 {([...roles, { value: "admin" as const, label: "관리자", desc: "" }]).map((r) => (
                   <button
                     key={r.value}
+                    data-testid={`quick-login-${r.value}`}
                     type="button"
                     onClick={() => { onLogin(r.value); onClose(); }}
                     className="text-[10px] py-1.5 rounded-lg border border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:text-white hover:border-brand-primary-container/50 transition-colors cursor-pointer font-medium"
@@ -146,6 +147,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
                 ))}
               </div>
             </div>
+
           </form>
 
           {/* Toggle mode */}

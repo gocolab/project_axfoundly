@@ -166,6 +166,7 @@ export default function CommunityPage({
           paginatedPosts.map((post, idx) => (
             <div
               key={post.id}
+              data-testid="community-post-row"
               onClick={() => setSelectedPost(post)}
               className={`grid grid-cols-12 gap-2 px-5 py-3.5 items-center hover:bg-brand-surface-low transition-colors cursor-pointer ${
                 idx < paginatedPosts.length - 1 ? "border-b border-brand-border/20" : ""

@@ -167,9 +167,11 @@ export default function GNB({
                 {/* User Menu */}
                 <div className="relative" ref={userMenuRef}>
                   <button
+                    data-testid="user-profile-button"
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-full border border-brand-border/50 hover:border-brand-primary-container/40 transition-colors cursor-pointer"
                   >
+
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary-container to-brand-tertiary flex items-center justify-center text-white text-xs font-bold">
                       {userName.charAt(0)}
                     </div>

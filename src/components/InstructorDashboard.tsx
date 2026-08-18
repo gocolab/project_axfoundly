@@ -98,10 +98,11 @@ export default function InstructorDashboard({
   ]);
 
   const tabs = [
-    { id: "courses" as const, label: "강의 관리 & AI 개설", icon: <BookOpen size={14} /> },
-    { id: "students" as const, label: "수강생 관리 (CRM 메시지)", icon: <Users size={14} /> },
+    { id: "courses" as const, label: "내 강의 목록", icon: <BookOpen size={14} /> },
+    { id: "students" as const, label: "수강생 관리 (CRM)", icon: <Users size={14} /> },
     { id: "settlement" as const, label: "정산 관리", icon: <DollarSign size={14} /> },
   ];
+
 
   // Mock student data
   const mockStudents = [
@@ -353,8 +354,9 @@ export default function InstructorDashboard({
               }}
               className="text-xs bg-brand-primary-container/20 text-brand-primary border border-brand-primary/40 font-bold px-3 py-2 rounded-xl hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              <PlusCircle size={14} /> 새 강의 등록
+              <Sparkles size={14} /> AI 강의 개설
             </button>
+
           </div>
 
           {myCourses.map((course) => (
@@ -418,7 +420,12 @@ export default function InstructorDashboard({
       {/* ──────────────── 2. 수강생 관리 (CRM) 탭 ──────────────── */}
       {activeTab === "students" && (
         <div className="flex flex-col gap-5 animate-fadeIn">
+          <div>
+            <h2 className="text-sm font-bold text-white">수강생 명단 및 진도 관리</h2>
+            <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 수강생들의 학습 현황을 확인하고 맞춤 CRM 메시지를 발송하세요.</p>
+          </div>
           {/* Top Bar: Course Selector & Filter */}
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-brand-surface-low p-4 rounded-xl border border-brand-border/40">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-brand-on-surface-variant">강의 선택:</span>
@@ -628,7 +635,12 @@ export default function InstructorDashboard({
       {/* ──────────────── 3. 정산 관리 탭 ──────────────── */}
       {activeTab === "settlement" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          <div>
+            <h2 className="text-sm font-bold text-white">매출 및 정산 통계</h2>
+            <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 정산 내역 및 출금 신청 현황을 투명하게 확인하세요.</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center stat-shimmer">
               <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">총 매출</p>
               <p className="text-2xl font-bold text-white font-display mt-1">₩{totalRevenue.toLocaleString()}</p>
@@ -692,15 +704,22 @@ export default function InstructorDashboard({
       {/* ──────────────── Modal 1: AI Chat & Curriculum Calendar Modal ──────────────── */}
       {showCreateModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-3xl w-full shadow-2xl max-h-[90vh] overflow-y-auto border border-brand-border">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-3xl w-full shadow-2xl max-h-[90vh] overflow-y-auto border border-brand-border relative">
+            <button
+              onClick={() => setShowCreateModal(false)}
+              aria-label="닫기"
+              className="absolute top-4 right-4 text-brand-on-surface-variant hover:text-white p-1.5 rounded-lg hover:bg-brand-surface-high transition-colors cursor-pointer z-10"
+            >
+              <X size={18} />
+            </button>
             {/* Header */}
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-brand-border/30">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-brand-border/30 pr-10">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-brand-primary-container flex items-center justify-center text-white font-bold">
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold text-white">강의 개설 마법사</h3>
+                  <h2 className="font-display text-lg font-bold text-white">AI 연계 강의 개설 & 달력 일정 등록</h2>
                   <p className="text-xs text-brand-on-surface-variant">
                     {createStep === "ai_chat"
                       ? "1단계: AI 채팅창으로 초벌 생성"
@@ -727,14 +746,9 @@ export default function InstructorDashboard({
                     상세 및 달력 설정
                   </button>
                 </div>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="p-1 rounded-lg hover:bg-brand-surface-high text-brand-on-surface-variant hover:text-white transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
               </div>
             </div>
+
 
             {/* STEP 1: AI Chat Interface */}
             {createStep === "ai_chat" && (

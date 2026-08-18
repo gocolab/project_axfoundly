@@ -109,25 +109,25 @@ export default function App() {
 
   // Handlers
   const handleLogin = async (role: UserRole) => {
+    const names: Record<UserRole, string> = {
+      student: "김수강생",
+      instructor: "김소현",
+      investor: "이벤처",
+      admin: "최관리",
+    };
+    setIsLoggedIn(true);
+    setUserRole(role);
+    setUserName(names[role]);
+
     try {
       const res = await api.login(role);
-      setIsLoggedIn(true);
-      setUserRole(role);
       setUserName(res.user.name);
       refreshData();
     } catch (error) {
-      console.error("Login failed:", error);
-      setIsLoggedIn(true);
-      setUserRole(role);
-      const names: Record<UserRole, string> = {
-        student: "김수강생",
-        instructor: "김소현",
-        investor: "한승우",
-        admin: "관리자",
-      };
-      setUserName(names[role]);
+      console.error("Login API call failed:", error);
     }
   };
+
 
   const handleLogout = () => {
     setIsLoggedIn(false);

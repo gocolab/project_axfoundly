@@ -444,12 +444,13 @@ export default function CoursePage({ courses, onEnroll, isLoggedIn, onLoginClick
                 )}
               </div>
 
-              {selectedCourse.isEnrolled ? (
+              {isLoggedIn && selectedCourse.isEnrolled ? (
                 <div className="flex flex-col items-center gap-2 p-3 bg-brand-surface-low rounded-xl border border-brand-tertiary/30">
                   <div className="flex items-center gap-2 text-brand-tertiary">
                     <CheckCircle size={18} />
                     <span className="text-sm font-bold">수강 신청 완료</span>
                   </div>
+
                   <div className="w-full progress-bar mt-2">
                     <div className="progress-bar-fill" style={{ width: `${selectedCourse.progress || 0}%` }} />
                   </div>
@@ -747,8 +748,9 @@ export default function CoursePage({ courses, onEnroll, isLoggedIn, onLoginClick
         {showPaymentModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
             <div className="glass-panel-heavy rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-brand-border">
-              <h3 className="font-display text-lg font-bold text-white mb-2">수강 신청 확인</h3>
+              <h3 className="font-display text-lg font-bold text-white mb-2">수강 신청 및 결제</h3>
               <p className="text-xs text-brand-on-surface-variant mb-4">아래 강의를 결제하시겠습니까?</p>
+
 
               <div className="bg-brand-surface-low rounded-xl p-4 border border-brand-border/30 mb-4">
                 <p className="text-sm font-bold text-white">{selectedCourse.title}</p>
@@ -834,10 +836,12 @@ export default function CoursePage({ courses, onEnroll, isLoggedIn, onLoginClick
           return (
             <div
               key={course.id}
+              data-testid="course-card"
               className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between"
               style={{ animationDelay: `${idx * 50}ms` }}
               onClick={() => setSelectedCourse(course)}
             >
+
               <div>
                 {/* Thumbnail Header */}
                 <div className="h-36 relative overflow-hidden">

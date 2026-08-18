@@ -1,6 +1,396 @@
 {
   "courses": [
     {
+      "id": "c-1787042988139",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 1,
+      "status": "모집중",
+      "isEnrolled": true,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042893583",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042841726",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 1,
+      "status": "모집중",
+      "isEnrolled": true,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042681797",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 1,
+      "status": "모집중",
+      "isEnrolled": true,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042643284",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 1,
+      "status": "모집중",
+      "isEnrolled": true,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042529349",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 1,
+      "status": "모집중",
+      "isEnrolled": true,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042496035",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042400740",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042333659",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042144739",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787042005637",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787041965052",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
+      "id": "c-1787041867775",
+      "title": "Playwright API Integration Test Course",
+      "description": "Automated test created course",
+      "category": "AI 모델링",
+      "instructor": "김소현",
+      "instructorAvatar": "",
+      "instructorTitle": "전문 멘토 강사",
+      "price": 350000,
+      "thumbnail": "",
+      "rating": 5,
+      "reviewCount": 0,
+      "studentCount": 0,
+      "status": "모집중",
+      "isEnrolled": false,
+      "progress": 0,
+      "schedule": {
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-17",
+        "daysOfWeek": [
+          "화",
+          "목"
+        ],
+        "timeSlot": "19:30 ~ 21:30",
+        "totalSessions": 8,
+        "scheduleType": "stepping_stone"
+      },
+      "curriculum": [],
+      "reviews": []
+    },
+    {
       "id": "c1",
       "title": "AI 프로덕트 매니저 부트캠프",
       "description": "GPT·Claude·Gemini 등 LLM 활용 제품 기획부터 런칭까지. 실무 프로젝트 중심 6주 12회차 집중 과정.",
@@ -13,9 +403,9 @@
       "thumbnail": "",
       "rating": 4.9,
       "reviewCount": 127,
-      "studentCount": 342,
+      "studentCount": 343,
       "status": "모집중",
-      "isEnrolled": false,
+      "isEnrolled": true,
       "progress": 0,
       "schedule": {
         "startDate": "2025-09-02",
@@ -530,7 +920,7 @@
           "bio": "핀테크 유니콘 출신 PM"
         }
       ],
-      "bookmarked": true,
+      "bookmarked": false,
       "investmentStage": "Seed"
     },
     {
@@ -668,6 +1058,306 @@
   ],
   "posts": [
     {
+      "id": "p-1787043004893",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787043004094",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042988135",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042916991",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042915881",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042892605",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042862967",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042861518",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042841554",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042717480",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042715909",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042681131",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042664618",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042663853",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042643387",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042558965",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042557012",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042529237",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042518561",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042517491",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042496158",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042401424",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042361544",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042359768",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042333749",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042258340",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트 1787042257752",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042234849",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042189927",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042166213",
+      "boardType": "QnA",
+      "title": "Playwright 자동화 통합 테스트",
+      "content": "E2E 통합 테스트 완결성 검증 본문 내용입니다.",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 0,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042144440",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787042005704",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787041965068",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
+      "id": "p-1787041867760",
+      "boardType": "QnA",
+      "title": "API Integration Spec Post",
+      "content": "Testing direct API endpoints",
+      "author": "김수강생",
+      "authorAvatar": "",
+      "createdAt": "2026-08-18",
+      "viewCount": 1,
+      "commentCount": 0,
+      "isPinned": false
+    },
+    {
       "id": "p-1",
       "boardType": "공지사항",
       "title": "🚀 [공지] 2025년 하반기 AI 스타트업 배치 3기 모집 안내",
@@ -675,7 +1365,7 @@
       "author": "관리자",
       "authorAvatar": "",
       "createdAt": "2025-08-10",
-      "viewCount": 1421,
+      "viewCount": 1423,
       "commentCount": 8,
       "isPinned": true
     },
@@ -777,6 +1467,108 @@
   ],
   "notifications": [
     {
+      "id": "notif-1787043014528",
+      "type": "course",
+      "title": "[수강신청 완료] Playwright API Integration Test Course",
+      "message": "Playwright API Integration Test Course 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.",
+      "time": "방금 전",
+      "isRead": true,
+      "courseTitle": "Playwright API Integration Test Course"
+    },
+    {
+      "id": "notif-1787042893016",
+      "type": "investor",
+      "title": "투자자 관심 알림",
+      "message": "'DocuMind AI' 프로젝트가 관심 스타트업에 등록되었습니다.",
+      "time": "방금 전",
+      "isRead": false
+    },
+    {
+      "id": "notif-1787042873659",
+      "type": "course",
+      "title": "[수강신청 완료] Playwright API Integration Test Course",
+      "message": "Playwright API Integration Test Course 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.",
+      "time": "방금 전",
+      "isRead": true,
+      "courseTitle": "Playwright API Integration Test Course"
+    },
+    {
+      "id": "notif-1787042738054",
+      "type": "course",
+      "title": "[수강신청 완료] Playwright API Integration Test Course",
+      "message": "Playwright API Integration Test Course 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.",
+      "time": "방금 전",
+      "isRead": true,
+      "courseTitle": "Playwright API Integration Test Course"
+    },
+    {
+      "id": "notif-1787042681458",
+      "type": "investor",
+      "title": "투자자 관심 알림",
+      "message": "'DocuMind AI' 프로젝트가 관심 스타트업에 등록되었습니다.",
+      "time": "방금 전",
+      "isRead": true
+    },
+    {
+      "id": "notif-1787042679276",
+      "type": "course",
+      "title": "[수강신청 완료] Playwright API Integration Test Course",
+      "message": "Playwright API Integration Test Course 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.",
+      "time": "방금 전",
+      "isRead": false,
+      "courseTitle": "Playwright API Integration Test Course"
+    },
+    {
+      "id": "notif-1787042580771",
+      "type": "course",
+      "title": "[수강신청 완료] Playwright API Integration Test Course",
+      "message": "Playwright API Integration Test Course 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.",
+      "time": "방금 전",
+      "isRead": true,
+      "courseTitle": "Playwright API Integration Test Course"
+    },
+    {
+      "id": "notif-1787042529202",
+      "type": "investor",
+      "title": "투자자 관심 알림",
+      "message": "'DocuMind AI' 프로젝트가 관심 스타트업에 등록되었습니다.",
+      "time": "방금 전",
+      "isRead": false
+    },
+    {
+      "id": "notif-1787042402228",
+      "type": "investor",
+      "title": "투자자 관심 알림",
+      "message": "'DocuMind AI' 프로젝트가 관심 스타트업에 등록되었습니다.",
+      "time": "방금 전",
+      "isRead": true
+    },
+    {
+      "id": "notif-1787042144789",
+      "type": "investor",
+      "title": "투자자 관심 알림",
+      "message": "'DocuMind AI' 프로젝트가 관심 스타트업에 등록되었습니다.",
+      "time": "방금 전",
+      "isRead": true
+    },
+    {
+      "id": "notif-1787042114477",
+      "type": "course",
+      "title": "[수강신청 완료] AI 프로덕트 매니저 부트캠프",
+      "message": "AI 프로덕트 매니저 부트캠프 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.",
+      "time": "방금 전",
+      "isRead": false,
+      "courseTitle": "AI 프로덕트 매니저 부트캠프"
+    },
+    {
+      "id": "notif-1787041965041",
+      "type": "investor",
+      "title": "투자자 관심 알림",
+      "message": "'DocuMind AI' 프로젝트가 관심 스타트업에 등록되었습니다.",
+      "time": "방금 전",
+      "isRead": true
+    },
+    {
       "id": "n1",
       "type": "instructor_msg",
       "title": "[김소현 강사] 2회차 과제 피드백이 등록되었습니다",
@@ -837,6 +1629,54 @@
     }
   ],
   "payments": [
+    {
+      "id": "pay-1787043014518",
+      "courseTitle": "Playwright API Integration Test Course",
+      "amount": 350000,
+      "date": "2026-08-18",
+      "method": "카드",
+      "status": "완료"
+    },
+    {
+      "id": "pay-1787042873648",
+      "courseTitle": "Playwright API Integration Test Course",
+      "amount": 350000,
+      "date": "2026-08-18",
+      "method": "카드",
+      "status": "완료"
+    },
+    {
+      "id": "pay-1787042738027",
+      "courseTitle": "Playwright API Integration Test Course",
+      "amount": 350000,
+      "date": "2026-08-18",
+      "method": "카드",
+      "status": "완료"
+    },
+    {
+      "id": "pay-1787042679274",
+      "courseTitle": "Playwright API Integration Test Course",
+      "amount": 350000,
+      "date": "2026-08-18",
+      "method": "카드",
+      "status": "완료"
+    },
+    {
+      "id": "pay-1787042580763",
+      "courseTitle": "Playwright API Integration Test Course",
+      "amount": 350000,
+      "date": "2026-08-18",
+      "method": "카드",
+      "status": "완료"
+    },
+    {
+      "id": "pay-1787042114476",
+      "courseTitle": "AI 프로덕트 매니저 부트캠프",
+      "amount": 590000,
+      "date": "2026-08-18",
+      "method": "카드",
+      "status": "완료"
+    },
     {
       "id": "pay-1",
       "courseTitle": "AI 프로덕트 매니저 부트캠프",
@@ -937,9 +1777,9 @@
   "stats": {
     "dailySignups": 42,
     "monthlySignups": 1280,
-    "totalRevenue": 84200000,
-    "monthlyRevenue": 28400000,
-    "activeCourses": 6,
+    "totalRevenue": 86540000,
+    "monthlyRevenue": 30740000,
+    "activeCourses": 19,
     "teamMatchCount": 38,
     "investmentMatchCount": 12
   },

@@ -56,6 +56,7 @@ async function startServer() {
   // Serve static UI assets and handle hot reload in dev
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
+      configFile: path.join(__dirname, "vite.config.ts"),
       server: { middlewareMode: true },
       appType: "spa",
     });

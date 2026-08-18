@@ -70,11 +70,12 @@ export default function InvestmentProposalModal({
               <TrendingUp size={18} />
             </div>
             <div>
-              <h2 className="font-display text-base font-bold text-white">투자 및 미팅 제안하기</h2>
+              <h3 className="font-display text-base font-bold text-white">투자 검토 및 미팅 제안</h3>
               <p className="text-[10px] text-brand-on-surface-variant">
                 수신: <span className="text-white font-semibold">{project.teamName}</span>
               </p>
             </div>
+
           </div>
           <button
             onClick={onClose}

@@ -264,7 +264,7 @@ export default function StudentDashboard({
                 }}
                 className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-1.5 px-3 rounded-lg hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1 shadow-sm"
               >
-                <Plus size={13} /> 새 프로젝트 등록
+                <Plus size={13} /> 신규 프로젝트 등록
               </button>
             </div>
 
@@ -283,7 +283,7 @@ export default function StudentDashboard({
                   }}
                   className="mt-4 text-xs bg-brand-primary-container/20 text-brand-primary py-2 px-4 rounded-xl border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer font-bold inline-flex items-center gap-1.5"
                 >
-                  <Plus size={13} /> 새 프로젝트 등록하기
+                  <Plus size={13} /> 신규 프로젝트 등록
                 </button>
               </div>
             ) : (

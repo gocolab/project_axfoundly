@@ -134,10 +134,11 @@ export default function InvestorDashboard({
           <div className="bg-gradient-to-r from-brand-primary-container/10 to-brand-tertiary/5 border border-brand-primary-container/20 rounded-xl p-4 flex items-center gap-3 mb-2">
             <Sparkles size={20} className="text-brand-primary flex-shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-brand-primary">AI가 분석한 맞춤 추천</p>
+              <p className="text-xs font-semibold text-brand-primary">AI 맞춤 스타트업 추천</p>
               <p className="text-[10px] text-brand-on-surface-variant mt-0.5">투자 선호 분야 및 키워드를 기반으로 자동 매칭된 프로젝트입니다</p>
             </div>
           </div>
+
 
           {recommendations.map((rec, idx) => (
             <div

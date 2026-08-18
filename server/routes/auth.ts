@@ -4,6 +4,15 @@ import type { UserRole, AdminMember } from "../../src/types.js";
 
 const router = Router();
 
+let currentUser = {
+  id: "user-student",
+  name: "김수강생",
+  email: "student@mail.com",
+  role: "student" as UserRole,
+  avatar: "",
+  joinDate: "2025-01-15",
+};
+
 // POST /api/auth/login
 router.post("/login", (req, res) => {
   const { role } = req.body as { role?: UserRole };
@@ -12,9 +21,10 @@ router.post("/login", (req, res) => {
   const nameMap: Record<UserRole, string> = {
     student: "김수강생",
     instructor: "김소현",
-    investor: "한승우",
-    admin: "관리자",
+    investor: "이벤처",
+    admin: "최관리",
   };
+
 
   const emailMap: Record<UserRole, string> = {
     student: "student@mail.com",
@@ -23,7 +33,7 @@ router.post("/login", (req, res) => {
     admin: "admin@platform.com",
   };
 
-  const user = {
+  currentUser = {
     id: `user-${userRole}`,
     name: nameMap[userRole],
     email: emailMap[userRole],
@@ -41,22 +51,38 @@ router.post("/login", (req, res) => {
     )
   );
 
-  res.json({ user, token: `mock-jwt-token-${userRole}` });
+  res.json({ user: currentUser, token: `mock-jwt-token-${userRole}` });
 });
 
 // GET /api/auth/me
 router.get("/me", (req, res) => {
-  // Return default student or requested role
-  res.json({
-    user: {
-      id: "user-student",
-      name: "김수강생",
-      email: "student@mail.com",
-      role: "student",
-      avatar: "",
-      joinDate: "2025-01-15",
-    },
-  });
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer mock-jwt-token-")) {
+    const role = authHeader.replace("Bearer mock-jwt-token-", "") as UserRole;
+    const nameMap: Record<UserRole, string> = {
+      student: "김수강생",
+      instructor: "김소현",
+      investor: "한승우",
+      admin: "관리자",
+    };
+    const emailMap: Record<UserRole, string> = {
+      student: "student@mail.com",
+      instructor: "sohyun.kim@mail.com",
+      investor: "sw.han@nexusvc.com",
+      admin: "admin@platform.com",
+    };
+    return res.json({
+      user: {
+        id: `user-${role}`,
+        name: nameMap[role] || "회원",
+        email: emailMap[role] || `${role}@mail.com`,
+        role,
+        avatar: "",
+        joinDate: "2025-01-15",
+      },
+    });
+  }
+  res.json({ user: currentUser });
 });
 
 export default router;

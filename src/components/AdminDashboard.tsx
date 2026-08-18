@@ -53,10 +53,11 @@ export default function AdminDashboard({
   const tabs = [
     { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={14} /> },
     { id: "members" as const, label: "회원 관리", icon: <Users size={14} /> },
-    { id: "courses" as const, label: "강의/콘텐츠 관리", icon: <BookOpen size={14} /> },
+    { id: "courses" as const, label: "강의 검수 & 승인", icon: <BookOpen size={14} /> },
     { id: "boards" as const, label: "게시판 관리", icon: <MessageSquare size={14} /> },
     { id: "crm" as const, label: "알림/마케팅 CRM", icon: <Bell size={14} /> },
   ];
+
 
   const filteredMembers = members.filter(
     (m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
@@ -81,10 +82,11 @@ export default function AdminDashboard({
           <Shield size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white">관리자 대시보드</h1>
+          <h1 className="font-display text-2xl font-bold text-white">플랫폼 관리자 대시보드</h1>
           <p className="text-sm text-brand-on-surface-variant">플랫폼 전체 통제 및 데이터 관리</p>
         </div>
       </div>
+
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-brand-border/30 pb-px overflow-x-auto">
@@ -173,7 +175,15 @@ export default function AdminDashboard({
       {/* ── 회원 관리 ── */}
       {activeTab === "members" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          <div>
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Users size={14} className="text-brand-primary" />
+              플랫폼 가입 회원 목록
+            </h2>
+            <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 회원의 권한 및 계정 상태를 조회하고 변경합니다.</p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-between">
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
               <input
@@ -241,10 +251,14 @@ export default function AdminDashboard({
       {/* ── 강의/콘텐츠 관리 ── */}
       {activeTab === "courses" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <BookOpen size={14} className="text-brand-accent-orange" />
-            개설 신청된 강의 검수
-          </h2>
+          <div>
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <BookOpen size={14} className="text-brand-accent-orange" />
+              신청/등록된 강의 커리큘럼 검수 & 승인
+            </h2>
+            <p className="text-xs text-brand-on-surface-variant mt-0.5">강사가 개설 신청한 강의의 커리큘럼과 일정을 검토하여 승인 또는 반려합니다.</p>
+          </div>
+
 
           {pendingCourses.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
@@ -314,8 +328,9 @@ export default function AdminDashboard({
               className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5"
             >
               <Plus size={14} />
-              게시판 생성
+              새 게시판 만들기
             </button>
+
           </div>
 
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">

@@ -1,0 +1,52 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('메인 히어로 배너 및 통계 지표가 정상 렌더링된다', async ({ page }) => {
+    // 히어로 텍스트 확인
+    await expect(page.locator('text=AI로 창업의 모든 것을')).toBeVisible();
+    await expect(page.locator('text=한 곳에서')).toBeVisible();
+
+    // 통계 지표 확인
+    await expect(page.getByText('수강생', { exact: true })).toBeVisible();
+    await expect(page.getByText('강의', { exact: true })).toBeVisible();
+    await expect(page.getByText('투자 유치 총액', { exact: true })).toBeVisible();
+  });
+
+  test('히어로 배너 [강의 둘러보기] 클릭 시 교육/강의 페이지로 이동한다', async ({ page }) => {
+    const exploreBtn = page.getByRole('button', { name: '강의 둘러보기' });
+    await expect(exploreBtn).toBeVisible();
+    await exploreBtn.click();
+
+    await expect(page.locator('h1', { hasText: '교육 / 강의' })).toBeVisible();
+  });
+
+  test('비로그인 상태에서 히어로 배너 [무료 가입하기] 클릭 시 회원가입 모달이 오픈된다', async ({ page }) => {
+    const signupBtn = page.getByRole('button', { name: '무료 가입하기' });
+    await expect(signupBtn).toBeVisible();
+    await signupBtn.click();
+
+    // 회원가입 모달 오픈 확인
+    await expect(page.locator('.glass-panel-heavy h2')).toBeVisible();
+  });
+
+  test('메인 페이지 주요 섹션(강의, 스타트업, 최근 소식) 및 전체보기 링크가 동작한다', async ({ page }) => {
+    // 진행 중인 주요 강의 섹션
+    await expect(page.locator('text=진행 중인 주요 강의')).toBeVisible();
+
+    // 주목받는 스타트업 섹션
+    await expect(page.locator('text=주목받는 스타트업')).toBeVisible();
+
+    // 최근 소식 섹션
+    await expect(page.locator('h2', { hasText: '최근 소식' })).toBeVisible();
+
+    // 스타트업 카드의 [전체 보기] 클릭
+    const viewAllStartupBtn = page.locator('section', { hasText: '주목받는 스타트업' }).getByRole('button', { name: '전체 보기' });
+    await viewAllStartupBtn.click();
+    await expect(page.locator('h1', { hasText: '스타트업 & IR 피칭' })).toBeVisible();
+  });
+
+});
