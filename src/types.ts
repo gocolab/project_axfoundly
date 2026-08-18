@@ -14,7 +14,60 @@ export interface User {
   joinDate: string;
 }
 
-// ── Course ──
+// ── Course Schedule & Curriculum ──
+export interface CourseSchedule {
+  startDate: string; // "2025-09-01"
+  endDate: string;   // "2025-10-15"
+  daysOfWeek: string[]; // ["화", "목"]
+  timeSlot: string;  // "19:30 ~ 21:30"
+  totalSessions: number; // 12
+  scheduleType: "regular" | "stepping_stone"; // 징검다리 방식 여부
+}
+
+export interface CurriculumItem {
+  week: number;
+  sessionNumber?: number;
+  title: string;
+  description: string;
+  duration: string;
+  date?: string;       // "2025-09-02"
+  dayOfWeek?: string;  // "화"
+  time?: string;       // "19:30 ~ 21:30"
+}
+
+// ── Instructor Profile & Infographics ──
+export interface InstructorInfographic {
+  experienceYears: number;
+  totalStudents: number;
+  satisfactionRate: number; // 98 (%)
+  topKeywords: string[];
+  careerHighlights: string[];
+  certifiedBadge: string;
+}
+
+export interface InstructorProfile {
+  id: string;
+  name: string;
+  title: string;
+  bio: string;
+  avatar: string;
+  rating: number;
+  reviewCount: number;
+  totalStudents: number;
+  infographic: InstructorInfographic;
+  careerHistory: string[];
+  courses: {
+    id: string;
+    title: string;
+    category: string;
+    period: string;
+    studentCount: number;
+    rating: number;
+    status: "모집중" | "진행중" | "종료";
+  }[];
+  reviews: Review[];
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -22,6 +75,7 @@ export interface Course {
   category: "AI 모델링" | "비즈니스 기획" | "마케팅" | "개발" | "디자인";
   instructor: string;
   instructorAvatar: string;
+  instructorTitle?: string;
   price: number;
   discountedPrice?: number;
   thumbnail: string;
@@ -29,17 +83,12 @@ export interface Course {
   reviewCount: number;
   studentCount: number;
   status: "모집중" | "진행중" | "종료";
+  schedule: CourseSchedule;
   curriculum: CurriculumItem[];
   reviews: Review[];
+  instructorProfile?: InstructorProfile;
   isEnrolled?: boolean;
   progress?: number; // 0-100
-}
-
-export interface CurriculumItem {
-  week: number;
-  title: string;
-  description: string;
-  duration: string;
 }
 
 export interface Review {
@@ -49,31 +98,53 @@ export interface Review {
   rating: number;
   content: string;
   date: string;
+  courseTitle?: string;
 }
 
 // ── IR / Startup ──
-export interface IRProject {
+export interface HiringRoleDetail {
   id: string;
-  teamName: string;
-  title: string;
-  oneLiner: string;
-  description: string;
-  field: "AI/ML" | "핀테크" | "헬스케어" | "에듀테크" | "커머스" | "SaaS";
-  thumbnail: string;
-  members: TeamMember[];
-  businessModel: string;
-  problem: string;
-  solution: string;
-  isHiring: boolean;
-  hiringRoles?: string[];
-  bookmarked?: boolean;
-  investmentStage: "Pre-Seed" | "Seed" | "Series A";
+  role: string;
+  type: "풀타임" | "파트타임" | "인턴" | "코파운더";
+  compensation?: string; // "월 300~450만원" or "추후 협의"
+  equity?: string;       // "1.0% ~ 3.0%" or "협의"
+  skills: string[];      // ["React", "TypeScript", "Node.js"]
+  applyMethod: "internal" | "link";
+  externalLink?: string; // "https://wanted.co.kr/..."
+  description?: string;
 }
 
 export interface TeamMember {
   name: string;
   role: string;
   avatar: string;
+  anonymousName?: string; // 비실명 모드용 이름 (예: "캡틴 AI")
+  anonymousRole?: string;
+  anonymousAvatar?: string;
+  bio?: string;
+  socialLink?: string;
+}
+
+export interface IRProject {
+  id: string;
+  teamName: string;
+  anonymousTeamName?: string; // 비실명 팀명
+  title: string;
+  oneLiner: string;
+  description: string;
+  field: "AI/ML" | "핀테크" | "헬스케어" | "에듀테크" | "커머스" | "SaaS";
+  thumbnail: string;
+  demoVideoUrl?: string; // 동작/시연 영상 URL (YouTube / Loom)
+  isAnonymous?: boolean; // 비실명 모드 활성화 여부
+  members: TeamMember[];
+  businessModel: string;
+  problem: string;
+  solution: string;
+  isHiring: boolean;
+  hiringRoles?: string[];
+  hiringDetails?: HiringRoleDetail[];
+  bookmarked?: boolean;
+  investmentStage: "Pre-Seed" | "Seed" | "Series A";
 }
 
 // ── Community / Board ──
@@ -95,11 +166,13 @@ export interface BoardPost {
 // ── Notification ──
 export interface Notification {
   id: string;
-  type: "course" | "team" | "investor" | "system";
+  type: "course" | "team" | "investor" | "system" | "instructor_msg";
   title: string;
   message: string;
   time: string;
   isRead: boolean;
+  sender?: string;
+  courseTitle?: string;
 }
 
 // ── Dashboard Stats (Admin) ──
@@ -113,7 +186,19 @@ export interface DashboardStats {
   investmentMatchCount: number;
 }
 
-// ── Instructor ──
+// ── Instructor CRM & Settlement ──
+export interface CRMMessage {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  targetType: "all" | "selected" | "behind";
+  targetCount: number;
+  title: string;
+  content: string;
+  channels: ("email" | "alimtalk" | "inapp")[];
+  sentAt: string;
+}
+
 export interface SettlementRecord {
   id: string;
   period: string;

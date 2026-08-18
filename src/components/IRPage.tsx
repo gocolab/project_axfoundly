@@ -6,13 +6,24 @@ import {
   Target,
   Lightbulb,
   Search,
-  Heart,
   Send,
   ExternalLink,
   Bookmark,
   BookmarkCheck,
+  Play,
+  Video,
+  Eye,
+  EyeOff,
+  Plus,
+  X,
+  Link,
+  FileText,
+  CheckCircle,
+  Share2,
+  Lock,
 } from "lucide-react";
-import type { IRProject, UserRole } from "../types";
+import type { IRProject, UserRole, HiringRoleDetail } from "../types";
+import Pagination from "./common/Pagination";
 
 interface IRPageProps {
   projects: IRProject[];
@@ -22,29 +33,103 @@ interface IRPageProps {
   onToggleBookmark: (id: string) => void;
 }
 
-export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, onToggleBookmark }: IRPageProps) {
+export default function IRPage({
+  projects,
+  userRole,
+  isLoggedIn,
+  onLoginClick,
+  onToggleBookmark,
+}: IRPageProps) {
   const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(null);
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [searchText, setSearchText] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 6;
+
+  // Detail View State
+  const [isAnonymousMode, setIsAnonymousMode] = React.useState(false);
   const [showProposalModal, setShowProposalModal] = React.useState(false);
   const [proposalMessage, setProposalMessage] = React.useState("");
   const [proposalSent, setProposalSent] = React.useState(false);
 
+  // Video & Apply Modals
+  const [showVideoModal, setShowVideoModal] = React.useState(false);
+  const [showEditVideoModal, setShowEditVideoModal] = React.useState(false);
+  const [videoUrlInput, setVideoUrlInput] = React.useState("");
+  const [selectedHiringRole, setSelectedHiringRole] = React.useState<HiringRoleDetail | null>(null);
+  const [showApplyModal, setShowApplyModal] = React.useState(false);
+  const [applicantNote, setApplicantNote] = React.useState("");
+
   const fields = ["전체", "AI/ML", "핀테크", "헬스케어", "에듀테크", "커머스", "SaaS"];
 
+  // Filter projects
   const filtered = projects.filter((p) => {
     const matchField = activeField === "전체" || p.field === activeField;
-    const matchSearch = p.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.oneLiner.toLowerCase().includes(searchText.toLowerCase());
+    const matchSearch =
+      p.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
+      p.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      p.oneLiner.toLowerCase().includes(searchText.toLowerCase()) ||
+      p.solution.toLowerCase().includes(searchText.toLowerCase());
     return matchField && matchSearch;
   });
 
+  // Pagination calculation
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedProjects = filtered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeField, searchText]);
+
+  // When project changes, sync anonymous state
+  React.useEffect(() => {
+    if (selectedProject) {
+      setIsAnonymousMode(selectedProject.isAnonymous || false);
+      setVideoUrlInput(selectedProject.demoVideoUrl || "");
+    }
+  }, [selectedProject]);
+
   // ── IR Detail View ──
   if (selectedProject) {
+    // Default mock hiring roles if none specified
+    const hiringDetails: HiringRoleDetail[] = selectedProject.hiringDetails || [
+      {
+        id: "hr-1",
+        role: "AI/LLM 파이프라인 개발자",
+        type: "풀타임",
+        compensation: "월 400~550만원",
+        equity: "1.0% ~ 3.0%",
+        skills: ["Python", "LangChain", "FastAPI", "VectorDB"],
+        applyMethod: "internal",
+        description: "RAG 시스템 아키텍처 및 자율 에이전트 엔지니어링 리드",
+      },
+      {
+        id: "hr-2",
+        role: "B2B SaaS 그로스/마케터",
+        type: "파트타임",
+        compensation: "월 200~300만원",
+        equity: "협의",
+        skills: ["GA4", "콘텐츠 마케팅", "B2B 세일즈"],
+        applyMethod: "link",
+        externalLink: "https://wanted.co.kr",
+        description: "초기 기업 대상 파일럿 고객 유치 및 퍼널 최적화",
+      },
+    ];
+
+    const currentTeamName = isAnonymousMode
+      ? selectedProject.anonymousTeamName || `${selectedProject.field} 스텔스 창업팀`
+      : selectedProject.teamName;
+
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fadeIn">
         <button
-          onClick={() => { setSelectedProject(null); setProposalSent(false); }}
+          onClick={() => {
+            setSelectedProject(null);
+            setProposalSent(false);
+          }}
           className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white mb-6 cursor-pointer transition-colors"
         >
           <ArrowLeft size={16} />
@@ -52,80 +137,234 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Project Detail */}
+          {/* Left: Project Details */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Header Card */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-              <div className="h-48 bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center relative">
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-lg">
+              <div className="h-48 bg-gradient-to-br from-indigo-800 via-purple-950 to-slate-950 flex items-center justify-center relative">
                 <span className="text-5xl opacity-20">🚀</span>
+
+                {/* Badges */}
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded bg-brand-primary-container/30 text-brand-primary border border-brand-primary/40 backdrop-blur-xs">
                     {selectedProject.investmentStage}
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-surface-high/80 text-brand-on-surface-variant">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded bg-brand-surface-high/80 text-brand-on-surface-variant backdrop-blur-xs">
                     {selectedProject.field}
                   </span>
                 </div>
-                {selectedProject.isHiring && (
-                  <span className="absolute top-4 right-4 badge-recruiting text-[10px] font-bold px-2 py-0.5 rounded">
-                    🔥 팀원 모집 중
-                  </span>
-                )}
+
+                {/* Team Hiring Badge & Anonymity Indicator */}
+                <div className="absolute top-4 right-4 flex items-center gap-2">
+                  {isAnonymousMode && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-surface-high/90 text-brand-tertiary border border-brand-tertiary/40 flex items-center gap-1">
+                      <Lock size={11} /> 스텔스(비실명) 모드
+                    </span>
+                  )}
+                  {selectedProject.isHiring && (
+                    <span className="badge-recruiting text-xs font-bold px-2.5 py-1 rounded shadow">
+                      🔥 팀원 모집 중
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="p-6">
-                <h1 className="font-display text-2xl font-bold text-white">{selectedProject.teamName}</h1>
-                <p className="text-sm text-brand-primary mt-1 font-medium">{selectedProject.title}</p>
-                <p className="text-sm text-brand-on-surface-variant mt-3 leading-relaxed">{selectedProject.oneLiner}</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
+                      {currentTeamName}
+                    </h1>
+                    <p className="text-sm font-semibold text-brand-primary mt-1">
+                      {selectedProject.title}
+                    </p>
+                  </div>
+
+                  {/* Real-Name vs Anonymous Toggle Switch */}
+                  <div className="flex items-center gap-2 bg-brand-surface-low px-3 py-1.5 rounded-xl border border-brand-border/40">
+                    <span className="text-xs text-brand-on-surface-variant flex items-center gap-1">
+                      {isAnonymousMode ? <EyeOff size={13} className="text-brand-tertiary" /> : <Eye size={13} />}
+                      {isAnonymousMode ? "비실명" : "실명"}
+                    </span>
+                    <button
+                      onClick={() => setIsAnonymousMode(!isAnonymousMode)}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                        isAnonymousMode ? "bg-brand-tertiary" : "bg-brand-surface-highest"
+                      }`}
+                      title="실명 / 비실명 표시 방식 전환"
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-0.5 ${
+                          isAnonymousMode ? "left-4.5" : "left-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-sm text-brand-on-surface-variant mt-3 leading-relaxed">
+                  {selectedProject.oneLiner}
+                </p>
               </div>
             </div>
 
+            {/* ── Demo / Operational Video Player Section ── */}
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                  <Video size={18} className="text-brand-primary" />
+                  서비스 동작 및 피칭 영상
+                </h2>
+                <button
+                  onClick={() => setShowEditVideoModal(true)}
+                  className="text-xs text-brand-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Link size={12} /> 영상 링크 설정/변경
+                </button>
+              </div>
+
+              {selectedProject.demoVideoUrl ? (
+                <div className="relative rounded-xl overflow-hidden border border-brand-border/40 aspect-video bg-black flex items-center justify-center group shadow-inner">
+                  {/* Video Thumbnail / Mock Player View */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-black flex flex-col items-center justify-center p-6 text-center">
+                    <button
+                      onClick={() => setShowVideoModal(true)}
+                      className="w-16 h-16 rounded-full bg-brand-primary-container text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform cursor-pointer"
+                    >
+                      <Play size={28} className="ml-1" />
+                    </button>
+                    <p className="text-sm font-bold text-white mt-4">
+                      {selectedProject.teamName} 서비스 시연 & 피칭 데모
+                    </p>
+                    <p className="text-xs text-brand-on-surface-variant mt-1 font-mono">
+                      {selectedProject.demoVideoUrl}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 text-center bg-brand-surface-low rounded-xl border border-brand-border/30">
+                  <Video size={28} className="text-brand-on-surface-variant mx-auto mb-2 opacity-50" />
+                  <p className="text-xs text-brand-on-surface-variant">등록된 시연 영상 링크가 없습니다</p>
+                  <button
+                    onClick={() => setShowEditVideoModal(true)}
+                    className="mt-3 text-xs bg-brand-primary-container/20 text-brand-primary border border-brand-primary/30 px-3 py-1.5 rounded-lg hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer"
+                  >
+                    + 영상 링크 입력하기
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Business Model */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6">
-              <h2 className="font-display text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
+              <h2 className="font-display text-lg font-bold text-white flex items-center gap-2 mb-3">
                 <Target size={18} className="text-brand-primary" />
-                비즈니스 모델
+                비즈니스 모델 (BM)
               </h2>
-              <p className="text-sm text-brand-on-surface-variant leading-relaxed">{selectedProject.businessModel}</p>
+              <p className="text-sm text-brand-on-surface-variant leading-relaxed">
+                {selectedProject.businessModel}
+              </p>
             </div>
 
             {/* Problem & Solution */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5">
-                <h3 className="text-sm font-bold text-brand-accent-rose flex items-center gap-1.5 mb-3">
-                  <Target size={14} />
-                  문제 (Problem)
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md">
+                <h3 className="text-sm font-bold text-brand-accent-rose flex items-center gap-1.5 mb-2.5">
+                  <Target size={15} /> 문제 정의 (Problem)
                 </h3>
-                <p className="text-xs text-brand-on-surface-variant leading-relaxed">{selectedProject.problem}</p>
+                <p className="text-xs text-brand-on-surface-variant leading-relaxed">
+                  {selectedProject.problem}
+                </p>
               </div>
-              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5">
-                <h3 className="text-sm font-bold text-brand-tertiary flex items-center gap-1.5 mb-3">
-                  <Lightbulb size={14} />
-                  해결책 (Solution)
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md">
+                <h3 className="text-sm font-bold text-brand-tertiary flex items-center gap-1.5 mb-2.5">
+                  <Lightbulb size={15} /> 해결 방안 (Solution)
                 </h3>
-                <p className="text-xs text-brand-on-surface-variant leading-relaxed">{selectedProject.solution}</p>
+                <p className="text-xs text-brand-on-surface-variant leading-relaxed">
+                  {selectedProject.solution}
+                </p>
               </div>
             </div>
 
-            {/* Hiring Roles */}
-            {selectedProject.isHiring && selectedProject.hiringRoles && (
-              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6">
-                <h2 className="font-display text-lg font-bold text-white flex items-center gap-2 mb-4">
-                  <Briefcase size={18} className="text-brand-tertiary" />
-                  구인/구직 공고
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {selectedProject.hiringRoles.map((role, idx) => (
-                    <div key={idx} className="p-3 bg-brand-surface-low rounded-lg border border-brand-border/30 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-brand-tertiary/10 flex items-center justify-center">
-                          <Users size={14} className="text-brand-tertiary" />
+            {/* ── Hiring Roles with Option Inputs & Link Switching ── */}
+            {selectedProject.isHiring && (
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                    <Briefcase size={18} className="text-brand-tertiary" />
+                    구인/구직 공고 ({hiringDetails.length}개 포지션)
+                  </h2>
+                  <span className="text-xs text-brand-tertiary font-semibold">
+                    자체 지원 및 외부 채용 링크 지원
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {hiringDetails.map((roleItem) => (
+                    <div
+                      key={roleItem.id}
+                      className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/40 hover:border-brand-primary/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-white">{roleItem.role}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-primary/20 text-brand-primary border border-brand-primary/30">
+                            {roleItem.type}
+                          </span>
+                          {roleItem.equity && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-brand-tertiary/15 text-brand-tertiary font-mono">
+                              지분 {roleItem.equity}
+                            </span>
+                          )}
+                          {roleItem.compensation && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-brand-surface-high text-brand-on-surface-variant">
+                              {roleItem.compensation}
+                            </span>
+                          )}
                         </div>
-                        <span className="text-xs font-semibold text-white">{role}</span>
+
+                        {roleItem.description && (
+                          <p className="text-[11px] text-brand-on-surface-variant mt-1.5">
+                            {roleItem.description}
+                          </p>
+                        )}
+
+                        {/* Skills */}
+                        <div className="flex gap-1.5 flex-wrap mt-2.5">
+                          {roleItem.skills.map((skill, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="text-[9px] px-1.5 py-0.5 rounded bg-brand-surface-high text-brand-on-surface-variant font-mono"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <button className="text-[10px] text-brand-primary hover:text-white transition-colors cursor-pointer">
-                        지원하기 →
-                      </button>
+
+                      {/* Action Button: Internal Apply vs External Link */}
+                      <div className="flex-shrink-0">
+                        {roleItem.applyMethod === "link" && roleItem.externalLink ? (
+                          <a
+                            href={roleItem.externalLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs bg-brand-surface-high text-white hover:bg-brand-primary-container px-3.5 py-2 rounded-xl border border-brand-border/40 transition-colors flex items-center gap-1.5"
+                          >
+                            외부 공고 링크 <ExternalLink size={12} />
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedHiringRole(roleItem);
+                              setShowApplyModal(true);
+                            }}
+                            className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 shadow-sm"
+                          >
+                            원클릭 지원하기 →
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -133,96 +372,253 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
             )}
           </div>
 
-          {/* Right: Team & Actions */}
+          {/* Right Column: Team Intro (Real-name / Anonymous) & Actions */}
           <div className="lg:col-span-1 flex flex-col gap-4">
-            {/* Team Members */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5">
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <Users size={14} className="text-brand-primary" />
-                팀 소개
-              </h3>
+            {/* Team Members Card */}
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Users size={15} className="text-brand-primary" />
+                  팀 소개 ({isAnonymousMode ? "비실명 모드" : "실명 공개"})
+                </h3>
+                <span className="text-[10px] text-brand-on-surface-variant font-mono">
+                  {selectedProject.members.length}명
+                </span>
+              </div>
+
               <div className="flex flex-col gap-3">
-                {selectedProject.members.map((member, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2 bg-brand-surface-low rounded-lg">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-primary-container to-brand-secondary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                      {member.name.charAt(0)}
+                {selectedProject.members.map((member, idx) => {
+                  const displayName = isAnonymousMode
+                    ? member.anonymousName || `팀원 ${idx + 1} (${member.role})`
+                    : member.name;
+                  const displayRole = isAnonymousMode
+                    ? member.anonymousRole || member.role
+                    : member.role;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30"
+                    >
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow ${
+                          isAnonymousMode
+                            ? "bg-gradient-to-br from-teal-600 to-emerald-800"
+                            : "bg-gradient-to-br from-brand-primary-container to-brand-secondary"
+                        }`}
+                      >
+                        {isAnonymousMode ? "👤" : member.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-white truncate">{displayName}</p>
+                        <p className="text-[10px] text-brand-on-surface-variant">{displayRole}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-white">{member.name}</p>
-                      <p className="text-[10px] text-brand-on-surface-variant">{member.role}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col gap-3">
+            {/* Investor Actions Card */}
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col gap-3 shadow-md">
               {userRole === "investor" && isLoggedIn ? (
                 <>
                   {proposalSent ? (
-                    <div className="text-center py-3">
-                      <span className="text-brand-tertiary text-sm font-bold">✓ 투자 제안이 전송되었습니다</span>
+                    <div className="text-center py-3 bg-brand-tertiary/10 rounded-xl border border-brand-tertiary/30">
+                      <span className="text-brand-tertiary text-xs font-bold flex items-center justify-center gap-1">
+                        <CheckCircle size={14} /> 투자 제안이 전송되었습니다
+                      </span>
                     </div>
                   ) : (
                     <button
                       onClick={() => setShowProposalModal(true)}
-                      className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
                     >
-                      <Send size={16} />
-                      투자 제안하기
+                      <Send size={15} />
+                      투자 제안하기 (IR 미팅 요청)
                     </button>
                   )}
                 </>
               ) : (
                 <button
                   disabled={!isLoggedIn || userRole !== "investor"}
-                  className="w-full bg-brand-surface-high text-brand-on-surface-variant py-3 rounded-xl text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+                  className="w-full bg-brand-surface-high text-brand-on-surface-variant py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
                   title="투자자 계정으로 로그인해야 합니다"
                 >
-                  <Send size={16} />
+                  <Send size={14} />
                   투자 제안하기
-                  <span className="text-[9px]">(투자자 전용)</span>
+                  <span className="text-[9px]">(투자자 권한 전용)</span>
                 </button>
               )}
 
               <button
                 onClick={() => {
-                  if (!isLoggedIn) { onLoginClick(); return; }
+                  if (!isLoggedIn) {
+                    onLoginClick();
+                    return;
+                  }
                   onToggleBookmark(selectedProject.id);
-                  setSelectedProject({ ...selectedProject, bookmarked: !selectedProject.bookmarked });
+                  setSelectedProject({
+                    ...selectedProject,
+                    bookmarked: !selectedProject.bookmarked,
+                  });
                 }}
-                className={`w-full py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                className={`w-full py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
                   selectedProject.bookmarked
-                    ? "border-brand-accent-orange text-brand-accent-orange bg-brand-accent-orange/10"
+                    ? "border-brand-accent-orange text-brand-accent-orange bg-brand-accent-orange/10 font-bold"
                     : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
                 }`}
               >
-                {selectedProject.bookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-                {selectedProject.bookmarked ? "관심 등록됨" : "관심 스타트업 등록"}
+                {selectedProject.bookmarked ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+                {selectedProject.bookmarked ? "관심 스타트업 등록됨" : "관심 스타트업 등록 (북마크)"}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Investment Proposal Modal */}
+        {/* ── Modal 1: Demo Video Player Modal ── */}
+        {showVideoModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/85 backdrop-blur-md p-4 animate-fadeIn">
+            <div className="glass-panel-heavy rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-brand-border">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-display text-sm font-bold text-white flex items-center gap-2">
+                  <Video size={16} className="text-brand-primary" />
+                  {selectedProject.teamName} 서비스 동작 시연
+                </h3>
+                <button
+                  onClick={() => setShowVideoModal(false)}
+                  className="p-1 rounded-lg hover:bg-brand-surface-high text-brand-on-surface-variant hover:text-white cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="aspect-video bg-black rounded-xl overflow-hidden border border-brand-border/40 flex items-center justify-center relative">
+                {/* Embed video or placeholder playback demo */}
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0"
+                  title="Demo Video"
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+
+              <div className="mt-3 flex justify-between items-center text-xs text-brand-on-surface-variant">
+                <span>동영상 원본 링크: {selectedProject.demoVideoUrl}</span>
+                <button
+                  onClick={() => setShowVideoModal(false)}
+                  className="px-4 py-1.5 rounded-lg bg-brand-surface-high text-white hover:bg-brand-primary-container text-xs cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal 2: Edit Demo Video URL Modal ── */}
+        {showEditVideoModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
+              <h3 className="font-display text-base font-bold text-white mb-2">동작/시연 영상 링크 등록</h3>
+              <p className="text-xs text-brand-on-surface-variant mb-4">
+                YouTube, Vimeo, Loom 등의 영상 URL을 입력하세요.
+              </p>
+
+              <input
+                type="text"
+                value={videoUrlInput}
+                onChange={(e) => setVideoUrlInput(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2.5 px-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary mb-4"
+              />
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowEditVideoModal(false)}
+                  className="flex-1 border border-brand-border text-white py-2 rounded-xl hover:bg-brand-surface-high text-xs cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedProject({ ...selectedProject, demoVideoUrl: videoUrlInput });
+                    setShowEditVideoModal(false);
+                    alert("영상 링크가 저장되었습니다.");
+                  }}
+                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2 rounded-xl text-xs hover:opacity-90 cursor-pointer shadow-md"
+                >
+                  저장하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal 3: One-click Apply Modal ── */}
+        {showApplyModal && selectedHiringRole && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
+              <h3 className="font-display text-base font-bold text-white mb-1">
+                [{selectedHiringRole.role}] 포지션 지원
+              </h3>
+              <p className="text-xs text-brand-on-surface-variant mb-4">
+                {selectedProject.teamName} 팀에 본인 프로필과 한 줄 소개를 전달합니다.
+              </p>
+
+              <div className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/30 mb-3 text-xs">
+                <p className="text-brand-primary font-bold">{selectedHiringRole.type} · 지분 {selectedHiringRole.equity || "협의"}</p>
+                <p className="text-brand-on-surface-variant mt-1">{selectedHiringRole.description}</p>
+              </div>
+
+              <textarea
+                value={applicantNote}
+                onChange={(e) => setApplicantNote(e.target.value)}
+                placeholder="본인의 강점, 관련 프로젝트 경험, 지원 동기를 간단히 적어주세요..."
+                className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary h-28 resize-none mb-4"
+              />
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowApplyModal(false)}
+                  className="flex-1 border border-brand-border text-white py-2 rounded-xl hover:bg-brand-surface-high text-xs cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    setShowApplyModal(false);
+                    setApplicantNote("");
+                    alert("지원이 성공적으로 접수되었습니다. 창업팀이 확인 후 연락드릴 예정입니다.");
+                  }}
+                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2 rounded-xl text-xs hover:opacity-90 cursor-pointer shadow-md"
+                >
+                  지원서 제출
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal 4: Investment Proposal Modal ── */}
         {showProposalModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
               <h3 className="font-display text-lg font-bold text-white mb-2">투자 제안하기</h3>
               <p className="text-xs text-brand-on-surface-variant mb-4">
-                {selectedProject.teamName}에 투자 제안 메시지를 보냅니다.
+                {selectedProject.teamName}에 공식 투자 제안 및 미팅 요청 메시지를 보냅니다.
               </p>
               <textarea
                 value={proposalMessage}
                 onChange={(e) => setProposalMessage(e.target.value)}
-                placeholder="투자 의향 및 미팅 제안 메시지를 작성하세요..."
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors h-28 resize-none"
+                placeholder="투자 의향, 라운드 조건 및 미팅 제안 메시지를 작성하세요..."
+                className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors h-28 resize-none"
               />
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => setShowProposalModal(false)}
-                  className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-sm"
+                  className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
                 >
                   취소
                 </button>
@@ -232,7 +628,7 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
                     setProposalSent(true);
                     setProposalMessage("");
                   }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
+                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs shadow-md"
                 >
                   제안 보내기
                 </button>
@@ -249,10 +645,12 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-6">
         <h1 className="font-display text-2xl font-bold text-white">스타트업 / IR</h1>
-        <p className="text-sm text-brand-on-surface-variant mt-1">수강생이 등록한 창업 프로젝트를 만나보세요</p>
+        <p className="text-sm text-brand-on-surface-variant mt-1">
+          수강생이 런칭한 혁신 프로젝트와 구인/투자 기회를 탐색하세요
+        </p>
       </div>
 
-      {/* Filter & Search */}
+      {/* Filter & Search Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex gap-2 flex-wrap">
           {fields.map((f) => (
@@ -261,7 +659,7 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
               onClick={() => setActiveField(f)}
               className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                 activeField === f
-                  ? "bg-brand-primary-container/20 border-brand-primary-container/40 text-brand-primary font-bold"
+                  ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
                   : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
               }`}
             >
@@ -273,51 +671,78 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
           <input
             type="text"
-            placeholder="스타트업 검색..."
+            placeholder="스타트업명, 아이템 검색..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full sm:w-56"
+            className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full sm:w-64"
           />
         </div>
       </div>
 
       {/* Project Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((project, idx) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {paginatedProjects.map((project, idx) => (
           <div
             key={project.id}
-            className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden card-hover cursor-pointer group animate-slideUp"
-            style={{ animationDelay: `${idx * 60}ms` }}
+            className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between"
+            style={{ animationDelay: `${idx * 50}ms` }}
             onClick={() => setSelectedProject(project)}
           >
-            <div className="h-32 relative overflow-hidden">
-              <div className={`w-full h-full bg-gradient-to-br ${
-                idx % 5 === 0 ? "from-blue-600 to-indigo-900" :
-                idx % 5 === 1 ? "from-teal-600 to-emerald-950" :
-                idx % 5 === 2 ? "from-amber-600 to-orange-900" :
-                idx % 5 === 3 ? "from-violet-600 to-purple-950" :
-                "from-rose-600 to-pink-900"
-              } flex items-center justify-center`}>
-                <span className="text-4xl opacity-20">🚀</span>
+            <div>
+              {/* Thumbnail Header */}
+              <div className="h-32 relative overflow-hidden">
+                <div
+                  className={`w-full h-full bg-gradient-to-br ${
+                    idx % 5 === 0
+                      ? "from-blue-600 to-indigo-950"
+                      : idx % 5 === 1
+                      ? "from-teal-600 to-emerald-950"
+                      : idx % 5 === 2
+                      ? "from-amber-600 to-orange-950"
+                      : idx % 5 === 3
+                      ? "from-violet-600 to-purple-950"
+                      : "from-rose-600 to-pink-950"
+                  } flex items-center justify-center`}
+                >
+                  <span className="text-4xl opacity-20">🚀</span>
+                </div>
+                <div className="absolute top-3 left-3 flex gap-1.5">
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-brand-surface-high/90 text-brand-on-surface-variant">
+                    {project.field}
+                  </span>
+                  {project.demoVideoUrl && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-primary-container/80 text-white flex items-center gap-0.5">
+                      <Play size={8} /> 영상
+                    </span>
+                  )}
+                </div>
+                {project.isHiring && (
+                  <span className="absolute top-3 right-3 badge-recruiting text-[9px] font-bold px-2 py-0.5 rounded shadow">
+                    채용중
+                  </span>
+                )}
               </div>
-              <div className="absolute top-3 left-3 flex gap-1.5">
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-surface-high/80 text-brand-on-surface-variant">{project.field}</span>
+
+              <div className="p-4">
+                <h3 className="font-display text-sm font-bold text-white group-hover:text-brand-primary transition-colors line-clamp-1">
+                  {project.teamName}
+                </h3>
+                <p className="text-[11px] text-brand-primary font-medium mt-0.5 truncate">{project.title}</p>
+                <p className="text-[11px] text-brand-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                  {project.oneLiner}
+                </p>
               </div>
-              {project.isHiring && (
-                <span className="absolute top-3 right-3 badge-recruiting text-[9px] font-bold px-1.5 py-0.5 rounded">채용중</span>
-              )}
             </div>
 
-            <div className="p-4">
-              <h3 className="font-display text-sm font-bold text-white group-hover:text-brand-primary transition-colors">
-                {project.teamName}
-              </h3>
-              <p className="text-[11px] text-brand-on-surface-variant mt-1 line-clamp-2">{project.oneLiner}</p>
-
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-brand-border/30">
+            {/* Footer */}
+            <div className="p-4 pt-0">
+              <div className="flex items-center justify-between pt-3 border-t border-brand-border/30">
                 <div className="flex -space-x-1.5">
                   {project.members.slice(0, 3).map((m, i) => (
-                    <div key={i} className="w-5 h-5 rounded-full bg-brand-surface-high border border-brand-card flex items-center justify-center text-[8px] font-bold text-brand-primary">
+                    <div
+                      key={i}
+                      className="w-5 h-5 rounded-full bg-brand-surface-high border border-brand-card flex items-center justify-center text-[8px] font-bold text-brand-primary"
+                    >
                       {m.name.charAt(0)}
                     </div>
                   ))}
@@ -327,7 +752,7 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
                     </div>
                   )}
                 </div>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary-container/25">
+                <span className="text-[9px] px-2 py-0.5 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary/25 font-semibold">
                   {project.investmentStage}
                 </span>
               </div>
@@ -337,10 +762,19 @@ export default function IRPage({ projects, userRole, isLoggedIn, onLoginClick, o
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16">
+        <div className="text-center py-16 bg-brand-card rounded-xl border border-brand-border/40 mt-4">
           <p className="text-brand-on-surface-variant text-sm">검색 결과가 없습니다</p>
         </div>
       )}
+
+      {/* Pagination Component */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        totalItems={filtered.length}
+        itemsPerPage={itemsPerPage}
+      />
     </div>
   );
 }
