@@ -1,7 +1,9 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
+import { initDb } from "./server/db.js";
 
 // Route modules
 import authRouter from "./server/routes/auth.js";
@@ -27,8 +29,31 @@ const __dirname = getDirname();
 
 
 async function startServer() {
+  // MongoDB 초기화 (연결 + 시드 데이터 로드)
+  await initDb();
+
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3005;
+
+  // CORS 설정
+  const allowedOrigins = process.env.ALLOWED_ORIGINS || "*";
+  app.use((req, res, next) => {
+    const origin = req.headers.origin || "";
+    if (allowedOrigins === "*") {
+      res.header("Access-Control-Allow-Origin", "*");
+    } else {
+      const origins = allowedOrigins.split(",").map((o) => o.trim());
+      if (origins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+      }
+    }
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+    next();
+  });
 
   app.use(express.json());
 

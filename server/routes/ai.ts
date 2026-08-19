@@ -22,6 +22,16 @@ function getGoogleAI(): GoogleGenAI {
   return googleAIClient;
 }
 
+// Timeout helper to avoid stalling on network issues
+function withTimeout<T>(promise: Promise<T>, ms = 3000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("LLM request timed out")), ms)
+    ),
+  ]);
+}
+
 // POST /api/ai/course-draft (AI Course Generator)
 router.post("/course-draft", async (req, res) => {
   try {
@@ -59,21 +69,23 @@ router.post("/course-draft", async (req, res) => {
 }
 `;
 
-      const response = await client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: "You are a master curriculum architect for tech startups. Output strictly valid JSON only without markdown formatting.",
-          temperature: 0.7,
-        },
-      });
+      const response = await withTimeout(
+        client.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: {
+            systemInstruction: "You are a master curriculum architect for tech startups. Output strictly valid JSON only without markdown formatting.",
+            temperature: 0.7,
+          },
+        })
+      );
 
       const text = response.text || "";
       const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(cleaned);
       return res.json({ draft: parsed });
     } catch (llmError) {
-      console.warn("LLM API failed, generating structured fallback curriculum draft:", llmError);
+      console.warn("LLM API fallback triggered:", llmError);
       // High-quality structured fallback
       const fallback = {
         title: `${topic} 마스터클래스 : 실전 MVP 런칭`,
@@ -125,14 +137,16 @@ Construct the report with the following 5 structured sections in rich Markdown f
 5. **[3,000 XP 획득을 위한 단계별 실천 로드맵]** (5 clear professional actions)
 `;
 
-      const response = await client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: "You are the Chief AI Architect at B2B Accelerator Hub. Speak Korean perfectly. Format output in rich Markdown.",
-          temperature: 0.8,
-        },
-      });
+      const response = await withTimeout(
+        client.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: {
+            systemInstruction: "You are the Chief AI Architect at B2B Accelerator Hub. Speak Korean perfectly. Format output in rich Markdown.",
+            temperature: 0.8,
+          },
+        })
+      );
 
       res.json({ report: response.text });
     } catch (llmError) {
@@ -189,16 +203,18 @@ router.post("/innovation-chat", async (req, res) => {
 
       let responseText = "";
       if (chatHistory.length > 0) {
-        const response = await client.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [
-            ...chatHistory,
-            { role: "user", parts: [{ text: message }] }
-          ]
-        });
+        const response = await withTimeout(
+          client.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
+              ...chatHistory,
+              { role: "user", parts: [{ text: message }] }
+            ]
+          })
+        );
         responseText = response.text || "";
       } else {
-        const response = await chat.sendMessage({ message });
+        const response = await withTimeout(chat.sendMessage({ message }));
         responseText = response.text || "";
       }
 

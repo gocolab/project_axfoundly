@@ -1,7 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('TC-07: 4종 역할별 대시보드 종합 기능 E2E 테스트', () => {
-  test('수강생 대시보드에서 내 강의실, 결제 영수증, 프로젝트 탭이 정상 작동한다', async ({ page }) => {
+test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 생성/수정/상태전환 E2E 테스트', () => {
+  test.beforeEach(async ({ page }) => {
+    // 모든 브라우저 alert/confirm 다이얼로그 자동 수락
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+  });
+
+  // ── 1. 수강생 대시보드 시나리오 ──
+  test('수강생 대시보드: 프로젝트 등록, 수정, 결제 영수증 조회 및 환불 신청 시나리오가 완결된다', async ({ page }) => {
     // 1. 수강생 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
@@ -12,24 +20,56 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 E2E 테스트', 
     await page.getByRole('button', { name: '마이페이지' }).click();
     await expect(page.locator('h1', { hasText: '수강생 대시보드' })).toBeVisible();
 
-    // 3. 내 강의실 탭 확인
-    await expect(page.getByRole('button', { name: '내 강의실' })).toBeVisible();
-
-    // 4. 결제 내역 탭 확인
-    const paymentTab = page.getByRole('button', { name: '수강 및 결제 내역' });
-    if (await paymentTab.isVisible()) {
-      await paymentTab.click();
-      await expect(page.locator('text=결제 내역').first()).toBeVisible();
-    }
-
-    // 5. 프로젝트 & 팀 빌딩 탭 확인
+    // 3. 프로젝트 & 팀 빌딩 탭으로 이동
     const projectTab = page.getByRole('button', { name: '프로젝트 & 팀 빌딩' });
-    await expect(projectTab).toBeVisible();
     await projectTab.click();
-    await expect(page.getByRole('button', { name: '신규 프로젝트 등록' }).first()).toBeVisible();
+
+    // 4. [신규 프로젝트 등록] 모달 열기 및 프로젝트 생성
+    const newProjectBtn = page.getByRole('button', { name: '신규 프로젝트 등록' }).first();
+    await expect(newProjectBtn).toBeVisible();
+    await newProjectBtn.click();
+
+    await expect(page.locator('h2', { hasText: '새 창업 프로젝트 등록' })).toBeVisible();
+
+    const uniqueTeam = `테스트팀_${Date.now()}`;
+    const uniqueTitle = `AI 자동화 솔루션 ${Date.now()}`;
+    await page.getByPlaceholder('예: DocuMind AI').fill(uniqueTeam);
+    await page.getByPlaceholder('예: 법률 문서를 위한 초정밀 RAG 분석 엔진').fill(uniqueTitle);
+    await page.getByPlaceholder('예: 500페이지 계약서를 3초 만에 검토하는 AI').fill('실시간 자동화 E2E 테스트 프로젝트');
+
+    // 프로젝트 저장
+    await page.locator('.glass-panel-heavy').getByRole('button', { name: '프로젝트 등록' }).click();
+
+    // 등록된 프로젝트가 목록에 표시되는지 확인
+    await expect(page.locator(`text=${uniqueTeam}`).first()).toBeVisible();
+
+    // 5. 내 강의실(수강 관리) 탭으로 이동하여 결제 내역 및 영수증 확인
+    await page.getByRole('button', { name: '내 강의실 (수강 관리)' }).click();
+    await expect(page.locator('text=수강 및 결제 영수증 내역')).toBeVisible();
+
+    // 영수증 조회 버튼 클릭
+    const receiptBtn = page.locator('button', { hasText: '영수증 조회' }).first();
+    if (await receiptBtn.isVisible()) {
+      await receiptBtn.click();
+      await expect(page.locator('h2', { hasText: '결제 영수증 & 환불 관리' })).toBeVisible();
+      await expect(page.locator('text=최종 결제 금액')).toBeVisible();
+
+      // 환불 신청 폼 열기
+      const refundBtn = page.getByRole('button', { name: '수강 취소 및 환불 신청' });
+      if (await refundBtn.isVisible()) {
+        await refundBtn.click();
+        const refundInput = page.locator('textarea[placeholder*="환불 신청 사유"]');
+        await expect(refundInput).toBeVisible();
+        await refundInput.fill('E2E 테스트 단순 변심 환불');
+        await page.getByRole('button', { name: '환불 확정' }).click();
+      } else {
+        await page.locator('.glass-panel-heavy button').first().click();
+      }
+    }
   });
 
-  test('강사 대시보드에서 강의 목록, AI 강의 개설 모달, CRM, 정산 탭이 작동한다', async ({ page }) => {
+  // ── 2. 강사 대시보드 시나리오 ──
+  test('강사 대시보드: AI 강의 개설, 수강생 CRM 타깃 메시지 발송, 정산 관리 시나리오가 완결된다', async ({ page }) => {
     // 1. 강사 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
@@ -40,65 +80,125 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 E2E 테스트', 
     await page.getByRole('button', { name: '마이페이지' }).click();
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
 
-    // 3. [AI 강의 개설] 버튼 및 모달 확인
+    // 3. [AI 강의 개설] 모달 열기
     const createCourseBtn = page.getByRole('button', { name: 'AI 강의 개설' });
     await expect(createCourseBtn).toBeVisible();
     await createCourseBtn.click();
-    await expect(page.locator('h2', { hasText: 'AI 연계 강의 개설 & 달력 일정 등록' })).toBeVisible();
-    await page.locator('.glass-panel-heavy button[aria-label="닫기"]').click(); // 닫기
 
-    // 4. CRM 탭 전환
+    await expect(page.locator('h2', { hasText: 'AI 연계 강의 개설 & 달력 일정 등록' })).toBeVisible();
+
+    // AI 주제 입력 후 초벌 생성
+    const aiInput = page.locator('input[placeholder*="비개발자 창업가"]');
+    await expect(aiInput).toBeVisible();
+    await aiInput.fill('LLM 에이전트 마스터');
+    await page.getByRole('button', { name: '생성' }).click();
+
+    // 상세 편집기로 적용 버튼 클릭
+    const applyDraftBtn = page.locator('button', { hasText: '상세 편집기로 적용' }).first();
+    await expect(applyDraftBtn).toBeVisible({ timeout: 10000 });
+    await applyDraftBtn.click();
+
+    // 상세 편집기 폼에서 강의 개설 완료
+    await expect(page.getByPlaceholder('강의 제목을 입력하세요')).toBeVisible();
+
+    const submitCourseBtn = page.locator('.glass-panel-heavy').getByRole('button', { name: '강의 개설 및 배포 완료' });
+    await submitCourseBtn.click();
+
+    // 모달 닫힘 확인
+    await expect(page.locator('h2', { hasText: 'AI 연계 강의 개설 & 달력 일정 등록' })).not.toBeVisible();
+
+    // 4. 수강생 관리 (CRM) 탭 이동 및 메시지 발송
     await page.getByRole('button', { name: '수강생 관리 (CRM)' }).click();
     await expect(page.locator('text=수강생 명단 및 진도 관리')).toBeVisible();
 
-    // 5. 정산 관리 탭 전환
+    // 메시지 발송 모달 열기
+    const sendMsgBtn = page.locator('button', { hasText: '메시지 전송' }).first();
+    await expect(sendMsgBtn).toBeVisible();
+    await sendMsgBtn.click();
+
+    await expect(page.locator('h3', { hasText: '수강 대상자 맞춤 메시지 발송' })).toBeVisible();
+    await page.getByPlaceholder('메시지 제목을 입력하세요').fill('3주차 실습 안내');
+    await page.getByPlaceholder('수강생에게 전달할 메시지 내용...').fill('실습 환경 접속 링크와 가이드 문서입니다.');
+
+    await page.locator('.glass-panel-heavy').getByRole('button', { name: '메시지 즉시 발송' }).click();
+    await expect(page.locator('h3', { hasText: '수강 대상자 맞춤 메시지 발송' })).not.toBeVisible();
+
+    // 5. 정산 관리 탭 전환 및 매출 통계 확인
     await page.getByRole('button', { name: '정산 관리' }).click();
     await expect(page.locator('text=매출 및 정산 통계')).toBeVisible();
+    await expect(page.getByRole('button', { name: '출금 신청' })).toBeVisible();
   });
 
-  test('투자자 대시보드에서 관심 스타트업 및 AI 추천 매칭 탭이 작동한다', async ({ page }) => {
+  // ── 3. 투자자 대시보드 시나리오 ──
+  test('투자자 대시보드: 관심 스타트업 목록 및 AI 추천 매칭 탭이 작동한다', async ({ page }) => {
     // 1. 투자자 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('.glass-panel-heavy button', { hasText: '투자자' }).first().click();
 
     // 2. 대시보드 이동
-    await expect(page.locator('header button', { hasText: '이벤처' })).toBeVisible();
-    await page.locator('header button', { hasText: '이벤처' }).click();
+    await expect(page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ })).toBeVisible();
+    await page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
 
-    // 3. 탭 전환 확인
+    // 3. 관심 스타트업 탭 확인
     await expect(page.getByRole('button', { name: '관심 스타트업' })).toBeVisible();
+
+    // 4. AI 추천 매칭 탭 전환 및 추천 스타트업 목록 확인
     await page.getByRole('button', { name: 'AI 추천 매칭' }).click();
     await expect(page.locator('text=AI 맞춤 스타트업 추천')).toBeVisible();
   });
 
-  test('관리자 대시보드에서 통계 홈, 회원 관리, 강의 승인, 게시판 탭이 작동한다', async ({ page }) => {
+  // ── 4. 관리자 대시보드 시나리오 ──
+  test('관리자 대시보드: 회원 관리(권한 변경), 강의 승인/반려, 게시판 관리(신규 생성) 시나리오가 완결된다', async ({ page }) => {
     // 1. 관리자 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('.glass-panel-heavy button', { hasText: '관리자' }).first().click();
-    await expect(page.locator('header button', { hasText: '최관리' })).toBeVisible();
+    await expect(page.locator('header button', { hasText: /(관리자|최관리)/ })).toBeVisible();
 
     // 2. 관리자 메뉴 이동
-    await page.locator('header button', { hasText: '최관리' }).click();
+    await page.locator('header button', { hasText: /(관리자|최관리)/ }).click();
     await page.getByRole('button', { name: '관리자 대시보드' }).click();
     await expect(page.locator('h1', { hasText: '플랫폼 관리자 대시보드' })).toBeVisible();
 
-    // 3. 통계 홈 탭
-    await expect(page.locator('text=통계 홈')).toBeVisible();
+    // 3. 통계 홈 KPI 확인
+    await expect(page.locator('text=일일 가입자')).toBeVisible();
+    await expect(page.locator('text=총 결제액')).toBeVisible();
 
-    // 4. 회원 관리 탭
+    // 4. 회원 관리 탭 이동 및 검색
     await page.getByRole('button', { name: '회원 관리' }).click();
     await expect(page.locator('text=플랫폼 가입 회원 목록')).toBeVisible();
+    const memberSearch = page.getByPlaceholder('회원 검색...');
+    await memberSearch.fill('김수강생');
+    await expect(page.locator('text=student@mail.com')).toBeVisible();
 
-    // 5. 강의 검수 & 승인 탭
+    // 5. 강의 검수 & 승인 탭 이동
     await page.getByRole('button', { name: '강의 검수 & 승인' }).click();
-    await expect(page.locator('text=신청/등록된 강의 커리큘럼')).toBeVisible();
+    await expect(page.locator('text=신청/등록된 강의 커리큘럼 검수 & 승인')).toBeVisible();
 
-    // 6. 게시판 관리 탭
+    // 승인 버튼이 있는 경우 승인 처리
+    const approveBtn = page.getByRole('button', { name: '승인' }).first();
+    if (await approveBtn.isVisible()) {
+      await approveBtn.click();
+    }
+
+    // 6. 게시판 관리 탭 이동 및 새 게시판 생성
     await page.getByRole('button', { name: '게시판 관리' }).click();
-    await expect(page.getByRole('button', { name: '새 게시판 만들기' })).toBeVisible();
+    await expect(page.locator('text=멀티 게시판 관리')).toBeVisible();
+
+    const createBoardBtn = page.getByRole('button', { name: '새 게시판 만들기' });
+    await expect(createBoardBtn).toBeVisible();
+    await createBoardBtn.click();
+
+    await expect(page.locator('h3', { hasText: '멀티 게시판 생성기' })).toBeVisible();
+    const uniqueBoard = `신규게시판_${Date.now()}`;
+    await page.getByPlaceholder('새 게시판 이름').fill(uniqueBoard);
+
+    await page.locator('.glass-panel-heavy').getByRole('button', { name: '생성' }).click();
+
+    // 생성된 게시판 확인
+    await expect(page.locator(`text=${uniqueBoard}`)).toBeVisible();
   });
 });

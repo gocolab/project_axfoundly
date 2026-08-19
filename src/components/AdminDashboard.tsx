@@ -23,6 +23,7 @@ import {
   Eye,
 } from "lucide-react";
 import type { DashboardStats, AdminMember, AdminBoard, UserRole, Course } from "../types";
+import { api } from "../lib/api";
 
 interface AdminDashboardProps {
   stats: DashboardStats;
@@ -45,10 +46,15 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm">("stats");
   const [memberSearch, setMemberSearch] = React.useState("");
+  const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);
   const [showCreateBoardModal, setShowCreateBoardModal] = React.useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = React.useState(false);
   const [newBoardName, setNewBoardName] = React.useState("");
   const [newBoardTemplate, setNewBoardTemplate] = React.useState<"일반형" | "갤러리형" | "카드형">("일반형");
+
+  React.useEffect(() => {
+    setLocalBoards(boards);
+  }, [boards]);
 
   const tabs = [
     { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={14} /> },
@@ -342,7 +348,7 @@ export default function AdminDashboard({
               <span>게시글 수</span>
               <span className="text-right">액션</span>
             </div>
-            {boards.map((board) => (
+            {localBoards.map((board) => (
               <div key={board.id} className="grid grid-cols-7 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors">
                 <span className="col-span-2 text-xs font-semibold text-white">{board.name}</span>
                 <span className="text-[10px] text-brand-on-surface-variant">{board.readPermission}</span>
@@ -474,7 +480,31 @@ export default function AdminDashboard({
                   취소
                 </button>
                 <button
-                  onClick={() => { setShowCreateBoardModal(false); alert(`"${newBoardName}" 게시판이 생성되었습니다!`); setNewBoardName(""); }}
+                  onClick={async () => {
+                    if (!newBoardName.trim()) return;
+                    const created = {
+                      id: `b-${Date.now()}`,
+                      name: newBoardName,
+                      readPermission: "전체",
+                      writePermission: "회원",
+                      template: newBoardTemplate,
+                      postCount: 0,
+                    };
+                    setLocalBoards((prev) => [...prev, created]);
+                    setShowCreateBoardModal(false);
+                    try {
+                      await api.createAdminBoard({
+                        name: newBoardName,
+                        readPermission: "전체",
+                        writePermission: "회원",
+                        template: newBoardTemplate,
+                      });
+                    } catch (e) {
+                      console.warn("API call failed", e);
+                    }
+                    alert(`"${newBoardName}" 게시판이 생성되었습니다!`);
+                    setNewBoardName("");
+                  }}
                   className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
                 >
                   생성

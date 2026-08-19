@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import "dotenv/config";
+import { MongoClient, type Db, type Collection } from "mongodb";
 import type {
   Course,
   IRProject,
@@ -36,8 +36,15 @@ export interface DatabaseSchema {
   applications: JobApplication[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
+// ──────────────────────── MongoDB 연결 설정 ────────────────────────
+
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  "mongodb://mahaumaster:!Mahaumaster2515@localhost:27017/?authSource=admin";
+const MONGODB_DBNAME = process.env.MONGODB_DBNAME || "launch_bizs_dev";
+
+let client: MongoClient;
+let mongodb: Db;
 
 // ──────────────────────── Seed Data ────────────────────────
 
@@ -663,84 +670,160 @@ const SEED_CRM_MESSAGES: CRMMessage[] = [
   },
 ];
 
-// ──────────────────────── Database Class ────────────────────────
+// ──────────────────── 초기 시드 데이터 맵 ────────────────────
+
+function buildSeedData(): DatabaseSchema {
+  return {
+    courses: SEED_COURSES,
+    irProjects: SEED_IR_PROJECTS,
+    posts: SEED_POSTS,
+    comments: SEED_COMMENTS,
+    notifications: SEED_NOTIFICATIONS,
+    teamRequests: SEED_TEAM_REQUESTS,
+    payments: SEED_PAYMENTS,
+    settlements: SEED_SETTLEMENTS,
+    proposals: SEED_PROPOSALS,
+    recommendations: SEED_RECOMMENDATIONS,
+    stats: SEED_STATS,
+    members: SEED_MEMBERS,
+    boards: SEED_BOARDS,
+    crmMessages: SEED_CRM_MESSAGES,
+    applications: [],
+  };
+}
+
+// ──────────────────────── Database Class (MongoDB 기반) ────────────────────────
+
+// stats는 단일 문서이므로 별도 처리가 필요한 키 목록
+const SINGLETON_KEYS: Array<keyof DatabaseSchema> = ["stats"];
 
 class Database {
-  private data: DatabaseSchema;
+  private cache: DatabaseSchema;
+  private initialized = false;
 
   constructor() {
-    this.ensureDataDir();
-    this.data = this.load();
+    // 초기값으로 시드 데이터 세팅 (initDb() 호출 전까지 폴백용)
+    this.cache = buildSeedData();
   }
 
-  private ensureDataDir() {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-  }
-
-  private load(): DatabaseSchema {
+  /**
+   * MongoDB 연결 및 데이터 로드.
+   * 서버 시작 전에 반드시 호출해야 합니다.
+   */
+  async init(): Promise<void> {
     try {
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, "utf-8");
-        return JSON.parse(raw);
+      client = new MongoClient(MONGODB_URI);
+      await client.connect();
+      mongodb = client.db(MONGODB_DBNAME);
+      console.log(`[DB] MongoDB connected: ${MONGODB_DBNAME}`);
+
+      // 각 컬렉션에서 데이터 로드 (비어있으면 시드 삽입)
+      const seedData = buildSeedData();
+      const keys = Object.keys(seedData) as Array<keyof DatabaseSchema>;
+
+      for (const key of keys) {
+        const collection = mongodb.collection(key);
+        const count = await collection.countDocuments();
+
+        if (count === 0) {
+          // 시드 데이터 삽입
+          if (SINGLETON_KEYS.includes(key)) {
+            // 단일 문서 (stats 등)
+            await collection.insertOne({ _singleton: true, ...(seedData[key] as object) });
+          } else {
+            const arr = seedData[key] as unknown[];
+            if (arr.length > 0) {
+              await collection.insertMany(arr as any[]);
+            }
+          }
+          console.log(`[DB] Seeded collection: ${key} (${SINGLETON_KEYS.includes(key) ? 1 : (seedData[key] as unknown[]).length} docs)`);
+        }
+
+        // 캐시에 로드
+        if (SINGLETON_KEYS.includes(key)) {
+          const doc = await collection.findOne({ _singleton: true });
+          if (doc) {
+            const { _id, _singleton, ...rest } = doc as any;
+            (this.cache as any)[key] = rest;
+          }
+        } else {
+          const docs = await collection.find({}).toArray();
+          (this.cache as any)[key] = docs.map((d: any) => {
+            const { _id, ...rest } = d;
+            return rest;
+          });
+        }
       }
-    } catch (e) {
-      console.error("Failed to load db.json, fallback to seed data", e);
+
+      this.initialized = true;
+      console.log("[DB] All collections loaded into cache");
+    } catch (error) {
+      console.error("[DB] MongoDB connection failed, using seed data as fallback:", error);
+      this.cache = buildSeedData();
+      this.initialized = true;
     }
-
-    const initialData: DatabaseSchema = {
-      courses: SEED_COURSES,
-      irProjects: SEED_IR_PROJECTS,
-      posts: SEED_POSTS,
-      comments: SEED_COMMENTS,
-      notifications: SEED_NOTIFICATIONS,
-      teamRequests: SEED_TEAM_REQUESTS,
-      payments: SEED_PAYMENTS,
-      settlements: SEED_SETTLEMENTS,
-      proposals: SEED_PROPOSALS,
-      recommendations: SEED_RECOMMENDATIONS,
-      stats: SEED_STATS,
-      members: SEED_MEMBERS,
-      boards: SEED_BOARDS,
-      crmMessages: SEED_CRM_MESSAGES,
-      applications: [],
-    };
-
-    this.saveData(initialData);
-    return initialData;
   }
 
-  private saveData(data: DatabaseSchema) {
+  /**
+   * MongoDB 컬렉션에 캐시 내용을 영속화 (전체 교체 방식)
+   */
+  private async syncToMongo<K extends keyof DatabaseSchema>(key: K): Promise<void> {
+    if (!mongodb) return;
+
     try {
-      this.ensureDataDir();
-      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-    } catch (e) {
-      console.error("Failed to write to db.json", e);
+      const collection = mongodb.collection(key as string);
+
+      if (SINGLETON_KEYS.includes(key)) {
+        const value = this.cache[key];
+        await collection.replaceOne(
+          { _singleton: true },
+          { _singleton: true, ...(value as object) },
+          { upsert: true }
+        );
+      } else {
+        const arr = this.cache[key] as unknown[];
+        await collection.deleteMany({});
+        if (arr.length > 0) {
+          await collection.insertMany(arr as any[]);
+        }
+      }
+    } catch (error) {
+      console.error(`[DB] Failed to sync collection "${String(key)}" to MongoDB:`, error);
     }
   }
 
   public persist() {
-    this.saveData(this.data);
+    // 모든 컬렉션 동기화 (fire-and-forget)
+    const keys = Object.keys(this.cache) as Array<keyof DatabaseSchema>;
+    for (const key of keys) {
+      this.syncToMongo(key);
+    }
   }
 
   public get<K extends keyof DatabaseSchema>(key: K): DatabaseSchema[K] {
-    return this.data[key];
+    return this.cache[key];
   }
 
   public set<K extends keyof DatabaseSchema>(key: K, value: DatabaseSchema[K]) {
-    this.data[key] = value;
-    this.persist();
+    this.cache[key] = value;
+    this.syncToMongo(key);
   }
 
   public update<K extends keyof DatabaseSchema>(
     key: K,
     updater: (prev: DatabaseSchema[K]) => DatabaseSchema[K]
   ) {
-    this.data[key] = updater(this.data[key]);
-    this.persist();
-    return this.data[key];
+    this.cache[key] = updater(this.cache[key]);
+    this.syncToMongo(key);
+    return this.cache[key];
   }
 }
 
 export const db = new Database();
+
+/**
+ * MongoDB 초기화 함수. 서버 시작 전에 반드시 호출.
+ */
+export async function initDb(): Promise<void> {
+  await db.init();
+}

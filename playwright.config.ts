@@ -10,7 +10,7 @@ export default defineConfig({
     ['html', { host: '0.0.0.0', port: 9323, open: 'never' }]
   ],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3005',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3005',
     reuseExistingServer: true,
     timeout: 120 * 1000,
   },

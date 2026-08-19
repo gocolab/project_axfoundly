@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('TC-06: 커뮤니티 멀티 게시판, 새 글 작성 및 댓글 E2E 테스트', () => {
+test.describe('TC-06: 커뮤니티 멀티 게시판, 새 글 작성, 상세 및 댓글 등록 E2E 테스트', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.locator('header nav').getByRole('button', { name: '커뮤니티' }).click();
+    await expect(page.locator('h1', { hasText: '커뮤니티' })).toBeVisible();
   });
 
   test('커뮤니티 페이지 타이틀 및 게시글 목록이 표시된다', async ({ page }) => {
@@ -67,13 +68,33 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 새 글 작성 및 댓글 E
     await expect(page.locator(`text=${uniqueTitle}`).first()).toBeVisible();
   });
 
-  test('게시글 행 클릭 시 게시글 상세 및 댓글 모달이 오픈된다', async ({ page }) => {
-    // 첫 번째 게시글 클릭
-    const firstPost = page.locator('[data-testid="community-post-row"], .grid.grid-cols-12.cursor-pointer').first();
+  test('게시글 행 클릭 시 상세 모달이 오픈되고, 댓글을 작성하여 실시간 등록할 수 있다', async ({ page }) => {
+    // 1. 수강생 로그인
+    await page.getByRole('button', { name: '로그인', exact: true }).click();
+    await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
+    await expect(page.locator('header button', { hasText: '김수강생' })).toBeVisible();
+
+    // 2. 커뮤니티 이동
+    await page.locator('header nav').getByRole('button', { name: '커뮤니티' }).click();
+
+    // 3. 첫 번째 게시글 클릭하여 상세 모달 열기
+    const firstPost = page.locator('.grid.grid-cols-12.cursor-pointer').first();
     await expect(firstPost).toBeVisible();
     await firstPost.click();
-    // 상세 모달 내 댓글 영역 확인
-    await expect(page.locator('h3', { hasText: '댓글' })).toBeVisible();
-  });
 
+    // 4. 상세 모달 내 댓글 영역 확인
+    await expect(page.locator('h3', { hasText: /댓글/ })).toBeVisible();
+
+    // 5. 댓글 입력 및 등록
+    const commentInput = page.getByPlaceholder('의견이나 질문을 댓글로 남겨보세요...');
+    await expect(commentInput).toBeVisible();
+    const commentText = `Playwright 실시간 댓글 검증 ${Date.now()}`;
+    await commentInput.fill(commentText);
+
+    // 댓글 등록 버튼 클릭
+    await page.locator('form').getByRole('button', { name: '등록' }).click();
+
+    // 6. 등록된 댓글이 목록에 즉시 노출되는지 확인
+    await expect(page.locator(`text=${commentText}`)).toBeVisible();
+  });
 });
