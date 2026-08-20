@@ -109,7 +109,7 @@ export default function App() {
   }, [refreshData]);
 
   // Handlers
-  const handleLogin = async (role: UserRole) => {
+  const handleLogin = async (role: UserRole, email?: string) => {
     const names: Record<UserRole, string> = {
       student: "김수강생",
       instructor: "김소현",
@@ -118,14 +118,48 @@ export default function App() {
     };
     setIsLoggedIn(true);
     setUserRole(role);
-    setUserName(names[role]);
+    setUserName(names[role] || "사용자");
 
     try {
-      const res = await api.login(role);
+      const res = await api.login(role, email);
       setUserName(res.user.name);
+      setUserRole(res.user.role);
       refreshData();
     } catch (error) {
       console.error("Login API call failed:", error);
+    }
+  };
+
+  const handleGoogleLogin = async (role?: UserRole, email?: string) => {
+    setIsLoggedIn(true);
+    const googleEmail = email || "otter.oh@gmail.com";
+    const googleRole = role || (googleEmail === "otter.oh@gmail.com" ? "admin" : "student");
+    setUserRole(googleRole);
+    setUserName(googleEmail.includes("otter") ? "오승환" : "구글 사용자");
+
+    try {
+      const res = await api.googleLogin({ email: googleEmail, role });
+      setUserRole(res.user.role);
+      setUserName(res.user.name);
+      refreshData();
+    } catch (error) {
+      console.error("Google login API failed:", error);
+    }
+  };
+
+  const handleSignup = async (data: { name: string; email: string; password?: string; role: UserRole }) => {
+    setIsLoggedIn(true);
+    setUserRole(data.role);
+    setUserName(data.name);
+
+    try {
+      const res = await api.signup(data);
+      setUserRole(res.user.role);
+      setUserName(res.user.name);
+      refreshData();
+      alert(`'${data.name}'님, ${data.role === "admin" ? "관리자" : data.role === "instructor" ? "강사" : data.role === "investor" ? "투자자" : "수강생"} 등급으로 회원가입이 완료되었습니다!`);
+    } catch (error) {
+      console.error("Signup API call failed:", error);
     }
   };
 
@@ -477,6 +511,8 @@ export default function App() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
+        onGoogleLogin={handleGoogleLogin}
+        onSignup={handleSignup}
       />
     </div>
   );

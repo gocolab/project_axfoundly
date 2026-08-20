@@ -62,7 +62,7 @@ export default function AdminBoardCreateModal({
           <div>
             <h3 className="font-display text-lg font-bold flex items-center gap-2">
               <Layout size={20} className="text-brand-tertiary" />
-              신규 멀티 게시판 생성 마법사
+              멀티 게시판 생성기
             </h3>
             <p className="text-xs text-brand-on-surface-variant mt-0.5">
               목적에 맞는 게시판 속성과 권한을 설정합니다
@@ -82,7 +82,7 @@ export default function AdminBoardCreateModal({
             <input
               type="text"
               required
-              placeholder="예: AI 창업 해커톤 공모전, 글로벌 IR 후기"
+              placeholder="새 게시판 이름 (예: AI 해커톤 공모전, IR 후기)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-primary"
@@ -147,10 +147,11 @@ export default function AdminBoardCreateModal({
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
+              data-testid="create-board-submit-btn"
               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-tertiary text-white font-bold hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
             >
               <Plus size={14} />
-              {isSubmitting ? "생성 중..." : "게시판 개설하기"}
+              {isSubmitting ? "생성 중..." : "게시판 생성"}
             </button>
           </div>
         </form>

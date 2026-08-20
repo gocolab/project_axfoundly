@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('TC-03: 인증(Auth) 및 4종 역할 기반 접근 제어(RBAC) E2E 테스트', () => {
+test.describe('TC-03: 인증(Auth), Google OAuth 및 4종 회원 등급 기반 접근 제어(RBAC) E2E 테스트', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
@@ -16,12 +16,60 @@ test.describe('TC-03: 인증(Auth) 및 4종 역할 기반 접근 제어(RBAC) E2
 
     // 회원가입 탭 전환
     await page.locator('.glass-panel-heavy').getByRole('button', { name: '회원가입' }).click();
-    await expect(modalHeader).toHaveText('회원가입');
+    await expect(modalHeader).toHaveText('회원 등급 가입');
 
     // 모달 닫기 버튼 클릭
     const closeButton = page.locator('.glass-panel-heavy button').first();
     await closeButton.click();
     await expect(modalHeader).not.toBeVisible();
+  });
+
+  test('Google OAuth 로그인 (otter.oh@gmail.com) 시 최고 관리자 프로필로 로그인되고 관리자 대시보드 접근이 가능하다', async ({ page }) => {
+    await page.getByRole('button', { name: '로그인', exact: true }).click();
+
+    // Google OAuth 로그인 버튼 확인 및 클릭
+    const googleBtn = page.getByTestId('google-oauth-button');
+    await expect(googleBtn).toBeVisible();
+    await expect(googleBtn).toContainText('otter.oh@gmail.com');
+    await googleBtn.click();
+
+    // GNB에 오승환 프로필 확인
+    const profileBtn = page.locator('header button', { hasText: '오승환' });
+    await expect(profileBtn).toBeVisible();
+    await profileBtn.click();
+
+    // 관리자 메뉴 확인 및 대시보드 이동
+    const adminMenu = page.getByRole('button', { name: '관리자 대시보드' });
+    await expect(adminMenu).toBeVisible();
+    await adminMenu.click();
+
+    await expect(page.locator('h1', { hasText: '플랫폼 관리자 대시보드' })).toBeVisible();
+  });
+
+  test('회원 등급(강사) 선택 가입 시 해당 등급으로 등록 및 대시보드 기능이 활성화된다', async ({ page }) => {
+    await page.getByRole('button', { name: '로그인', exact: true }).click();
+    await page.locator('.glass-panel-heavy').getByRole('button', { name: '회원가입' }).click();
+
+    // 회원 정보 입력
+    const uniqueEmail = `teacher_${Date.now()}@test.com`;
+    await page.getByPlaceholder('이름').fill('신규강사');
+    await page.getByPlaceholder('이메일 주소').fill(uniqueEmail);
+    await page.getByPlaceholder('비밀번호').fill('secret123');
+
+    // 강사 등급 선택
+    await page.getByTestId('signup-role-instructor').click();
+
+    // 가입 완료 제출
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.locator('.glass-panel-heavy').getByRole('button', { name: '선택한 등급으로 가입 완료' }).click();
+
+    // GNB에서 신규 가입자 확인
+    const profileBtn = page.locator('header button', { hasText: '신규강사' });
+    await expect(profileBtn).toBeVisible();
+    await profileBtn.click();
+
+    await page.getByRole('button', { name: '마이페이지' }).click();
+    await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
   });
 
   test('수강생(Student) 빠른 로그인 시 수강생 대시보드가 정상 렌더링된다', async ({ page }) => {

@@ -35,11 +35,29 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // ── Auth ──
-  login: async (role: UserRole) => {
+  login: async (role?: UserRole, email?: string, password?: string) => {
     return fetchJson<{ user: any; token: string }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ role, email, password }),
     });
+  },
+
+  googleLogin: async (data?: { email?: string; name?: string; role?: UserRole; credential?: string; code?: string }) => {
+    return fetchJson<{ user: any; token: string }>("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify(data || { email: "otter.oh@gmail.com" }),
+    });
+  },
+
+  signup: async (data: { name: string; email: string; password?: string; role: UserRole }) => {
+    return fetchJson<{ user: any; token: string }>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  getGoogleAuthUrl: async () => {
+    return fetchJson<{ url: string }>("/api/auth/google/url");
   },
 
   // ── Courses ──
@@ -299,6 +317,12 @@ export const api = {
     return fetchJson<{ board: AdminBoard }>("/api/admin/boards", {
       method: "POST",
       body: JSON.stringify(boardData),
+    });
+  },
+
+  deleteAdminBoard: async (id: string) => {
+    return fetchJson<{ success: boolean }>(`/api/admin/boards/${id}`, {
+      method: "DELETE",
     });
   },
 

@@ -57,6 +57,16 @@ export default function AdminDashboard({
     setLocalBoards(boards);
   }, [boards]);
 
+  const handleDeleteBoard = async (id: string, name: string) => {
+    try {
+      await api.deleteAdminBoard(id);
+      setLocalBoards((prev) => prev.filter((b) => b.id !== id));
+    } catch (e) {
+      console.error(e);
+      setLocalBoards((prev) => prev.filter((b) => b.id !== id));
+    }
+  };
+
   const tabs = [
     { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={14} /> },
     { id: "members" as const, label: "회원 관리", icon: <Users size={14} /> },
@@ -358,7 +368,12 @@ export default function AdminDashboard({
                 <span className="text-[10px] text-brand-on-surface-variant">{board.postCount}</span>
                 <div className="flex justify-end gap-1.5">
                   <button className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer"><Edit size={11} /></button>
-                  <button className="text-[9px] text-error hover:text-brand-accent-rose cursor-pointer"><Trash2 size={11} /></button>
+                  <button
+                    onClick={() => handleDeleteBoard(board.id, board.name)}
+                    className="text-[9px] text-error hover:text-brand-accent-rose cursor-pointer"
+                  >
+                    <Trash2 size={11} />
+                  </button>
                 </div>
               </div>
             ))}

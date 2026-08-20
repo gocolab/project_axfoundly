@@ -303,7 +303,8 @@ test.describe('TC-08: 백엔드 11개 도메인 REST API 전수 무결성 및 C/
     const membersData = await membersRes.json();
     expect(membersData.members.length).toBeGreaterThan(0);
 
-    const firstMemberId = membersData.members[0].id;
+    const targetMember = membersData.members.find((m: any) => m.email === 'student@mail.com') || membersData.members[0];
+    const firstMemberId = targetMember.id;
 
     // Change Role
     const roleRes = await request.patch(`/api/admin/members/${firstMemberId}/role`, {
