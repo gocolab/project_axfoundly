@@ -229,4 +229,72 @@ router.post("/innovation-chat", async (req, res) => {
   }
 });
 
+// POST /api/ai/tutor (AI Startup Tutor Chatbot)
+router.post("/tutor", async (req, res) => {
+  try {
+    const { question, context } = req.body;
+    if (!question) {
+      return res.status(400).json({ error: "Question is required." });
+    }
+
+    try {
+      const client = getGoogleAI();
+      const prompt = `
+당신은 "AI로 창업하라" 플랫폼의 공식 전담 **AI 창업 튜터 & 스타트업 코치**입니다.
+창업 교육, AI 기술 스택(LLM, RAG, 에이전트), MVP 개발, 팀 빌딩, 투자 유치(IR) 등 창업 전 주기에 대해 친절하고 전문적으로 한국어로 답변해 주세요.
+
+[사용자 질문]: ${question}
+[현재 컨텍스트]: ${context || "전체 플랫폼"}
+
+답변은 마크다운 형식으로 가독성 있게 작성하고, 필요한 경우 실행 가능한 조언(Action Item 2~3가지)을 포함해 주세요.
+`;
+
+      const response = await withTimeout(
+        client.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: {
+            systemInstruction: "You are the friendly, highly competent AI Startup Tutor for 'AI로 창업하라' platform. Speak warm and sharp Korean.",
+            temperature: 0.7,
+          },
+        })
+      );
+
+      res.json({
+        answer: response.text || "AI 튜터의 답변을 생성하는 중입니다.",
+        suggestions: [
+          "AI 프로덕트 매니저 부트캠프 알아보기",
+          "IR 스타트업에 프로젝트 등록하는 법",
+          "Co-founder 팀빌딩 매칭 팁",
+        ],
+      });
+    } catch (llmError) {
+      // High-quality smart fallback
+      const q = question.toLowerCase();
+      let answer = "";
+      if (q.includes("강의") || q.includes("교육") || q.includes("커리큘럼")) {
+        answer = `🎓 **강의 및 커리큘럼 안내**\n\n「AI로 창업하라」에서는 **AI 모델링**, **비즈니스 기획**, **마케팅**, **개발**, **디자인** 등 5대 핵심 분야의 실전 부트캠프를 제공하고 있습니다.\n\n- **추천 액션**:\n  1. [교육/강의] 탭에서 **징검다리 연계 일정**을 확인해 보세요.\n  2. 강사 프로필을 클릭해 과거 이력 및 수강생 만족도(98%)를 확인하세요.`;
+      } else if (q.includes("투자") || q.includes("ir") || q.includes("펀딩")) {
+        answer = `💼 **투자 유치 및 IR 가이드**\n\n초기 AI 스타트업의 투자 유치는 **실제 동작하는 데모 영상**과 **명확한 BM(비즈니스 모델)**이 핵심입니다.\n\n- **추천 액션**:\n  1. [스타트업/IR] 메뉴에서 **가상 IR 피칭룸** 및 투자 제안을 활용하세요.\n  2. 초기 단계라면 **스텔스(비실명) 모드**로 안전하게 아이템을 검증받을 수 있습니다.`;
+      } else if (q.includes("팀") || q.includes("동료") || q.includes("코파운더")) {
+        answer = `🤝 **팀 빌딩 & Co-founder 매칭**\n\n성공적인 창업을 위해 AI 엔지니어, 기획자, 마케터 등 상호 보완적인 팀 빌딩을 지원합니다.\n\n- **추천 액션**:\n  1. [커뮤니티] - [팀 빌딩] 탭에 Co-founder 모집 글을 등록하세요.\n  2. IR 상세 페이지의 **구인 공고 원클릭 지원서**를 통해 팀원을 영입하세요.`;
+      } else {
+        answer = `🤖 **AI 창업 튜터 답변**\n\n'${question}'에 대해 안내해 드립니다!\n\nAI 창업은 **아이디어 검증 ➔ MVP 빠른 런칭 ➔ 커뮤니티 피드백 ➔ 투자 유치**의 선순환 구조로 완성됩니다.\n\n- **추천 액션**:\n  1. 마이페이지에서 본인 프로젝트를 등록하고 IR 게시판에 노출해 보세요.\n  2. 궁금한 점은 언제든 튜터에게 질문해 주세요!`;
+      }
+
+      res.json({
+        answer,
+        suggestions: [
+          "추천 인기 강의 목록",
+          "투자자 매칭 잘 받는 팁",
+          "팀빌딩 제안 작성 요령",
+        ],
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to generate tutor response" });
+  }
+});
+
 export default router;
+

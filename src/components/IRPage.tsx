@@ -25,6 +25,8 @@ import {
 import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal } from "../types";
 import Pagination from "./common/Pagination";
 import InvestmentProposalModal from "./InvestmentProposalModal";
+import JobApplicationModal from "./JobApplicationModal";
+import VirtualIRModal from "./VirtualIRModal";
 import { api } from "../lib/api";
 
 interface IRPageProps {
@@ -64,6 +66,7 @@ export default function IRPage({
   const [videoUrlInput, setVideoUrlInput] = React.useState("");
   const [selectedHiringRole, setSelectedHiringRole] = React.useState<HiringRoleDetail | null>(null);
   const [showApplyModal, setShowApplyModal] = React.useState(false);
+  const [showVirtualIRModal, setShowVirtualIRModal] = React.useState(false);
   const [applicantNote, setApplicantNote] = React.useState("");
 
   const fields = ["전체", "AI/ML", "핀테크", "헬스케어", "에듀테크", "커머스", "SaaS"];
@@ -433,27 +436,43 @@ export default function IRPage({
                       </span>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setShowProposalModal(true)}
-                      className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
-                    >
-                      <Send size={15} />
-                      투자 제안하기
-                    </button>
+                      <button
+                        onClick={() => setShowProposalModal(true)}
+                        className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
+                      >
+                        <Send size={15} />
+                        투자 제안하기
+                      </button>
+                    )}
 
-                  )}
-                </>
-              ) : (
-                <button
-                  disabled={!isLoggedIn || userRole !== "investor"}
-                  className="w-full bg-brand-surface-high text-brand-on-surface-variant py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
-                  title="투자자 계정으로 로그인해야 합니다"
-                >
-                  <Send size={14} />
-                  투자 제안하기
-                  <span className="text-[9px]">(투자자 권한 전용)</span>
-                </button>
-              )}
+                    <button
+                      onClick={() => setShowVirtualIRModal(true)}
+                      className="w-full bg-brand-surface-high hover:bg-brand-primary-container/40 text-brand-primary border border-brand-primary/40 font-bold py-2.5 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-2"
+                    >
+                      <Video size={15} />
+                      가상 IR 피칭룸 & NDA 계약
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      disabled={!isLoggedIn || userRole !== "investor"}
+                      className="w-full bg-brand-surface-high text-brand-on-surface-variant py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+                      title="투자자 계정으로 로그인해야 합니다"
+                    >
+                      <Send size={14} />
+                      투자 제안하기
+                      <span className="text-[9px]">(투자자 권한 전용)</span>
+                    </button>
+                    <button
+                      disabled={!isLoggedIn || userRole !== "investor"}
+                      className="w-full bg-brand-surface-low text-brand-on-surface-variant/60 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-40 border border-brand-border/30"
+                    >
+                      <Video size={14} />
+                      가상 IR 피칭룸 (투자자 전용)
+                    </button>
+                  </div>
+                )}
 
               <button
                 onClick={() => {
@@ -560,64 +579,31 @@ export default function IRPage({
           </div>
         )}
 
-        {/* ── Modal 3: One-click Apply Modal ── */}
-        {showApplyModal && selectedHiringRole && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
-              <h3 className="font-display text-base font-bold text-white mb-1">
-                팀 합류 지원하기: [{selectedHiringRole.role}]
-              </h3>
-              <p className="text-xs text-brand-on-surface-variant mb-4">
+        {/* ── Modal 3: One-click Job Application Modal ── */}
+        <JobApplicationModal
+          isOpen={showApplyModal}
+          onClose={() => setShowApplyModal(false)}
+          project={selectedProject}
+          hiringRole={selectedHiringRole}
+          applicantName={isLoggedIn ? "김수강생" : "게스트"}
+          applicantEmail="student@mail.com"
+          onSuccess={() => {
+            setShowApplyModal(false);
+          }}
+        />
 
-                {selectedProject.teamName} 팀에 본인 프로필과 한 줄 소개를 전달합니다.
-              </p>
+        {/* ── Modal 4: Virtual IR Pitching & NDA Modal ── */}
+        <VirtualIRModal
+          isOpen={showVirtualIRModal}
+          onClose={() => setShowVirtualIRModal(false)}
+          project={selectedProject}
+          investorName="이벤처 (심사역)"
+          onSuccess={() => {
+            setShowVirtualIRModal(false);
+          }}
+        />
 
-              <div className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/30 mb-3 text-xs">
-                <p className="text-brand-primary font-bold">{selectedHiringRole.type} · 지분 {selectedHiringRole.equity || "협의"}</p>
-                <p className="text-brand-on-surface-variant mt-1">{selectedHiringRole.description}</p>
-              </div>
-
-              <textarea
-                value={applicantNote}
-                onChange={(e) => setApplicantNote(e.target.value)}
-                placeholder="본인의 강점, 관련 프로젝트 경험, 지원 동기를 간단히 적어주세요..."
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary h-28 resize-none mb-4"
-              />
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowApplyModal(false)}
-                  className="flex-1 border border-brand-border text-white py-2 rounded-xl hover:bg-brand-surface-high text-xs cursor-pointer"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      await api.applyForJob(selectedProject.id, {
-                        roleId: selectedHiringRole.id,
-                        applicantName: "김수강생",
-                        applicantEmail: "student@mail.com",
-                        coverLetter: applicantNote,
-                      });
-                      setShowApplyModal(false);
-                      setApplicantNote("");
-                      alert("지원이 성공적으로 접수되었습니다. 창업팀이 확인 후 연락드릴 예정입니다.");
-                    } catch (err) {
-                      console.error("Apply failed", err);
-                      alert("지원서 접수에 실패했습니다.");
-                    }
-                  }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2 rounded-xl text-xs hover:opacity-90 cursor-pointer shadow-md"
-                >
-                  지원서 제출
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Modal 4: Investment Proposal Modal ── */}
+        {/* ── Modal 5: Investment Proposal Modal ── */}
         <InvestmentProposalModal
           project={selectedProject}
           isOpen={showProposalModal}

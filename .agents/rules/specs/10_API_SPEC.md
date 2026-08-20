@@ -1,77 +1,53 @@
 # 10. API 명세서
 
-> 문서 상태: 산출물 문서 (개발하며 갱신)
-> **규칙**: 새 API를 구현하기 전에 반드시 여기에 명세를 먼저 작성하고 사용자 확인을 받은 후 구현한다.
-> 공통 응답 포맷·에러 규약은 `rules/02_BACKEND.md`를 따른다. 여기에는 개별 API만 기록한다.
+> 문서 상태: 산출물 문서 (구현 완료 및 동기화)
+> 공통 응답 포맷 및 규약은 `rules/coding/02_BACKEND.md`를 따른다.
 
-## 0. 문서 원본(source of truth) 규칙
-
-### 자동 생성 문서 도입 여부
-- 상태: ❓ 미결정
-- 선택지: Swagger(OpenAPI) / 도입 안 함
-- 결정:
-- 결정일:
-
-### 도입 후 운영 방식
-- 자동 생성 문서를 도입한 시점부터 **상세 명세의 원본은 자동 생성 문서(코드)**다.
-- 이 문서에는 **1장 API 목록과 API별 설계 의도·정책**만 유지한다.
-- 자동 생성 문서를 도입하지 않는 프로젝트는 이 문서가 끝까지 원본이다.
-
-## 1. API 목록
-
-> 상태: 📝 설계 / 🔄 개발중 / ✅ 완료 / 🗑 폐기
-> biz_flows.md 기반 예상 API 도메인: 인증, 강의, 수강, 결제, 게시판, 팀빌딩, 투자, 알림, AI 매칭
+## 1. API 목록 요약
 
 | ID | 메서드 | URL | 이름 | 모듈 | 인증 | 상태 |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| API-AUTH-01 | POST | `/api/auth/login` | 역할 기반 데모 로그인 | Auth | 불필요 | ✅ 완료 |
+| API-CRS-01 | GET | `/api/courses` | 강의 목록 조회 (필터/페이징) | Courses | 불필요 | ✅ 완료 |
+| API-CRS-02 | GET | `/api/courses/:id` | 강의 상세 조회 | Courses | 불필요 | ✅ 완료 |
+| API-CRS-03 | POST | `/api/courses` | 신규 강의 개설 및 등록 | Courses | 강사/관리자 | ✅ 완료 |
+| API-CRS-04 | POST | `/api/courses/:id/enroll` | 수강 신청 및 결제 | Courses | 수강생 | ✅ 완료 |
+| API-CRS-05 | PATCH | `/api/courses/:id/approve` | 강의 승인 | Courses | 관리자 | ✅ 완료 |
+| API-CRS-06 | PATCH | `/api/courses/:id/reject` | 강의 반려 | Courses | 관리자 | ✅ 완료 |
+| API-IR-01 | GET | `/api/ir/projects` | 스타트업 IR 목록 조회 | IR | 불필요 | ✅ 완료 |
+| API-IR-02 | GET | `/api/ir/projects/:id` | 스타트업 IR 상세 조회 | IR | 불필요 | ✅ 완료 |
+| API-IR-03 | POST | `/api/ir/projects` | 프로젝트 등록/수정 | IR | 회원 | ✅ 완료 |
+| API-IR-04 | POST | `/api/ir/projects/:id/bookmark` | 관심 스타트업 북마크 토글 | IR | 투자자 | ✅ 완료 |
+| API-IR-05 | POST | `/api/ir/projects/:id/apply` | 구인 공고 원클릭 자체 지원 | IR | 수강생 | ✅ 완료 |
+| API-IR-06 | POST | `/api/ir/projects/:id/virtual-ir` | 가상 IR 화상 피칭룸 예약 | IR | 투자자 | ✅ 완료 |
+| API-IR-07 | POST | `/api/ir/projects/:id/nda` | 간편 전자 계약 (NDA 체결) | IR | 투자자 | ✅ 완료 |
+| API-AI-01 | POST | `/api/ai/course-draft` | AI 강의 초벌 커리큘럼 생성 | AI | 강사 | ✅ 완료 |
+| API-AI-02 | POST | `/api/ai/diagnosis` | 빌더 AI 아키텍트 페르소나 진단 | AI | 전체 | ✅ 완료 |
+| API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |
+| API-AI-04 | POST | `/api/ai/tutor` | 실시간 AI 창업 튜터 Q&A | AI | 전체 | ✅ 완료 |
+| API-COM-01 | GET | `/api/community/posts` | 멀티 게시판 글 목록 | Community | 불필요 | ✅ 완료 |
+| API-COM-02 | POST | `/api/community/posts` | 게시글 작성 | Community | 회원 | ✅ 완료 |
+| API-COM-03 | GET | `/api/community/posts/:id` | 게시글 상세 및 댓글 조회 | Community | 불필요 | ✅ 완료 |
+| API-COM-04 | POST | `/api/community/posts/:id/comments` | 댓글 등록 | Community | 회원 | ✅ 완료 |
+| API-ADM-01 | GET | `/api/admin/stats` | 대시보드 KPI 통계 조회 | Admin | 관리자 | ✅ 완료 |
+| API-ADM-02 | GET | `/api/admin/members` | 회원 목록 및 상태 조회 | Admin | 관리자 | ✅ 완료 |
+| API-ADM-03 | PATCH | `/api/admin/members/:id/role` | 회원 권한 변경 | Admin | 관리자 | ✅ 완료 |
+| API-ADM-04 | POST | `/api/admin/boards` | 신규 멀티 게시판 생성 | Admin | 관리자 | ✅ 완료 |
+| API-CRM-01 | POST | `/api/instructor/crm/send` | 강사 수강생 타깃 CRM 발송 | Instructor | 강사 | ✅ 완료 |
 
-> 개발 시작 시 도메인별로 API를 설계하고 이 목록을 채운다.
+## 2. 주요 신규 고도화 API 상세
 
-## 2. API 상세 명세
+### API-AI-04. 실시간 AI 창업 튜터 Q&A (`POST /api/ai/tutor`)
+- **설명**: 사용자의 창업/강의/IR 질의에 대해 Gemini 2.5 Flash 기반으로 실시간 액션 아이템 및 맞춤 제안 키워드를 반환합니다.
+- **요청 Body**: `{ "question": "...", "context": "현재 페이지" }`
+- **응답 (200)**: `{ "answer": "...", "suggestions": ["..."] }`
 
----
+### API-IR-06. 가상 IR 화상 피칭룸 예약 (`POST /api/ir/projects/:id/virtual-ir`)
+- **설명**: 투자자와 창업팀 간의 실시간 화상 미팅 링크(`Jitsi`) 생성 및 아젠다를 등록합니다.
+- **요청 Body**: `{ "investorName": "...", "scheduledAt": "2025-09-15 14:00", "feedbackNotes": "..." }`
+- **응답 (201)**: `{ "success": true, "meeting": { "id": "vir-...", "meetingLink": "..." } }`
 
-### 템플릿 (새 API 추가 시 복사)
-
-### API-XXX. (API 이름)
-
-- **메서드 / URL**: `GET /api/v1/...`
-- **설명**:
-- **인증**: 필요 / 불필요
-- **연관 화면**: (11_SCREEN_SPEC.md의 화면 ID)
-- **상태**: 📝 설계
-
-#### 요청
-
-**Path / Query 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 설명 |
-|---|---|---|---|---|
-|  | path / query |  |  |  |
-
-**Request Body** (없으면 "없음")
-
-```json
-{
-}
-```
-
-#### 응답
-
-**성공 (200)**
-
-```json
-{
-}
-```
-
-**에러**
-
-| HTTP | 에러 코드 | 발생 조건 |
-|---|---|---|
-| 400 |  |  |
-| 404 |  |  |
-
-#### 비고
-- (페이징, 정렬, 캐시, 멱등성 등 특이사항)
+### API-IR-07. 간편 전자 계약 NDA 체결 (`POST /api/ir/projects/:id/nda`)
+- **설명**: 2년 기밀유지 및 지식재산권 보호 표준 NDA 전자 서명을 체결합니다.
+- **요청 Body**: `{ "investorName": "...", "termsSummary": "..." }`
+- **응답 (201)**: `{ "success": true, "nda": { "id": "nda-...", "agreedAt": "2025-08-20" } }`

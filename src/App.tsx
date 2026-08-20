@@ -9,6 +9,7 @@ import StudentDashboard from "./components/StudentDashboard";
 import InstructorDashboard from "./components/InstructorDashboard";
 import InvestorDashboard from "./components/InvestorDashboard";
 import AdminDashboard from "./components/AdminDashboard";
+import AITutorWidget from "./components/common/AITutorWidget";
 import { api } from "./lib/api";
 import type {
   UserRole,
@@ -466,6 +467,11 @@ export default function App() {
       />
 
       <main className="pb-16">{renderPage()}</main>
+
+      <AITutorWidget
+        currentPage={currentPage}
+        onNavigate={(page) => setCurrentPage(page)}
+      />
 
       <AuthModal
         isOpen={showAuthModal}

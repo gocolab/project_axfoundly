@@ -23,6 +23,7 @@ import {
   Eye,
 } from "lucide-react";
 import type { DashboardStats, AdminMember, AdminBoard, UserRole, Course } from "../types";
+import AdminBoardCreateModal from "./AdminBoardCreateModal";
 import { api } from "../lib/api";
 
 interface AdminDashboardProps {
@@ -421,99 +422,14 @@ export default function AdminDashboard({
       )}
 
       {/* Create Board Modal */}
-      {showCreateBoardModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="font-display text-lg font-bold text-white mb-4">멀티 게시판 생성기</h3>
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">게시판 이름</label>
-                <input
-                  type="text"
-                  value={newBoardName}
-                  onChange={(e) => setNewBoardName(e.target.value)}
-                  placeholder="새 게시판 이름"
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2.5 px-4 text-sm text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">템플릿</label>
-                <div className="flex gap-2">
-                  {(["일반형", "갤러리형", "카드형"] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setNewBoardTemplate(t)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                        newBoardTemplate === t
-                          ? "bg-brand-primary-container/20 border-brand-primary-container/40 text-brand-primary font-bold"
-                          : "border-brand-border text-brand-on-surface-variant hover:text-white"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-semibold text-brand-on-surface-variant block mb-1">읽기 권한</label>
-                  <select className="w-full text-xs bg-brand-surface-low border border-brand-border rounded-lg px-2.5 py-1.5 text-white focus:outline-none cursor-pointer">
-                    <option>전체</option>
-                    <option>회원</option>
-                    <option>관리자</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-brand-on-surface-variant block mb-1">쓰기 권한</label>
-                  <select className="w-full text-xs bg-brand-surface-low border border-brand-border rounded-lg px-2.5 py-1.5 text-white focus:outline-none cursor-pointer">
-                    <option>전체</option>
-                    <option>회원</option>
-                    <option>관리자</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => setShowCreateBoardModal(false)}
-                  className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-sm"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!newBoardName.trim()) return;
-                    const created = {
-                      id: `b-${Date.now()}`,
-                      name: newBoardName,
-                      readPermission: "전체",
-                      writePermission: "회원",
-                      template: newBoardTemplate,
-                      postCount: 0,
-                    };
-                    setLocalBoards((prev) => [...prev, created]);
-                    setShowCreateBoardModal(false);
-                    try {
-                      await api.createAdminBoard({
-                        name: newBoardName,
-                        readPermission: "전체",
-                        writePermission: "회원",
-                        template: newBoardTemplate,
-                      });
-                    } catch (e) {
-                      console.warn("API call failed", e);
-                    }
-                    alert(`"${newBoardName}" 게시판이 생성되었습니다!`);
-                    setNewBoardName("");
-                  }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
-                >
-                  생성
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminBoardCreateModal
+        isOpen={showCreateBoardModal}
+        onClose={() => setShowCreateBoardModal(false)}
+        onSuccess={(newBoard) => {
+          setLocalBoards((prev) => [...prev, newBoard]);
+          alert(`"${newBoard.name}" 게시판이 생성되었습니다!`);
+        }}
+      />
 
       {/* Broadcast Modal */}
       {showBroadcastModal && (

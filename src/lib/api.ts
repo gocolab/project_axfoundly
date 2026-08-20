@@ -323,4 +323,26 @@ export const api = {
       body: JSON.stringify({ message, history }),
     });
   },
+
+  askAITutor: async (question: string, context?: string) => {
+    return fetchJson<{ answer: string; suggestions?: string[] }>("/api/ai/tutor", {
+      method: "POST",
+      body: JSON.stringify({ question, context }),
+    });
+  },
+
+  scheduleVirtualIR: async (projectId: string, data: { investorName?: string; scheduledAt?: string; feedbackNotes?: string }) => {
+    return fetchJson<{ success: boolean; meeting: any }>(`/api/ir/projects/${projectId}/virtual-ir`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  signNDA: async (projectId: string, data: { investorName?: string; termsSummary?: string }) => {
+    return fetchJson<{ success: boolean; nda: any }>(`/api/ir/projects/${projectId}/nda`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
 };
+

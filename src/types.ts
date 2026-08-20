@@ -294,3 +294,40 @@ export interface AdminMember {
   status: "활성" | "정지" | "탈퇴";
   courseCount: number;
 }
+
+// ── AI Startup Tutor ──
+export interface AITutorMessage {
+  id: string;
+  sender: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  suggestions?: string[];
+  relatedLink?: {
+    type: "course" | "ir" | "community";
+    id: string;
+    title: string;
+  };
+}
+
+// ── Virtual IR & NDA Agreement ──
+export interface VirtualIRMeeting {
+  id: string;
+  projectId: string;
+  projectName: string;
+  investorName: string;
+  scheduledAt: string;
+  meetingLink: string;
+  status: "대기중" | "확정" | "완료" | "취소";
+  feedbackNotes?: string;
+}
+
+export interface NDAAgreement {
+  id: string;
+  projectId: string;
+  projectName: string;
+  investorName: string;
+  agreedAt: string;
+  status: "서명완료" | "검토중";
+  termsSummary: string;
+}
+
