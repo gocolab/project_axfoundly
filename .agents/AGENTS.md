@@ -27,20 +27,52 @@
 
 ### 스킬 (`.agents/skills/`)
 
+#### 하네스: 전문 에이전트 스킬
+
+| 스킬 | 역할 | 용도 |
+|------|------|------|
+| [`dev-orchestrator`](file:///apps/project_launch_bizs/.agents/skills/dev-orchestrator/SKILL.md) | 🎯 오케스트레이터 | 개발 파이프라인 통합 조율 — 설계→구현→검증→문서 동기화 전체 플로우 |
+| [`architect`](file:///apps/project_launch_bizs/.agents/skills/architect/SKILL.md) | 📐 설계·명세 전문가 | API/화면/DB 명세 작성, 인터뷰 진행, 기술 의사결정 |
+| [`implementer`](file:///apps/project_launch_bizs/.agents/skills/implementer/SKILL.md) | 🔧 풀스택 구현 전문가 | React + Express + MongoDB 코드 작성, 빌드 검증 |
+| [`qa-reviewer`](file:///apps/project_launch_bizs/.agents/skills/qa-reviewer/SKILL.md) | 🔍 품질 검증 전문가 | 경계면 교차 비교, 빌드·린트·E2E 테스트, 코드 리뷰 |
+| [`doc-syncer`](file:///apps/project_launch_bizs/.agents/skills/doc-syncer/SKILL.md) | 📝 문서 동기화 전문가 | 명세-코드 동기화, 결정 변경 이력 관리, drift 검사 |
+
+#### 기반 스킬
+
 | 스킬 | 용도 |
 |------|------|
-| [`agentic-dev`](file:///apps/project_launch_bizs/.agents/skills/agentic-dev/SKILL.md) | 에이전틱 개발 가이드 — 역할 분담, 품질 게이트, 컨텍스트 관리, 문서 우선 원칙 |
+| [`agentic-dev`](file:///apps/project_launch_bizs/.agents/skills/agentic-dev/SKILL.md) | 에이전틱 개발 가이드 — 품질 게이트, 컨텍스트 관리, 문서 우선 원칙 |
 | [`e2e-testing`](file:///apps/project_launch_bizs/.agents/skills/e2e-testing/SKILL.md) | Playwright E2E 테스트 — Plan → Generate → Heal 파이프라인 |
+| [`harness`](file:///apps/project_launch_bizs/.agents/skills/harness/SKILL.md) | 하네스 아키텍트 — 전문 에이전트 팀 설계 및 스킬 자동 생성 메타 스킬 |
 
 ---
 
 ## 에이전트 역할 정의
 
+### 개발 파이프라인 (하네스)
+
+```
+[사용자 요청] → dev-orchestrator
+                    │
+    Phase 1: [architect]      → 명세 작성 (API/화면/DB)
+                    │
+    Phase 2: [implementer]    → 코드 구현 (React + Express)
+                    │
+    Phase 3: [qa-reviewer]    → 품질 검증 (경계면 + 빌드)
+                    │
+    Phase 4: [doc-syncer]     → 문서 동기화
+                    │
+                [완료 보고]
+```
+
+### 역할별 책임
+
 | 역할 | 책임 | 참조 문서 |
 |------|------|-----------|
-| **구현 에이전트** | 아키텍처 규칙에 따라 실제 코드를 작성 | `coding/*`, `specs/*` |
-| **테스트/리뷰 에이전트** | 코드 품질 검토, E2E·유닛 테스트 실행 | `e2e-testing` 스킬, `coding/07_TEST.md` |
-| **문서화 에이전트** | 코드 변경에 맞춰 명세·문서를 최신 상태로 업데이트 | `AGENT_GUIDE.md`, `99_DECISIONS.md` |
+| **architect** | 기능 요구사항 분석, API/화면/DB 명세 작성, 인터뷰 진행 | `coding/*`, `specs/*`, `docs/bizs/*` |
+| **implementer** | specs 기반 풀스택 코드 작성, 빌드 검증 | `specs/*`, `coding/*`, `src/`, `server/` |
+| **qa-reviewer** | 경계면 교차 비교, 빌드·린트·E2E 실행, 코드 리뷰 | `e2e-testing` 스킬, `coding/07_TEST.md` |
+| **doc-syncer** | 코드 변경 후 명세·문서 최신화, 결정 이력 관리 | `specs/*`, `99_DECISIONS.md` |
 
 ---
 
@@ -66,10 +98,15 @@
 
 ## 작업 유형별 진입점
 
-| 작업 | 먼저 읽을 문서 |
-|------|---------------|
-| 새 기능 구현 | `AGENT_GUIDE.md` → `coding/*` → `specs/*` |
-| 버그 수정 | 관련 `specs/*` → 소스코드 |
-| E2E 테스트 | `e2e-testing` 스킬 |
-| 설계 결정 | `AGENT_GUIDE.md` (인터뷰 규칙) → `coding/*` |
+| 작업 | 먼저 읽을 문서 / 사용할 스킬 |
+|------|---------------------------|
+| 새 기능 전체 개발 (설계~검증) | `dev-orchestrator` 스킬 |
+| 설계·명세 작성 | `architect` 스킬 → `coding/*`, `specs/*` |
+| 코드 구현 | `implementer` 스킬 → `specs/*` |
+| 품질 검증·코드 리뷰 | `qa-reviewer` 스킬 |
+| 문서 동기화 | `doc-syncer` 스킬 |
+| 인터뷰·의사결정 | `architect` 스킬 → `AGENT_GUIDE.md` |
+| E2E 테스트 | `qa-reviewer` → `e2e-testing` 스킬 |
+| 버그 수정 | `implementer` 스킬 → 관련 `specs/*` → 소스코드 |
 | 비즈니스 요구사항 확인 | `docs/bizs/biz_flows.md`, `docs/bizs/menus.md` |
+| 하네스 재구성 | `harness` 스킬 |

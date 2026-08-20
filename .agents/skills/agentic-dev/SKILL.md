@@ -35,15 +35,17 @@ description: |
 
 실패 시 에러 로그를 읽고 **스스로 코드를 수정(Self-correction)** 한다.
 
-### 4. 역할 분담 (멀티 에이전트 파이프라인)
+### 4. 역할 분담 (하네스 기반 멀티 에이전트 파이프라인)
 
-복잡한 작업은 하나의 에이전트에게 모두 맡기지 않고, 역할을 분리한다:
+복잡한 작업은 하나의 에이전트에게 모두 맡기지 않고, 전문 에이전트 스킬로 역할을 분리한다.
+전체 파이프라인을 한 번에 실행하려면 [`dev-orchestrator`](file:///apps/project_launch_bizs/.agents/skills/dev-orchestrator/SKILL.md) 스킬을 사용한다.
 
-| 역할 | 책임 |
-|------|------|
-| **구현 에이전트** | 아키텍처 규칙에 따라 실제 코드를 작성한다 |
-| **테스트/리뷰 에이전트** | 작성된 코드의 보안, 스타일 가이드 준수 여부를 검토하고 테스트를 실행한다 |
-| **문서화 에이전트** | 코드 변경 사항에 맞춰 프로젝트 명세서와 문서를 최신 상태로 업데이트한다 |
+| 역할 | 스킬 | 책임 |
+|------|------|------|
+| **설계·명세** | [`architect`](file:///apps/project_launch_bizs/.agents/skills/architect/SKILL.md) | API/화면/DB 명세 작성, 인터뷰 진행, 기술 의사결정 |
+| **풀스택 구현** | [`implementer`](file:///apps/project_launch_bizs/.agents/skills/implementer/SKILL.md) | specs 기반 React + Express + MongoDB 코드 작성 |
+| **품질 검증** | [`qa-reviewer`](file:///apps/project_launch_bizs/.agents/skills/qa-reviewer/SKILL.md) | 경계면 교차 비교, 빌드·린트·E2E 테스트, 코드 리뷰 |
+| **문서 동기화** | [`doc-syncer`](file:///apps/project_launch_bizs/.agents/skills/doc-syncer/SKILL.md) | 명세-코드 동기화, 결정 변경 이력 관리 |
 
 ---
 
