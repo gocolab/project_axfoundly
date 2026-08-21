@@ -36,8 +36,9 @@ interface IRPageProps {
   onLoginClick: () => void;
   onToggleBookmark: (id: string) => void;
   onSendProposal?: (proposal: InvestmentProposal) => void;
+  initialProjectId?: string | null;
+  onClearSelectedProject?: () => void;
 }
-
 
 export default function IRPage({
   projects,
@@ -46,9 +47,24 @@ export default function IRPage({
   onLoginClick,
   onToggleBookmark,
   onSendProposal,
+  initialProjectId,
+  onClearSelectedProject,
 }: IRPageProps) {
+  const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(() => {
+    if (initialProjectId) {
+      return projects.find((p) => p.id === initialProjectId) || null;
+    }
+    return null;
+  });
 
-  const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(null);
+  React.useEffect(() => {
+    if (initialProjectId) {
+      const match = projects.find((p) => p.id === initialProjectId);
+      if (match) {
+        setSelectedProject(match);
+      }
+    }
+  }, [initialProjectId, projects]);
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -138,6 +154,7 @@ export default function IRPage({
           onClick={() => {
             setSelectedProject(null);
             setProposalSent(false);
+            onClearSelectedProject?.();
           }}
           className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white mb-6 cursor-pointer transition-colors"
         >

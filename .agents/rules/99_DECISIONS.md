@@ -9,6 +9,7 @@
 
 | 날짜 | 문서 | 항목 | 이전 결정 | 새 결정 | 변경 이유 |
 |---|---|---|---|---|---|
+| 2026-08-21 | .agents/plugins/* | Ralph-Loop 플러그인 도입 | 수동 빌드/테스트 후 단발성 수정 | `.agents/plugins/ralph-loop/` 네이티브 플러그인 및 스킬 도입 (Antigravity 환경 맞춤 자율 루프) | Claude Code 전용 플러그인(`ralph-loop@claude-plugins-official`)의 기능을 Antigravity 환경에 맞게 네이티브 플러그인으로 전환 구현하여 자율 반복 개선 지원 |
 | 2026-08-20 | specs/*, docs/bizs/* | 핵심 누락 기능 완비 | AI 튜터/가상 IR/전자계약 미구현 상태 | 플로팅 AI 창업 튜터 위젯(`AITutorWidget`), 원클릭 자체 지원서(`JobApplicationModal`), 가상 IR 화상 피칭룸 & NDA 전자계약(`VirtualIRModal`), 멀티 게시판 생성 마법사(`AdminBoardCreateModal`) 통합 완료 | biz_flows.md 및 menus.md 비즈니스 지시서 상의 전 주기 올인원 파이프라인 완성 |
 | 2026-08-18 | docs/bizs/menus.md, specs/11_SCREEN_SPEC.md | UX 및 기능 명세 보완 | 기본 목록 및 정적 화면 구성 | 공통 검색/페이지네이션, AI 초벌 강의 개설 & 징검다리 달력 연동, 강사 상세 모달/인포그래픽, IR 구인 옵션/영상/실명설정, CRM 타깃 메시징 반영 | 사용자 요구에 따른 UX 고도화 및 실무 인터랙션 강화 |
 | 2026-08-11 | (전체) | 프로젝트 전환 | CCTV 출결 자동 관리 & 알림 시스템 | 「AI로 창업하라」 — 창업 교육~투자 유치 올인원 플랫폼 | 프로젝트 전면 변경. 기존 문서 세트 구조(AGENT_GUIDE 템플릿)는 유지하되 프로젝트별 내용 전체 교체. 업무 정의는 docs/bizs/biz_flows.md 참조 |

@@ -29,10 +29,33 @@ interface CoursePageProps {
   onEnroll: (courseId: string) => void;
   isLoggedIn: boolean;
   onLoginClick: () => void;
+  initialCourseId?: string | null;
+  onClearSelectedCourse?: () => void;
 }
 
-export default function CoursePage({ courses, onEnroll, isLoggedIn, onLoginClick }: CoursePageProps) {
-  const [selectedCourse, setSelectedCourse] = React.useState<Course | null>(null);
+export default function CoursePage({
+  courses,
+  onEnroll,
+  isLoggedIn,
+  onLoginClick,
+  initialCourseId,
+  onClearSelectedCourse,
+}: CoursePageProps) {
+  const [selectedCourse, setSelectedCourse] = React.useState<Course | null>(() => {
+    if (initialCourseId) {
+      return courses.find((c) => c.id === initialCourseId) || null;
+    }
+    return null;
+  });
+
+  React.useEffect(() => {
+    if (initialCourseId) {
+      const match = courses.find((c) => c.id === initialCourseId);
+      if (match) {
+        setSelectedCourse(match);
+      }
+    }
+  }, [initialCourseId, courses]);
   const [activeCategory, setActiveCategory] = React.useState<string>("전체");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -109,6 +132,7 @@ export default function CoursePage({ courses, onEnroll, isLoggedIn, onLoginClick
           onClick={() => {
             setSelectedCourse(null);
             setShowInstructorModal(false);
+            onClearSelectedCourse?.();
           }}
           className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white mb-6 cursor-pointer transition-colors"
         >

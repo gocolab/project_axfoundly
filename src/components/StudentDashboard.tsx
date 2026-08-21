@@ -30,6 +30,7 @@ interface StudentDashboardProps {
   notifications: Notification[];
   myProjects?: IRProject[];
   onViewCourse: (id: string) => void;
+  onViewIR?: (id: string) => void;
   onSaveProject?: (project: IRProject) => void;
   onRefundPayment?: (updatedPayment: PaymentRecord) => void;
   onUpdateTeamRequest?: (id: string, status: "수락" | "거절") => void;
@@ -42,6 +43,7 @@ export default function StudentDashboard({
   notifications,
   myProjects = [],
   onViewCourse,
+  onViewIR,
   onSaveProject,
   onRefundPayment,
   onUpdateTeamRequest,
@@ -313,15 +315,25 @@ export default function StudentDashboard({
                       <span className="text-[10px] text-brand-on-surface-variant">
                         {p.isAnonymous ? "🔒 스텔스 모드 적용됨" : "🌐 실명 모드"}
                       </span>
-                      <button
-                        onClick={() => {
-                          setEditingProject(p);
-                          setShowProjectModal(true);
-                        }}
-                        className="text-xs text-brand-primary hover:underline font-bold"
-                      >
-                        프로젝트 수정 →
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {onViewIR && (
+                          <button
+                            onClick={() => onViewIR(p.id)}
+                            className="text-xs text-brand-on-surface-variant hover:text-white transition-colors cursor-pointer inline-flex items-center gap-0.5"
+                          >
+                            <ExternalLink size={11} /> IR 보기
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setEditingProject(p);
+                            setShowProjectModal(true);
+                          }}
+                          className="text-xs text-brand-primary hover:underline font-bold"
+                        >
+                          수정 →
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

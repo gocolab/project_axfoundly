@@ -34,6 +34,7 @@ interface AdminDashboardProps {
   onChangeRole: (memberId: string, newRole: UserRole) => void;
   onApproveCourse: (courseId: string) => void;
   onRejectCourse: (courseId: string) => void;
+  onViewCourse?: (courseId: string) => void;
 }
 
 export default function AdminDashboard({
@@ -44,6 +45,7 @@ export default function AdminDashboard({
   onChangeRole,
   onApproveCourse,
   onRejectCourse,
+  onViewCourse,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm">("stats");
   const [memberSearch, setMemberSearch] = React.useState("");
@@ -311,7 +313,10 @@ export default function AdminDashboard({
                     >
                       <XCircle size={12} /> 반려
                     </button>
-                    <button className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-1.5 px-3 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                    <button
+                      onClick={() => onViewCourse && onViewCourse(course.id)}
+                      className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-1.5 px-3 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                    >
                       <Eye size={12} /> 상세
                     </button>
                   </div>

@@ -35,8 +35,11 @@ export default function App() {
   const [userName, setUserName] = React.useState("게스트");
   const [showAuthModal, setShowAuthModal] = React.useState(false);
 
-  // Navigation
+  // Navigation & Selection
   const [currentPage, setCurrentPage] = React.useState("home");
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
 
   // Data state
   const [courses, setCourses] = React.useState<Course[]>([]);
@@ -328,11 +331,18 @@ export default function App() {
   };
 
   const handleViewCourse = (courseId: string) => {
+    setSelectedCourseId(courseId);
     setCurrentPage("courses");
   };
 
   const handleViewIR = (projectId: string) => {
+    setSelectedProjectId(projectId);
     setCurrentPage("ir");
+  };
+
+  const handleViewPost = (postId: string) => {
+    setSelectedPostId(postId);
+    setCurrentPage("community");
   };
 
   // Pending courses for admin review
@@ -350,6 +360,7 @@ export default function App() {
             notifications={notifications}
             myProjects={irProjects.filter((p) => p.members?.some((m) => m.name === "김수강생"))}
             onViewCourse={handleViewCourse}
+            onViewIR={handleViewIR}
             onSaveProject={handleSaveProject}
             onRefundPayment={handleRefundPayment}
             onUpdateTeamRequest={handleUpdateTeamRequest}
@@ -362,6 +373,7 @@ export default function App() {
             settlements={settlements}
             onSaveCourse={handleSaveCourse}
             onSendCRMMessage={handleSendCRMMessage}
+            onViewCourse={handleViewCourse}
           />
         );
       case "investor":
@@ -394,6 +406,7 @@ export default function App() {
             onChangeRole={handleAdminChangeRole}
             onApproveCourse={handleApproveCourse}
             onRejectCourse={handleRejectCourse}
+            onViewCourse={handleViewCourse}
           />
         );
       default:
@@ -413,6 +426,7 @@ export default function App() {
             onNavigate={setCurrentPage}
             onViewCourse={handleViewCourse}
             onViewIR={handleViewIR}
+            onViewPost={handleViewPost}
             isLoggedIn={isLoggedIn}
             onLoginClick={() => setShowAuthModal(true)}
           />
@@ -424,6 +438,8 @@ export default function App() {
             onEnroll={handleEnroll}
             isLoggedIn={isLoggedIn}
             onLoginClick={() => setShowAuthModal(true)}
+            initialCourseId={selectedCourseId}
+            onClearSelectedCourse={() => setSelectedCourseId(null)}
           />
         );
       case "ir":
@@ -435,6 +451,8 @@ export default function App() {
             onLoginClick={() => setShowAuthModal(true)}
             onToggleBookmark={handleToggleBookmark}
             onSendProposal={handleSendProposal}
+            initialProjectId={selectedProjectId}
+            onClearSelectedProject={() => setSelectedProjectId(null)}
           />
         );
       case "community":
@@ -446,6 +464,8 @@ export default function App() {
             userRole={userRole}
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
+            initialPostId={selectedPostId}
+            onClearSelectedPost={() => setSelectedPostId(null)}
           />
         );
       case "dashboard":
@@ -479,6 +499,7 @@ export default function App() {
             onChangeRole={handleAdminChangeRole}
             onApproveCourse={handleApproveCourse}
             onRejectCourse={handleRejectCourse}
+            onViewCourse={handleViewCourse}
           />
         );
       default:

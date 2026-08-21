@@ -20,6 +20,7 @@ interface MainPageProps {
   onNavigate: (page: string) => void;
   onViewCourse: (id: string) => void;
   onViewIR: (id: string) => void;
+  onViewPost?: (id: string) => void;
   isLoggedIn: boolean;
   onLoginClick: () => void;
 }
@@ -31,6 +32,7 @@ export default function MainPage({
   onNavigate,
   onViewCourse,
   onViewIR,
+  onViewPost,
   isLoggedIn,
   onLoginClick,
 }: MainPageProps) {
@@ -257,7 +259,13 @@ export default function MainPage({
                 className={`flex items-center justify-between px-5 py-3.5 hover:bg-brand-surface-low transition-colors cursor-pointer ${
                   idx < notices.slice(0, 5).length - 1 ? "border-b border-brand-border/30" : ""
                 }`}
-                onClick={() => onNavigate("community")}
+                onClick={() => {
+                  if (onViewPost) {
+                    onViewPost(post.id);
+                  } else {
+                    onNavigate("community");
+                  }
+                }}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {post.isPinned && (

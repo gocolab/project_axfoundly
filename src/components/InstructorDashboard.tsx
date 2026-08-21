@@ -28,11 +28,11 @@ import type { Course, SettlementRecord, CurriculumItem, CourseSchedule, CRMMessa
 import { api } from "../lib/api";
 
 interface InstructorDashboardProps {
-
   myCourses: Course[];
   settlements: SettlementRecord[];
   onSaveCourse?: (course: Course) => void;
   onSendCRMMessage?: (msg: Omit<CRMMessage, "id" | "sentAt">) => void;
+  onViewCourse?: (courseId: string) => void;
 }
 
 export default function InstructorDashboard({
@@ -40,6 +40,7 @@ export default function InstructorDashboard({
   settlements,
   onSaveCourse,
   onSendCRMMessage,
+  onViewCourse,
 }: InstructorDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement">("courses");
   const [selectedCourseForCRM, setSelectedCourseForCRM] = React.useState<string>(myCourses[0]?.id || "c1");
@@ -402,6 +403,14 @@ export default function InstructorDashboard({
               </div>
 
               <div className="flex gap-2 flex-shrink-0 self-end md:self-center">
+                {onViewCourse && (
+                  <button
+                    onClick={() => onViewCourse(course.id)}
+                    className="text-xs bg-brand-surface-high text-white py-2 px-3 rounded-lg border border-brand-border/40 hover:bg-brand-surface-highest transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Eye size={12} /> 강의 보기
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     handleApplyDraft(course);

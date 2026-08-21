@@ -22,6 +22,8 @@ interface CommunityPageProps {
   userRole?: UserRole;
   userName?: string;
   onLoginClick: () => void;
+  initialPostId?: string | null;
+  onClearSelectedPost?: () => void;
 }
 
 export default function CommunityPage({
@@ -31,13 +33,29 @@ export default function CommunityPage({
   userRole = "student",
   userName = "김수강생",
   onLoginClick,
+  initialPostId,
+  onClearSelectedPost,
 }: CommunityPageProps) {
   const [activeBoard, setActiveBoard] = React.useState<BoardType | "전체">("전체");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
 
-  const [selectedPost, setSelectedPost] = React.useState<BoardPost | null>(null);
+  const [selectedPost, setSelectedPost] = React.useState<BoardPost | null>(() => {
+    if (initialPostId) {
+      return posts.find((p) => p.id === initialPostId) || null;
+    }
+    return null;
+  });
+
+  React.useEffect(() => {
+    if (initialPostId) {
+      const match = posts.find((p) => p.id === initialPostId);
+      if (match) {
+        setSelectedPost(match);
+      }
+    }
+  }, [initialPostId, posts]);
   const [showWriteModal, setShowWriteModal] = React.useState(false);
 
   const [newTitle, setNewTitle] = React.useState("");
@@ -228,7 +246,10 @@ export default function CommunityPage({
       {selectedPost && (
         <CommunityPostDetailModal
           post={selectedPost}
-          onClose={() => setSelectedPost(null)}
+          onClose={() => {
+            setSelectedPost(null);
+            onClearSelectedPost?.();
+          }}
           isLoggedIn={isLoggedIn}
           userRole={userRole}
           userName={userName}

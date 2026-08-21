@@ -37,6 +37,12 @@
 | [`qa-reviewer`](file:///apps/project_launch_bizs/.agents/skills/qa-reviewer/SKILL.md) | 🔍 품질 검증 전문가 | 경계면 교차 비교, 빌드·린트·E2E 테스트, 코드 리뷰 |
 | [`doc-syncer`](file:///apps/project_launch_bizs/.agents/skills/doc-syncer/SKILL.md) | 📝 문서 동기화 전문가 | 명세-코드 동기화, 결정 변경 이력 관리, drift 검사 |
 
+#### 플러그인 & 확장 스킬 (`.agents/plugins/`)
+
+| 플러그인 / 스킬 | 용도 |
+|---|---|
+| [`ralph-loop`](file:///apps/project_launch_bizs/.agents/plugins/ralph-loop/skills/ralph-loop/SKILL.md) | 자율 반복 개발 — 빌드/린트/테스트 통과 시까지 자율 반복 개선 루프 |
+
 #### 기반 스킬
 
 | 스킬 | 용도 |
@@ -101,6 +107,7 @@
 | 작업 | 먼저 읽을 문서 / 사용할 스킬 |
 |------|---------------------------|
 | 새 기능 전체 개발 (설계~검증) | `dev-orchestrator` 스킬 |
+| 자율 반복 수정 (빌드/테스트 통과까지) | `ralph-loop` 스킬 |
 | 설계·명세 작성 | `architect` 스킬 → `coding/*`, `specs/*` |
 | 코드 구현 | `implementer` 스킬 → `specs/*` |
 | 품질 검증·코드 리뷰 | `qa-reviewer` 스킬 |
