@@ -297,6 +297,11 @@ export default function App() {
     try {
       const res = await api.saveCourse(newCourse);
       setCourses((prev) => [res.course, ...prev]);
+      if (!userAssignedRoles.includes("course_instructor")) {
+        const nextRoles = [...userAssignedRoles, "course_instructor"];
+        setUserAssignedRoles(nextRoles);
+        localStorage.setItem("user_assigned_roles", JSON.stringify(nextRoles));
+      }
       refreshData();
       toast.success("강의 개설 성공", "강의가 성공적으로 개설/등록되었습니다.");
     } catch (error) {
@@ -361,6 +366,11 @@ export default function App() {
         }
         return [res.project, ...prev];
       });
+      if (!userAssignedRoles.includes("ir_owner")) {
+        const nextRoles = [...userAssignedRoles, "ir_owner"];
+        setUserAssignedRoles(nextRoles);
+        localStorage.setItem("user_assigned_roles", JSON.stringify(nextRoles));
+      }
       refreshData();
       toast.success("저장 완료", "스타트업 프로젝트가 성공적으로 저장되었습니다.");
     } catch (error) {
@@ -545,6 +555,7 @@ export default function App() {
             onLoginClick={() => setShowAuthModal(true)}
             onToggleBookmark={handleToggleBookmark}
             onSendProposal={handleSendProposal}
+            onSaveProject={handleSaveProject}
             initialProjectId={selectedProjectId}
             onClearSelectedProject={() => setSelectedProjectId(null)}
           />

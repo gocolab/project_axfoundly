@@ -24,14 +24,16 @@ description: |
 - **불필요하거나 중복된 명세는 제거**하고, 필요할 때만 참조한다.
 - 이 스킬과 `AGENTS.md`가 **목차 역할**을 수행하며, 세부 문서는 필요 시 참조한다.
 
-### 3. 품질 게이트 (자동화 검증 루프)
+### 3. 품질 게이트 (자동화 검증 루프 & Git 배포)
 
 코드 변경 후 아래 게이트를 **반드시** 통과해야 한다:
 
-- [ ] **빌드 통과**: `npm run build` 성공
+- [ ] **사전 동기화**: `git status` 점검 및 `git pull origin <branch>` 완료
+- [ ] **빌드 통과**: `npm run build` 성공 (TypeScript 컴파일 포함)
 - [ ] **린트 통과**: 린트 에러 0건
 - [ ] **테스트 통과**: 관련 테스트 스위트 성공
 - [ ] **문서 동기화**: 코드와 명세 문서 일치 확인
+- [ ] **Git 반영**: 품질 게이트 통과 후 Conventional Commits 기반 `git commit & push` 완료
 
 실패 시 에러 로그를 읽고 **스스로 코드를 수정(Self-correction)** 한다.
 
@@ -57,16 +59,21 @@ description: |
    - 프로젝트 전체 문서 맵과 에이전트 역할 정의의 진입점입니다.
 2. **에이전트 작업 지침**: [`.agents/rules/AGENT_GUIDE.md`](file:///apps/project_launch_bizs/.agents/rules/AGENT_GUIDE.md)
    - 인터뷰 절차·개발 시작 조건·문서 유지 규칙을 정의합니다.
-3. **업무 정의**: [`docs/bizs/biz_flows.md`](file:///apps/project_launch_bizs/docs/bizs/biz_flows.md)
+3. **협업 및 Git 규칙**: [`.agents/rules/coding/08_COLLABORATION.md`](file:///apps/project_launch_bizs/.agents/rules/coding/08_COLLABORATION.md)
+   - 브랜치 전략, 커밋 컨벤션, Git Pull/Push 프로세스를 정의합니다.
+4. **업무 정의**: [`docs/bizs/biz_flows.md`](file:///apps/project_launch_bizs/docs/bizs/biz_flows.md)
    - 플랫폼의 비즈니스 모델·기능 구성·개발 로드맵을 정의합니다.
 
 ## 워크플로우
 
-1. **작업 시작 전**: `.agents/AGENTS.md`를 읽어 문서 세트 구조와 현재 결정 상태를 파악한다.
+1. **작업 시작 전**:
+   - `.agents/AGENTS.md`를 읽어 문서 세트 구조와 현재 결정 상태를 파악한다.
+   - `git status` 확인 및 `git pull origin <branch>`를 통해 원격 최신 코드를 동기화한다.
 2. **설계 결정이 필요한 경우**: `.agents/rules/coding/` 폴더의 해당 문서에서 ✅/❓ 상태를 확인한다.
    - ❓ 미결정 항목이 있으면 **코드를 작성하지 않고** 사용자에게 질문한다.
 3. **기능 구현 전**: 해당 기능의 API 명세(`specs/10_API_SPEC.md`), 화면 설계(`specs/11_SCREEN_SPEC.md`)를 먼저 작성하고 사용자 확인을 받는다.
-4. **코드 작성 후**: 품질 게이트를 통과하고, 문서와 코드가 일치하는지 확인한다. 불일치 시 문서를 먼저 수정한다.
+4. **코드 작성 후**: 품질 게이트(빌드·린트·테스트)를 통과하고, 문서와 코드가 일치하는지 확인한다. 불일치 시 문서를 먼저 수정한다.
+5. **검증 완료 후**: Conventional Commits 규칙으로 커밋하고 원격 저장소에 `git push`를 수행하여 작업을 안전하게 저장 및 배포한다.
 
 ## 테스트 자동화
 

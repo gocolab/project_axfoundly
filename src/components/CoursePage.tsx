@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
+import CourseCreateEditModal from "./CourseCreateEditModal";
 
 interface CoursePageProps {
   courses: Course[];
@@ -1038,24 +1039,17 @@ export default function CoursePage({
         </div>
       )}
 
-      {/* 강의 생성 모달 — placeholder (실제 InstructorDashboard 모달 재사용) */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="font-display text-lg font-bold text-white mb-3">강의 개설/수정</h3>
-            <p className="text-xs text-brand-on-surface-variant mb-4">
-              강의 생성은 강사 대시보드에서 AI 초벌 생성기와 함께 진행할 수 있습니다.
-              마이페이지 → 강의 관리 메뉴를 이용해 주세요.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(false)}
-              className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 강의 개설 & AI 커리큘럼 생성 모달 */}
+      <CourseCreateEditModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        instructorName={userName || "김수강생"}
+        onSave={(newCourse) => {
+          if (onSaveCourse) {
+            onSaveCourse(newCourse);
+          }
+        }}
+      />
     </div>
   );
 }

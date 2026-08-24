@@ -27,6 +27,7 @@ import Pagination from "./common/Pagination";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
 import VirtualIRModal from "./VirtualIRModal";
+import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import { api } from "../lib/api";
 
 interface IRPageProps {
@@ -812,24 +813,16 @@ export default function IRPage({
         </div>
       )}
 
-      {/* 프로젝트 등록 모달 */}
-      {showCreateProjectModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="font-display text-lg font-bold text-white mb-3">스타트업 프로젝트 등록</h3>
-            <p className="text-xs text-brand-on-surface-variant mb-4">
-              프로젝트 등록은 마이페이지 → 프로젝트 & 팀 빌딩 메뉴에서 진행하거나,
-              수강생 대시보드에서 창업 프로젝트를 등록할 수 있습니다.
-            </p>
-            <button
-              onClick={() => setShowCreateProjectModal(false)}
-              className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 스타트업 IR 프로젝트 등록 모달 */}
+      <ProjectCreateEditModal
+        isOpen={showCreateProjectModal}
+        onClose={() => setShowCreateProjectModal(false)}
+        onSave={(newProject) => {
+          if (onSaveProject) {
+            onSaveProject(newProject);
+          }
+        }}
+      />
     </div>
   );
 }

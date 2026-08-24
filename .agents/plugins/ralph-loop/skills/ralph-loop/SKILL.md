@@ -21,12 +21,17 @@ description: |
 | `completion_promise` | "BUILD & LINT SUCCESS" | 루프 종료를 판단하는 성공 기준 |
 | `max_iterations` | 5 | 최대 반복 횟수 (최대 10 권장) |
 | `verify_command` | `npm run build && npm run lint` | 각 루프 끝에 실행할 검증 명령 |
+| `auto_git_push` | false | 검증 성공 시 자동 git commit & push 수행 여부 |
 
 ---
 
 ## 4단계 반복 사이클
 
 ```
+                ┌───────────────────────────────────┐
+                │  0. 사전 동기화 (git pull - 선택)  │
+                └─────────────────┬─────────────────┘
+                                  ▼
                 ┌───────────────────────────────────┐
                 │  1. 상태 진단 (Inspect & Verify)   │
                 └─────────────────┬─────────────────┘
@@ -46,15 +51,19 @@ description: |
                   [성공?] ────────┴──────── [실패?]
                      │                         │
                      ▼                         ▼
-                 [루프 종료]             (Iteration < Max)
-                                               │
-                                               ▼
-                                         [다음 루프로 회귀]
+            [Git Commit & Push]          (Iteration < Max)
+            (auto_git_push=true)               │
+                     │                         ▼
+                     ▼                   [다음 루프로 회귀]
+                 [루프 종료]
 ```
 
 ---
 
 ## 단계별 상세 가이드
+
+### 0단계: 사전 동기화 (Pre-sync)
+- 루프 시작 전 `git status` 확인 및 필요 시 `git pull origin <branch>`를 실행하여 최신 코드베이스 상태를 확보합니다.
 
 ### 1단계: 상태 진단 (Inspect & Verify)
 - 현재 코드베이스에서 지정된 검증 명령(`npm run build`, `npm run lint` 등)을 실행하여 현재 상태와 에러 목록을 파악합니다.
@@ -69,7 +78,9 @@ description: |
 
 ### 4단계: 검증 및 종료 판정 (Evaluate)
 - 검증 명령을 재실행합니다:
-  - **성공(모든 검증 통과)**: 완료 보고서 작성 후 루프를 성공적으로 종료합니다.
+  - **성공(모든 검증 통과)**: 
+    - `auto_git_push: true`이거나 사용자가 요청한 경우: Conventional Commits 형식으로 `git commit` 및 `git push origin <branch>`를 실행합니다.
+    - 완료 보고서 작성 후 루프를 성공적으로 종료합니다.
   - **실패(에러 잔존)**: 현재 반복 횟수가 `max_iterations` 미만이면 남은 에러를 가지고 2단계로 이동하여 다음 루프를 시작합니다.
   - **최대 횟수 도달**: 루프를 중단하고 현재까지의 진행 상황 및 잔여 에러를 요약하여 사용자에게 보고합니다.
 
@@ -80,5 +91,5 @@ description: |
 ### 1. 일반 대화형 호출
 > "현재 빌드 및 린트 오류가 모두 해결될 때까지 ralph-loop로 5회 내에서 반복 수정해줘."
 
-### 2. Antigravity `/goal` 연계 사용
-> `/goal ralph-loop 방식으로 src/ 및 server/의 타입 에러와 빌드 에러를 모두 잡고 완료 보고해줘`
+### 2. Antigravity `/goal` 연계 사용 (성공 시 자동 푸시 포함)
+> `/goal ralph-loop 방식으로 src/ 및 server/의 타입 에러와 빌드 에러를 모두 잡고 검증 완료 시 git push까지 진행해줘`

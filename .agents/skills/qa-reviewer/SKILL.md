@@ -83,7 +83,7 @@ E2E 테스트 실행이 필요하면 [`e2e-testing`](file:///apps/project_launch
 npm run test:e2e       # Playwright E2E 테스트 실행
 ```
 
-### 5. 검증 보고
+### 5. 검증 보고 및 Git 승인 판정
 
 발견된 문제를 다음 형식으로 보고한다:
 
@@ -99,11 +99,12 @@ npm run test:e2e       # Playwright E2E 테스트 실행
 ### 🟢 Info (참고)
 - 개선 가능한 부분
 
-### ✅ 통과
-- 빌드: ✅/❌
-- 린트: ✅/❌
-- 경계면: ✅/❌
-- E2E: ✅/❌/⏭️(미실행)
+### ✅ 품질 게이트 통과 현황
+- 빌드 (`npm run build`): ✅/❌
+- 린트/타입 (`npx tsc --noEmit`): ✅/❌
+- 경계면 일관성: ✅/❌
+- E2E 테스트: ✅/❌/⏭️(미실행)
+- **Git 커밋/푸시 승인 (Ready for Commit & Push)**: ✅ 승인 / ❌ 불가 (수정 필요)
 ```
 
 ## 에러 핸들링
@@ -117,3 +118,4 @@ npm run test:e2e       # Playwright E2E 테스트 실행
 - **implementer로부터**: 구현 완료 알림을 받으면 검증을 시작한다
 - **architect에게**: 명세와 코드 간 구조적 불일치가 발견되면 명세 수정을 요청한다
 - **doc-syncer에게**: 코드 수정으로 인해 문서 갱신이 필요한 경우를 전달한다
+- **오케스트레이터에게**: 모든 품질 게이트 통과 시 최종 `git commit & push` 진행 승인을 전달한다

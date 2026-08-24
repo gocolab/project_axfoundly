@@ -60,13 +60,17 @@
 ```
 [사용자 요청] → dev-orchestrator
                     │
+    Phase 0: [사전 동기화]    → git pull 및 작업 트리 확인
+                    │
     Phase 1: [architect]      → 명세 작성 (API/화면/DB)
                     │
     Phase 2: [implementer]    → 코드 구현 (React + Express)
                     │
-    Phase 3: [qa-reviewer]    → 품질 검증 (경계면 + 빌드)
+    Phase 3: [qa-reviewer]    → 품질 검증 (경계면 + 빌드 + 린트)
                     │
     Phase 4: [doc-syncer]     → 문서 동기화
+                    │
+    Phase 5: [Git 반영]       → git commit & push (품질 게이트 통과 시)
                     │
                 [완료 보고]
 ```
@@ -79,6 +83,7 @@
 | **implementer** | specs 기반 풀스택 코드 작성, 빌드 검증 | `specs/*`, `coding/*`, `src/`, `server/` |
 | **qa-reviewer** | 경계면 교차 비교, 빌드·린트·E2E 실행, 코드 리뷰 | `e2e-testing` 스킬, `coding/07_TEST.md` |
 | **doc-syncer** | 코드 변경 후 명세·문서 최신화, 결정 이력 관리 | `specs/*`, `99_DECISIONS.md` |
+| **Git 동기화** | 작업 전 `git pull`, 품질 게이트 통과 후 `git commit & push` | `coding/08_COLLABORATION.md` |
 
 ---
 
@@ -94,11 +99,13 @@
 
 코드 변경 시 아래 게이트를 **반드시** 통과해야 합니다:
 
-- [ ] `npm run build` — 빌드 성공
+- [ ] 작업 착수 전 `git pull` 완료 (최신 원격 동기화)
+- [ ] `npm run build` — 빌드 성공 (TypeScript 컴파일 포함)
 - [ ] 린트 에러 0건
 - [ ] 관련 테스트 스위트 통과
 - [ ] 코드와 명세 문서 일치 확인
 - [ ] 결정 변경 시 `99_DECISIONS.md` 업데이트
+- [ ] 작업 완료 및 검증 통과 후 `git commit & push` 완료 (안전 커밋/푸시)
 
 ---
 
