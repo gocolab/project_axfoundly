@@ -112,18 +112,25 @@ export default function App() {
     }
   }, []);
 
+  const authProcessedRef = React.useRef(false);
+
   React.useEffect(() => {
     refreshData();
     
-    // URL에서 token과 role 읽기 (OAuth 콜백 처리)
+    // URL에서 token과 role 읽기 (OAuth 콜백 처리 - 중복 실행 방지)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     const error = urlParams.get("error");
     
-    if (error) {
-      toast.error("로그인 실패", `오류 코드: ${error}`);
+    if (error && !authProcessedRef.current) {
+      authProcessedRef.current = true;
       window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (token) {
+      toast.error("로그인 실패", `오류 코드: ${error}`);
+    } else if (token && !authProcessedRef.current) {
+      authProcessedRef.current = true;
+      // 즉시 URL 쿼리 파라미터를 제거하여 중복 호출 방지
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
       api.getMe(token).then(res => {
         if (res.user) {
           setIsLoggedIn(true);
@@ -131,7 +138,6 @@ export default function App() {
           setUserRole(res.user.role);
           setUserAssignedRoles(res.user.assignedRoles || []);
           toast.success("로그인 성공", `${res.user.name}님 환영합니다!`);
-          window.history.replaceState({}, document.title, window.location.pathname);
         }
       }).catch(err => {
         console.error("Token verification failed:", err);

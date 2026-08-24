@@ -35,11 +35,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = React.useCallback(
     ({ type, title, message, duration = 3500 }: Omit<Toast, "id">) => {
-      const id = `toast-${Date.now()}-${Math.random()}`;
-      setToasts((prev) => [...prev.slice(-4), { id, type, title, message, duration }]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, duration);
+      setToasts((prev) => {
+        // 동일한 알림 중복 방지 (이미 표시 중인 토스트와 타입, 제목, 메시지가 동일한 경우 무시)
+        const isDuplicate = prev.some(
+          (t) => t.type === type && t.title === title && t.message === message
+        );
+        if (isDuplicate) return prev;
+
+        const id = `toast-${Date.now()}-${Math.random()}`;
+        setTimeout(() => {
+          setToasts((current) => current.filter((t) => t.id !== id));
+        }, duration);
+
+        return [...prev.slice(-4), { id, type, title, message, duration }];
+      });
     },
     []
   );
@@ -61,8 +70,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   );
 
+  const contextValue = React.useMemo(
+    () => ({ toasts, showToast, removeToast, success, error, warning, info }),
+    [toasts, showToast, removeToast, success, error, warning, info]
+  );
+
   return (
-    <ToastContext.Provider value={{ toasts, showToast, removeToast, success, error, warning, info }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>
