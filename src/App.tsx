@@ -9,7 +9,9 @@ import StudentDashboard from "./components/StudentDashboard";
 import InstructorDashboard from "./components/InstructorDashboard";
 import InvestorDashboard from "./components/InvestorDashboard";
 import AdminDashboard from "./components/AdminDashboard";
+import ProfilePage from "./components/ProfilePage";
 import AITutorWidget from "./components/common/AITutorWidget";
+import { ToastProvider } from "./components/common/Toast";
 import { api } from "./lib/api";
 import type {
   UserRole,
@@ -437,7 +439,9 @@ export default function App() {
             courses={courses}
             onEnroll={handleEnroll}
             isLoggedIn={isLoggedIn}
+            userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
+            onSaveCourse={handleSaveCourse}
             initialCourseId={selectedCourseId}
             onClearSelectedCourse={() => setSelectedCourseId(null)}
           />
@@ -448,6 +452,7 @@ export default function App() {
             projects={irProjects}
             userRole={userRole}
             isLoggedIn={isLoggedIn}
+            userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
             onToggleBookmark={handleToggleBookmark}
             onSendProposal={handleSendProposal}
@@ -502,39 +507,51 @@ export default function App() {
             onViewCourse={handleViewCourse}
           />
         );
+      case "profile":
+        return (
+          <ProfilePage
+            isLoggedIn={isLoggedIn}
+            userName={userName}
+            userRole={userRole}
+            onNavigate={setCurrentPage}
+            onLoginClick={() => setShowAuthModal(true)}
+          />
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-on-surface font-sans selection:bg-brand-primary-container selection:text-white">
-      <GNB
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        isLoggedIn={isLoggedIn}
-        userRole={userRole}
-        userName={userName}
-        onLoginClick={() => setShowAuthModal(true)}
-        onLogout={handleLogout}
-        notifications={notifications}
-        onMarkNotificationRead={handleMarkNotificationRead}
-      />
+    <ToastProvider>
+      <div className="min-h-screen bg-brand-bg text-brand-on-surface font-sans selection:bg-brand-primary-container selection:text-white">
+        <GNB
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          isLoggedIn={isLoggedIn}
+          userRole={userRole}
+          userName={userName}
+          onLoginClick={() => setShowAuthModal(true)}
+          onLogout={handleLogout}
+          notifications={notifications}
+          onMarkNotificationRead={handleMarkNotificationRead}
+        />
 
-      <main className="pb-16">{renderPage()}</main>
+        <main className="pb-16">{renderPage()}</main>
 
-      <AITutorWidget
-        currentPage={currentPage}
-        onNavigate={(page) => setCurrentPage(page)}
-      />
+        <AITutorWidget
+          currentPage={currentPage}
+          onNavigate={(page) => setCurrentPage(page)}
+        />
 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onLogin={handleLogin}
-        onGoogleLogin={handleGoogleLogin}
-        onSignup={handleSignup}
-      />
-    </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={handleLogin}
+          onGoogleLogin={handleGoogleLogin}
+          onSignup={handleSignup}
+        />
+      </div>
+    </ToastProvider>
   );
 }

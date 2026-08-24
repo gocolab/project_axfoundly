@@ -5,13 +5,35 @@
 // ── User / Auth ──
 export type UserRole = "student" | "instructor" | "investor" | "admin";
 
+/** 권한 계층: admin(관리자) > manager(강사·투자자) > member(수강생) */
+export type UserPermission = "admin" | "manager" | "member";
+
+/** UserRole → UserPermission 매핑 헬퍼 */
+export const roleToPermission = (role: UserRole): UserPermission => {
+  if (role === "admin") return "admin";
+  if (role === "instructor" || role === "investor") return "manager";
+  return "member";
+};
+
+/** 권한이 최소 요구 수준을 충족하는지 확인 */
+export const hasPermission = (role: UserRole, required: UserPermission): boolean => {
+  const order: UserPermission[] = ["member", "manager", "admin"];
+  const userLevel = order.indexOf(roleToPermission(role));
+  const requiredLevel = order.indexOf(required);
+  return userLevel >= requiredLevel;
+};
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  permission: UserPermission;
   avatar: string;
   joinDate: string;
+  bio?: string;
+  /** 업무 부여: 해당 페이지에 기록 여부로 자동 추가 */
+  assignedRoles?: ("course_instructor" | "ir_owner" | "investor_active")[];
 }
 
 // ── Course Schedule & Curriculum ──

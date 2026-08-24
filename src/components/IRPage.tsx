@@ -33,9 +33,11 @@ interface IRPageProps {
   projects: IRProject[];
   userRole: UserRole;
   isLoggedIn: boolean;
+  userName?: string;
   onLoginClick: () => void;
   onToggleBookmark: (id: string) => void;
   onSendProposal?: (proposal: InvestmentProposal) => void;
+  onSaveProject?: (project: IRProject) => void;
   initialProjectId?: string | null;
   onClearSelectedProject?: () => void;
 }
@@ -44,9 +46,11 @@ export default function IRPage({
   projects,
   userRole,
   isLoggedIn,
+  userName,
   onLoginClick,
   onToggleBookmark,
   onSendProposal,
+  onSaveProject,
   initialProjectId,
   onClearSelectedProject,
 }: IRPageProps) {
@@ -84,6 +88,7 @@ export default function IRPage({
   const [showApplyModal, setShowApplyModal] = React.useState(false);
   const [showVirtualIRModal, setShowVirtualIRModal] = React.useState(false);
   const [applicantNote, setApplicantNote] = React.useState("");
+  const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
 
   const fields = ["전체", "AI/ML", "핀테크", "헬스케어", "에듀테크", "커머스", "SaaS"];
 
@@ -647,31 +652,57 @@ export default function IRPage({
 
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex gap-2 flex-wrap">
-          {fields.map((f) => (
+      <div className="flex flex-col gap-3 mb-6">
+        {/* Row 1: 분야 필터 + 등록 버튼 */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {fields.map((f) => (
+              <button
+                key={f}
+                onClick={() => setActiveField(f)}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                  activeField === f
+                    ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
+                    : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          {/* 프로젝트 등록 버튼 — 로그인 회원 누구나 */}
+          {isLoggedIn && (
             <button
-              key={f}
-              onClick={() => setActiveField(f)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                activeField === f
-                  ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
-                  : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
-              }`}
+              onClick={() => setShowCreateProjectModal(true)}
+              className="text-xs font-semibold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
             >
-              {f}
+              <span className="text-base leading-none">+</span> 프로젝트 등록
             </button>
-          ))}
+          )}
         </div>
-        <div className="relative sm:ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-          <input
-            type="text"
-            placeholder="스타트업명, 아이템 검색..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full sm:w-64"
-          />
+        {/* Row 2: 검색창 + Pagination */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <input
+              type="text"
+              placeholder="스타트업명, 아이템 검색..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+            />
+          </div>
+          {totalPages > 1 && (
+            <div className="ml-auto">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filtered.length}
+                itemsPerPage={itemsPerPage}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -685,8 +716,8 @@ export default function IRPage({
             onClick={() => setSelectedProject(project)}
           >
             <div>
-              {/* Thumbnail Header */}
-              <div className="h-32 relative overflow-hidden">
+              {/* Thumbnail Header — 한 줄 인라인 표시 */}
+              <div className="h-14 relative overflow-hidden">
                 <div
                   className={`w-full h-full bg-gradient-to-br ${
                     idx % 5 === 0
@@ -698,25 +729,25 @@ export default function IRPage({
                       : idx % 5 === 3
                       ? "from-violet-600 to-purple-950"
                       : "from-rose-600 to-pink-950"
-                  } flex items-center justify-center`}
+                  } flex items-center justify-between px-3`}
                 >
-                  <span className="text-4xl opacity-20">🚀</span>
-                </div>
-                <div className="absolute top-3 left-3 flex gap-1.5">
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-brand-surface-high/90 text-brand-on-surface-variant">
-                    {project.field}
-                  </span>
-                  {project.demoVideoUrl && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-primary-container/80 text-white flex items-center gap-0.5">
-                      <Play size={8} /> 영상
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/10 text-white">
+                      {project.field}
                     </span>
-                  )}
+                    {project.demoVideoUrl && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-primary-container/80 text-white flex items-center gap-0.5">
+                        <Play size={8} /> 영상
+                      </span>
+                    )}
+                    {project.isHiring && (
+                      <span className="badge-recruiting text-[9px] font-bold px-2 py-0.5 rounded shadow">
+                        채용중
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-2xl opacity-15">🚀</span>
                 </div>
-                {project.isHiring && (
-                  <span className="absolute top-3 right-3 badge-recruiting text-[9px] font-bold px-2 py-0.5 rounded shadow">
-                    채용중
-                  </span>
-                )}
               </div>
 
               <div className="p-4">
@@ -763,14 +794,24 @@ export default function IRPage({
         </div>
       )}
 
-      {/* Pagination Component */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        totalItems={filtered.length}
-        itemsPerPage={itemsPerPage}
-      />
+      {/* 프로젝트 등록 모달 */}
+      {showCreateProjectModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="font-display text-lg font-bold text-white mb-3">스타트업 프로젝트 등록</h3>
+            <p className="text-xs text-brand-on-surface-variant mb-4">
+              프로젝트 등록은 마이페이지 → 프로젝트 & 팀 빌딩 메뉴에서 진행하거나,
+              수강생 대시보드에서 창업 프로젝트를 등록할 수 있습니다.
+            </p>
+            <button
+              onClick={() => setShowCreateProjectModal(false)}
+              className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

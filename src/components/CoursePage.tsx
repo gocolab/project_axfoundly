@@ -28,7 +28,10 @@ interface CoursePageProps {
   courses: Course[];
   onEnroll: (courseId: string) => void;
   isLoggedIn: boolean;
+  userRole?: import("../types").UserRole;
+  userName?: string;
   onLoginClick: () => void;
+  onSaveCourse?: (course: Course) => void;
   initialCourseId?: string | null;
   onClearSelectedCourse?: () => void;
 }
@@ -37,7 +40,9 @@ export default function CoursePage({
   courses,
   onEnroll,
   isLoggedIn,
+  userName,
   onLoginClick,
+  onSaveCourse,
   initialCourseId,
   onClearSelectedCourse,
 }: CoursePageProps) {
@@ -61,9 +66,9 @@ export default function CoursePage({
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
 
-  // Modals & States in Detail View
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [showInstructorModal, setShowInstructorModal] = React.useState(false);
+  const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = React.useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = React.useState<Date>(new Date(2025, 8, 1)); // Sep 2025
 
@@ -824,32 +829,59 @@ export default function CoursePage({
         </p>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex gap-2 flex-wrap">
-          {categories.map((cat) => (
+      {/* Filter & Search Bar — with Pagination on right */}
+      <div className="flex flex-col gap-3 mb-6">
+        {/* Row 1: 카테고리 필터 + 생성 버튼 */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                  activeCategory === cat
+                    ? "bg-brand-primary-container/20 border-brand-primary-container/40 text-brand-primary font-bold shadow-sm"
+                    : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          {/* 강의 생성 버튼 — 로그인 회원 누구나 */}
+          {isLoggedIn && (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                activeCategory === cat
-                  ? "bg-brand-primary-container/20 border-brand-primary-container/40 text-brand-primary font-bold shadow-sm"
-                  : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
-              }`}
+              onClick={() => setShowCreateModal(true)}
+              className="text-xs font-semibold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
             >
-              {cat}
+              <span className="text-base leading-none">+</span> 강의 생성
             </button>
-          ))}
+          )}
         </div>
-        <div className="relative sm:ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-          <input
-            type="text"
-            placeholder="강의명, 강사명 검색..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full sm:w-64"
-          />
+        {/* Row 2: 검색창 + Pagination */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <input
+              type="text"
+              placeholder="강의명, 강사명 검색..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full"
+            />
+          </div>
+          {/* Pagination — 검색창 우측 */}
+          {totalPages > 1 && (
+            <div className="ml-auto">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filtered.length}
+                itemsPerPage={itemsPerPage}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -867,8 +899,8 @@ export default function CoursePage({
             >
 
               <div>
-                {/* Thumbnail Header */}
-                <div className="h-36 relative overflow-hidden">
+                {/* Thumbnail Header — 한 줄 인라인 표시 */}
+                <div className="h-14 relative overflow-hidden">
                   <div
                     className={`w-full h-full bg-gradient-to-br ${
                       idx % 4 === 0
@@ -970,14 +1002,24 @@ export default function CoursePage({
         </div>
       )}
 
-      {/* Pagination Component */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        totalItems={filtered.length}
-        itemsPerPage={itemsPerPage}
-      />
+      {/* 강의 생성 모달 — placeholder (실제 InstructorDashboard 모달 재사용) */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="font-display text-lg font-bold text-white mb-3">강의 개설/수정</h3>
+            <p className="text-xs text-brand-on-surface-variant mb-4">
+              강의 생성은 강사 대시보드에서 AI 초벌 생성기와 함께 진행할 수 있습니다.
+              마이페이지 → 강의 관리 메뉴를 이용해 주세요.
+            </p>
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -47,7 +47,7 @@ export default function AdminDashboard({
   onRejectCourse,
   onViewCourse,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm">("stats");
+  const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm" | "payments">("stats");
   const [memberSearch, setMemberSearch] = React.useState("");
   const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);
   const [showCreateBoardModal, setShowCreateBoardModal] = React.useState(false);
@@ -70,11 +70,12 @@ export default function AdminDashboard({
   };
 
   const tabs = [
-    { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={14} /> },
-    { id: "members" as const, label: "회원 관리", icon: <Users size={14} /> },
-    { id: "courses" as const, label: "강의 검수 & 승인", icon: <BookOpen size={14} /> },
-    { id: "boards" as const, label: "게시판 관리", icon: <MessageSquare size={14} /> },
-    { id: "crm" as const, label: "알림/마케팅 CRM", icon: <Bell size={14} /> },
+    { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={16} /> },
+    { id: "members" as const, label: "회원 관리", icon: <Users size={16} /> },
+    { id: "courses" as const, label: "강의 검수 & 승인", icon: <BookOpen size={16} /> },
+    { id: "boards" as const, label: "게시판 관리", icon: <MessageSquare size={16} /> },
+    { id: "payments" as const, label: "결제 관리", icon: <DollarSign size={16} /> },
+    { id: "crm" as const, label: "알림/마케팅 CRM", icon: <Bell size={16} /> },
   ];
 
 
@@ -96,6 +97,7 @@ export default function AdminDashboard({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-accent-rose to-brand-accent-orange flex items-center justify-center">
           <Shield size={20} className="text-white" />
@@ -106,25 +108,30 @@ export default function AdminDashboard({
         </div>
       </div>
 
+      {/* 좌측 사이드바 + 콘텐츠 */}
+      <div className="flex gap-5">
+        {/* ── 좌측 사이드바 메뉴 ── */}
+        <aside className="w-52 flex-shrink-0">
+          <nav className="flex flex-col gap-1 sticky top-20">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer text-left ${
+                  activeTab === tab.id
+                    ? "bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30 shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high border border-transparent"
+                }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-brand-border/30 pb-px overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === tab.id
-                ? "text-brand-primary tab-active"
-                : "text-brand-on-surface-variant hover:text-white"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+        {/* ── 우측 콘텐츠 영역 ── */}
+        <div className="flex-1 min-w-0">
       {/* ── 통계 홈 ── */}
       {activeTab === "stats" && (
         <div className="flex flex-col gap-6 animate-fadeIn">
@@ -440,70 +447,136 @@ export default function AdminDashboard({
           </div>
         </div>
       )}
-
-      {/* Create Board Modal */}
-      <AdminBoardCreateModal
-        isOpen={showCreateBoardModal}
-        onClose={() => setShowCreateBoardModal(false)}
-        onSuccess={(newBoard) => {
-          setLocalBoards((prev) => [...prev, newBoard]);
-          alert(`"${newBoard.name}" 게시판이 생성되었습니다!`);
-        }}
-      />
-
-      {/* Broadcast Modal */}
-      {showBroadcastModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="font-display text-lg font-bold text-white mb-4">공지 일괄 발송</h3>
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">발송 대상</label>
-                <select className="w-full text-xs bg-brand-surface-low border border-brand-border rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer">
-                  <option>전체 회원</option>
-                  <option>수강생</option>
-                  <option>강사</option>
-                  <option>투자자</option>
-                </select>
+          {/* 결제 관리 탭 */}
+          {activeTab === "payments" && (
+            <div className="flex flex-col gap-4 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <DollarSign size={14} className="text-brand-tertiary" />
+                  결제 관리
+                </h2>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">발송 채널</label>
-                <div className="flex gap-3">
-                  <label className="flex items-center gap-1.5 text-xs text-brand-on-surface-variant cursor-pointer">
-                    <input type="checkbox" defaultChecked className="rounded" /> 이메일
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-brand-on-surface-variant cursor-pointer">
-                    <input type="checkbox" className="rounded" /> 알림톡
-                  </label>
+
+              {/* Kakao Pay 연동 상태 */}
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#FFCD00] flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-bold text-[#3A1D1D]">Pay</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-white">카카오페이 테스트 연동
+                    <span className="ml-2 text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/30">연동됨</span>
+                  </p>
+                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5">CID: TC0ONETIME (테스트 일회성 카드결제)</p>
                 </div>
               </div>
-              <input
-                type="text"
-                placeholder="제목"
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2.5 px-4 text-sm text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors"
-              />
-              <textarea
-                placeholder="메시지 내용..."
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors h-28 resize-none"
-              />
-              <div className="flex gap-2 mt-1">
-                <button
-                  onClick={() => setShowBroadcastModal(false)}
-                  className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-sm"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={() => { setShowBroadcastModal(false); alert("공지가 발송되었습니다!"); }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
-                >
-                  발송
-                </button>
+
+              {/* 모의 결제 내역 */}
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
+                <div className="grid grid-cols-7 gap-2 px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
+                  <span>주문번호</span>
+                  <span className="col-span-2">강의명</span>
+                  <span>결제자</span>
+                  <span>결제일</span>
+                  <span>금액</span>
+                  <span className="text-right">기능</span>
+                </div>
+                {[
+                  { id: "pay-1", course: "AI 프덤트 매니저", user: "김수강생", date: "2025-08-10", amount: 590000, status: "완료" },
+                  { id: "pay-2", course: "비즈니스 모델 설계", user: "이성수", date: "2025-08-09", amount: 490000, status: "완료" },
+                  { id: "pay-3", course: "그로스 해킹", user: "박시운", date: "2025-08-07", amount: 390000, status: "환불" },
+                ].map((p) => (
+                  <div key={p.id} className="grid grid-cols-7 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors">
+                    <span className="text-[10px] font-mono text-brand-on-surface-variant">{p.id}</span>
+                    <span className="col-span-2 text-xs text-white truncate">{p.course}</span>
+                    <span className="text-[10px] text-brand-on-surface-variant">{p.user}</span>
+                    <span className="text-[10px] text-brand-on-surface-variant">{p.date}</span>
+                    <span className="text-[10px] font-semibold text-white">₩{p.amount.toLocaleString()}</span>
+                    <div className="flex items-center justify-end gap-1">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                        p.status === "완료" ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"
+                      }`}>{p.status}</span>
+                      {p.status === "완료" && (
+                        <button
+                          onClick={() => { if(window.confirm(`결제 ${p.id}를 취소하시겠습니까?`)) {
+                            alert(`${p.id} 결제가 취소되었습니다.`);
+                          }}}
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer border border-red-500/20"
+                        >
+                          취소
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          {/* Create Board Modal */}
+          <AdminBoardCreateModal
+            isOpen={showCreateBoardModal}
+            onClose={() => setShowCreateBoardModal(false)}
+            onSuccess={(newBoard) => {
+              setLocalBoards((prev) => [...prev, newBoard]);
+              alert(`"${newBoard.name}" 게시판이 생성되었습니다!`);
+            }}
+          />
+
+          {/* Broadcast Modal */}
+          {showBroadcastModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+              <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                <h3 className="font-display text-lg font-bold text-white mb-4">공지 일괄 발송</h3>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">발송 대상</label>
+                    <select className="w-full text-xs bg-brand-surface-low border border-brand-border rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer">
+                      <option>전체 회원</option>
+                      <option>수강생</option>
+                      <option>강사</option>
+                      <option>투자자</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">발송 야널</label>
+                    <div className="flex gap-3">
+                      <label className="flex items-center gap-1.5 text-xs text-brand-on-surface-variant cursor-pointer">
+                        <input type="checkbox" defaultChecked className="rounded" /> 이메일
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-brand-on-surface-variant cursor-pointer">
+                        <input type="checkbox" className="rounded" /> 알림톡
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="제목"
+                    className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2.5 px-4 text-sm text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors"
+                  />
+                  <textarea
+                    placeholder="메시지 내용..."
+                    className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors h-28 resize-none"
+                  />
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => setShowBroadcastModal(false)}
+                      className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-sm"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={() => { setShowBroadcastModal(false); alert("공지가 발송되었습니다!"); }}
+                      className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
+                    >
+                      발송
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>{/* end content area */}
+      </div>{/* end flex sidebar+content */}
     </div>
   );
 }

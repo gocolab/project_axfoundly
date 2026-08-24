@@ -42,62 +42,69 @@ export default function MainPage({
     <div className="flex flex-col gap-0">
       {/* ── Hero Banner ── */}
       <section className="hero-gradient relative overflow-hidden rounded-2xl mx-4 sm:mx-6 mt-4 mb-8">
-        {/* Decorative dots */}
-        <div className="absolute top-6 right-8 w-32 h-32 rounded-full bg-brand-primary-container/10 blur-3xl" />
-        <div className="absolute bottom-4 left-12 w-24 h-24 rounded-full bg-brand-tertiary/8 blur-2xl" />
+        {/* Decorative orbs */}
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-brand-primary-container/10 blur-3xl translate-x-1/2 -translate-y-1/4" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-brand-tertiary/8 blur-2xl -translate-x-1/4 translate-y-1/4" />
+        <div className="absolute top-1/2 left-1/2 w-32 h-32 rounded-full bg-brand-secondary/6 blur-2xl -translate-x-1/2 -translate-y-1/2" />
 
-        <div className="relative z-10 px-6 sm:px-10 py-12 sm:py-16 max-w-3xl">
-          <div className="inline-flex items-center gap-1.5 bg-brand-primary-container/20 border border-brand-primary-container/30 rounded-full px-3 py-1 mb-4">
-            <Sparkles size={12} className="text-brand-primary" />
-            <span className="text-[11px] font-semibold text-brand-primary">AI 시대의 새로운 창업 여정</span>
+        <div className="relative z-10 px-6 sm:px-12 py-10 sm:py-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
+          <div className="max-w-2xl">
+            {/* 줄 1: 배지 라벨 */}
+            <div className="inline-flex items-center gap-1.5 bg-brand-primary-container/20 border border-brand-primary-container/30 rounded-full px-3 py-1 mb-3">
+              <Sparkles size={12} className="text-brand-primary" />
+              <span className="text-[11px] font-semibold text-brand-primary">AI 시대의 새로운 창업 플랫폼</span>
+            </div>
+
+            {/* 줄 2: 메인 타이틀 */}
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
+              AI로{" "}
+              <span className="bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-tertiary bg-clip-text text-transparent">
+                창업의 모든 것
+              </span>
+              을 한 곳에서
+            </h1>
+
+            {/* 줄 3: 서브카피 + CTA 버튼 */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-5">
+              <p className="text-sm text-brand-on-surface-variant leading-relaxed">
+                교육·팀빌딩·투자 유치까지 — 당신의 창업을 완성합니다
+              </p>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => onNavigate("courses")}
+                  className="bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Play size={14} />
+                  강의 보기
+                </button>
+                {!isLoggedIn && (
+                  <button
+                    onClick={onLoginClick}
+                    className="border border-brand-border text-white px-5 py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-sm flex items-center gap-2 whitespace-nowrap"
+                  >
+                    무료 가입
+                    <ArrowRight size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
-            AI로 창업의 모든 것을<br />
-            <span className="bg-gradient-to-r from-brand-primary to-brand-tertiary bg-clip-text text-transparent">
-              한 곳에서
-            </span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-brand-on-surface-variant mt-4 max-w-lg leading-relaxed">
-            AI 기반 창업 교육부터 팀 빌딩, 투자 유치까지.
-            당신의 아이디어를 현실로 만드는 올인원 플랫폼입니다.
-          </p>
-
-          <div className="flex flex-wrap gap-3 mt-6">
-            <button
-              onClick={() => onNavigate("courses")}
-              className="bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm flex items-center gap-2"
-            >
-              <Play size={14} />
-              강의 둘러보기
-            </button>
-            {!isLoggedIn && (
-              <button
-                onClick={onLoginClick}
-                className="border border-brand-border text-white px-5 py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-sm flex items-center gap-2"
-              >
-                무료 가입하기
-                <ArrowRight size={14} />
-              </button>
-            )}
-          </div>
-
-          {/* Quick stats */}
-          <div className="flex gap-6 mt-8 text-center">
-            <div>
-              <p className="text-2xl font-bold text-white font-display">2,400+</p>
+          {/* Quick stats — 우측 */}
+          <div className="flex sm:flex-col gap-4 sm:gap-3 sm:items-end">
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white font-display leading-none">2,400+</p>
               <p className="text-[10px] text-brand-on-surface-variant mt-0.5">수강생</p>
             </div>
-            <div className="w-px bg-brand-border/40" />
-            <div>
-              <p className="text-2xl font-bold text-white font-display">85+</p>
+            <div className="w-px sm:w-full sm:h-px bg-brand-border/30" />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white font-display leading-none">85+</p>
               <p className="text-[10px] text-brand-on-surface-variant mt-0.5">강의</p>
             </div>
-            <div className="w-px bg-brand-border/40" />
-            <div>
-              <p className="text-2xl font-bold text-white font-display">₩12억</p>
-              <p className="text-[10px] text-brand-on-surface-variant mt-0.5">투자 유치 총액</p>
+            <div className="w-px sm:w-full sm:h-px bg-brand-border/30" />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white font-display leading-none">₩12억</p>
+              <p className="text-[10px] text-brand-on-surface-variant mt-0.5">투자 유치</p>
             </div>
           </div>
         </div>

@@ -47,11 +47,11 @@ export default function GNB({
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const navItems = [
-    { id: "home", label: "홈", icon: <Rocket size={16} /> },
     { id: "courses", label: "교육/강의", icon: <GraduationCap size={16} /> },
     { id: "ir", label: "스타트업/IR", icon: <TrendingUp size={16} /> },
     { id: "community", label: "커뮤니티", icon: <MessageSquare size={16} /> },
   ];
+
 
   const roleLabel: Record<UserRole, string> = {
     student: "수강생",
@@ -192,12 +192,13 @@ export default function GNB({
                         마이페이지
                       </button>
                       <button
-                        onClick={() => { setCurrentPage("dashboard"); setShowUserMenu(false); }}
+                        onClick={() => { setCurrentPage("profile"); setShowUserMenu(false); }}
                         className="w-full text-left px-4 py-2.5 text-xs text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low transition-colors cursor-pointer flex items-center gap-2"
                       >
                         <User size={14} />
                         프로필 설정
                       </button>
+
                       {userRole === "admin" && (
                         <button
                           onClick={() => { setCurrentPage("admin"); setShowUserMenu(false); }}
