@@ -711,75 +711,72 @@ export default function IRPage({
         {paginatedProjects.map((project, idx) => (
           <div
             key={project.id}
-            className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between"
+            className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
             style={{ animationDelay: `${idx * 50}ms` }}
             onClick={() => setSelectedProject(project)}
           >
             <div>
-              {/* Thumbnail Header — 한 줄 인라인 표시 */}
-              <div className="h-14 relative overflow-hidden">
-                <div
-                  className={`w-full h-full bg-gradient-to-br ${
-                    idx % 5 === 0
-                      ? "from-blue-600 to-indigo-950"
-                      : idx % 5 === 1
-                      ? "from-teal-600 to-emerald-950"
-                      : idx % 5 === 2
-                      ? "from-amber-600 to-orange-950"
-                      : idx % 5 === 3
-                      ? "from-violet-600 to-purple-950"
-                      : "from-rose-600 to-pink-950"
-                  } flex items-center justify-between px-3`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/10 text-white">
-                      {project.field}
+              {/* Thumbnail Header — 첨부 이미지 스타일의 일관된 바이올렛/인디고 헤더 */}
+              <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
+                <span className="text-3xl opacity-50 drop-shadow-md select-none">🚀</span>
+
+                <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                    {project.field}
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                    {project.investmentStage}
+                  </span>
+                  {project.demoVideoUrl && (
+                    <span className="text-xs font-bold px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 flex items-center gap-1">
+                      <Play size={10} /> 영상
                     </span>
-                    {project.demoVideoUrl && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-primary-container/80 text-white flex items-center gap-0.5">
-                        <Play size={8} /> 영상
-                      </span>
-                    )}
-                    {project.isHiring && (
-                      <span className="badge-recruiting text-[9px] font-bold px-2 py-0.5 rounded shadow">
-                        채용중
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-2xl opacity-15">🚀</span>
+                  )}
+                  {project.isHiring && (
+                    <span className="text-xs font-bold px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300">
+                      채용중
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="p-4">
-                <h3 className="font-display text-sm font-bold text-white group-hover:text-brand-primary transition-colors line-clamp-1">
+              <div className="p-5">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-mono">{project.field}</span>
+                  <span className="px-2 py-0.5 rounded bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30 font-bold text-[10px]">
+                    {project.investmentStage}
+                  </span>
+                </div>
+
+                <h3 className="font-display text-base font-bold text-white mt-1.5 group-hover:text-brand-primary transition-colors line-clamp-1 leading-snug">
                   {project.teamName}
                 </h3>
-                <p className="text-[11px] text-brand-primary font-medium mt-0.5 truncate">{project.title}</p>
-                <p className="text-[11px] text-brand-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-brand-primary font-medium mt-0.5 truncate">{project.title}</p>
+                <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
                   {project.oneLiner}
                 </p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-4 pt-0">
-              <div className="flex items-center justify-between pt-3 border-t border-brand-border/30">
-                <div className="flex -space-x-1.5">
+            <div className="p-5 pt-0">
+              <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80">
+                <div className="flex -space-x-2">
                   {project.members.slice(0, 3).map((m, i) => (
                     <div
                       key={i}
-                      className="w-5 h-5 rounded-full bg-brand-surface-high border border-brand-card flex items-center justify-center text-[8px] font-bold text-brand-primary"
+                      className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold text-brand-primary"
                     >
                       {m.name.charAt(0)}
                     </div>
                   ))}
                   {project.members.length > 3 && (
-                    <div className="w-5 h-5 rounded-full bg-brand-surface-high border border-brand-card flex items-center justify-center text-[8px] text-brand-on-surface-variant">
+                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] text-slate-400">
                       +{project.members.length - 3}
                     </div>
                   )}
                 </div>
-                <span className="text-[9px] px-2 py-0.5 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary/25 font-semibold">
+                <span className="text-xs px-2.5 py-1 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary/25 font-semibold">
                   {project.investmentStage}
                 </span>
               </div>

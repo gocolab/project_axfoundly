@@ -112,77 +112,97 @@ export default function StudentDashboard({
                     return (
                       <div
                         key={course.id}
-                        className="bg-brand-card border border-brand-border/60 rounded-xl p-4 card-hover cursor-pointer shadow-md flex flex-col justify-between"
+                        className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer shadow-lg flex flex-col justify-between"
                         onClick={() => onViewCourse(course.id)}
                       >
                         <div>
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <span className="text-[10px] text-brand-primary font-mono font-bold">
+                          {/* Thumbnail Header — 첨부 이미지 스타일 */}
+                          <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">
+                            <span className="text-3xl opacity-50 drop-shadow-md select-none">🎓</span>
+                            <div className="absolute top-3 left-3 flex gap-2">
+                              <span
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                                  course.status === "모집중"
+                                    ? "bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]"
+                                    : course.status === "진행중"
+                                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                                    : "bg-slate-700/40 border-slate-600/50 text-slate-300"
+                                }`}
+                              >
+                                {course.status}
+                              </span>
+                              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                                {schedule.totalSessions}회차
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="p-5">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs text-slate-400 font-medium">
                                 {course.category}
                               </span>
-                              <h3 className="text-sm font-bold text-white mt-0.5 line-clamp-1">
-                                {course.title}
-                              </h3>
-                            </div>
-                            <span className="text-[10px] bg-brand-tertiary/10 text-brand-tertiary font-bold px-2 py-0.5 rounded-full border border-brand-tertiary/30">
-                              {course.status}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-brand-on-surface-variant line-clamp-2 mb-3">
-                            {course.description}
-                          </p>
-
-                          {/* 일정 배지 */}
-                          <div className="bg-brand-surface-low/80 p-2.5 rounded-lg border border-brand-border/30 mb-3 space-y-1">
-                            <div className="flex items-center gap-1.5 text-[10px] text-brand-on-surface-variant">
-                              <CalendarIcon size={11} className="text-brand-primary" />
-                              <span>{schedule.startDate} ~ {schedule.endDate}</span>
-                              <span className="font-bold text-brand-tertiary">({schedule.totalSessions}회차)</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-brand-on-surface-variant">
-                              <Clock size={11} className="text-brand-primary" />
-                              <span>매주 [{schedule.daysOfWeek.join(", ")}] {schedule.timeSlot}</span>
-                            </div>
-                          </div>
-
-                          {/* 진도율 바 */}
-                          <div className="space-y-1 mb-3">
-                            <div className="flex justify-between text-[10px]">
-                              <span className="text-brand-on-surface-variant">학습 진도율</span>
-                              <span className="text-brand-primary font-mono font-bold">
-                                {course.progress || 0}%
+                              <span className="text-xs font-semibold text-[#34d399] flex items-center gap-1">
+                                <CalendarIcon size={12} className="text-[#34d399]" />
+                                {schedule.startDate.slice(5)} ~ {schedule.endDate.slice(5)}
                               </span>
                             </div>
-                            <div className="h-1.5 bg-brand-surface-high rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-brand-primary-container to-brand-secondary rounded-full transition-all duration-500"
-                                style={{ width: `${course.progress || 0}%` }}
-                              />
+
+                            <h3 className="font-display text-base font-bold text-white leading-snug line-clamp-1">
+                              {course.title}
+                            </h3>
+
+                            <p className="text-xs text-slate-400 line-clamp-2 mt-1.5 mb-3 leading-relaxed">
+                              {course.description}
+                            </p>
+
+                            {/* 일정 배지 */}
+                            <div className="bg-[#0b1329]/90 p-3 rounded-xl border border-slate-800/80 mb-3 space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-300 font-medium">일정: 매주 [{schedule.daysOfWeek.join(", ")}]</span>
+                                <span className="text-white font-mono font-bold">{schedule.timeSlot}</span>
+                              </div>
+                            </div>
+
+                            {/* 진도율 바 */}
+                            <div className="space-y-1.5 mb-2">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-slate-400">학습 진도율</span>
+                                <span className="text-[#34d399] font-mono font-bold">
+                                  {course.progress || 0}%
+                                </span>
+                              </div>
+                              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-brand-primary-container to-[#34d399] rounded-full transition-all duration-500"
+                                  style={{ width: `${course.progress || 0}%` }}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex gap-2 pt-2 border-t border-brand-border/30">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewCourse(course.id);
-                            }}
-                            className="flex-1 text-[11px] font-bold bg-brand-primary-container text-white py-2 rounded-lg hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1"
-                          >
-                            <Play size={11} /> 강의실 입장
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              alert("학습 자료 및 강의 슬라이드가 다운로드되었습니다.");
-                            }}
-                            className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-2 px-3 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                          >
-                            <Download size={10} /> 자료
-                          </button>
+                        <div className="p-5 pt-0">
+                          <div className="flex gap-2 pt-3.5 border-t border-slate-800/80">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewCourse(course.id);
+                              }}
+                              className="flex-1 text-xs font-bold bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                            >
+                              <Play size={12} /> 강의실 입장
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                alert("학습 자료 및 강의 슬라이드가 다운로드되었습니다.");
+                              }}
+                              className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-2.5 rounded-xl hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <Download size={12} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );

@@ -93,32 +93,49 @@ export default function InvestorDashboard({
               {bookmarkedProjects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-brand-card border border-brand-border/60 rounded-xl p-5 card-hover cursor-pointer group"
+                  className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group flex flex-col justify-between shadow-lg"
                   onClick={() => onViewProject(project.id)}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <span className="text-[9px] font-mono text-brand-on-surface-variant">{project.field}</span>
-                      <h3 className="text-sm font-bold text-white mt-0.5 group-hover:text-brand-primary transition-colors">
+                  <div>
+                    {/* Thumbnail Header — 첨부 이미지 스타일의 바이올렛/인디고 헤더 */}
+                    <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
+                      <span className="text-3xl opacity-50 drop-shadow-md select-none">🚀</span>
+                      <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                          {project.field}
+                        </span>
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                          {project.investmentStage}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onRemoveBookmark(project.id); }}
+                        className="absolute top-3 right-3 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer p-1.5 rounded-lg bg-black/40 border border-white/10"
+                        title="관심 해제"
+                      >
+                        <Heart size={14} fill="currentColor" />
+                      </button>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="font-display text-base font-bold text-white group-hover:text-brand-primary transition-colors line-clamp-1 leading-snug">
                         {project.teamName}
                       </h3>
-                      <p className="text-[10px] text-brand-on-surface-variant mt-1">{project.oneLiner}</p>
+                      <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                        {project.oneLiner}
+                      </p>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onRemoveBookmark(project.id); }}
-                      className="text-brand-accent-orange hover:text-brand-accent-rose transition-colors cursor-pointer p-1"
-                      title="관심 해제"
-                    >
-                      <Heart size={16} fill="currentColor" />
-                    </button>
                   </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-brand-border/30">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary-container/25">
-                      {project.investmentStage}
-                    </span>
-                    <div className="flex items-center gap-1 text-[10px] text-brand-on-surface-variant">
-                      <TrendingUp size={10} />
-                      <span>업데이트 알림 활성</span>
+
+                  <div className="p-5 pt-0">
+                    <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80 text-xs">
+                      <span className="text-xs px-2.5 py-1 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary/25 font-semibold">
+                        {project.investmentStage}
+                      </span>
+                      <div className="flex items-center gap-1 text-slate-400">
+                        <TrendingUp size={12} className="text-[#34d399]" />
+                        <span>업데이트 알림 활성</span>
+                      </div>
                     </div>
                   </div>
                 </div>
