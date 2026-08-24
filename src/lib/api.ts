@@ -93,6 +93,14 @@ export const api = {
     );
   },
 
+  enrollWithKakaoPay: async (data: { itemName: string; totalAmount: number; orderId: string; userId: string }) => {
+    return fetchJson<{ next_redirect_pc_url: string; tid: string }>("/api/payments/ready", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+
   approveCourse: async (id: string) => {
     return fetchJson<{ success: boolean; course: Course }>(`/api/courses/${id}/approve`, {
       method: "PATCH",

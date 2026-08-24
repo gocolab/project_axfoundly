@@ -177,9 +177,24 @@ export default function App() {
     setCurrentPage("home");
   };
 
-  const handleEnroll = async (courseId: string) => {
+  const handleEnroll = async (courseId: string, paymentMethod: "카드" | "계좌이체" | "카카오페이" = "카드") => {
     try {
-      const res = await api.enrollCourse(courseId, "카드");
+      if (paymentMethod === "카카오페이") {
+        const course = courses.find((c) => c.id === courseId);
+        if (!course) return;
+        const res = await api.enrollWithKakaoPay({
+          itemName: course.title,
+          totalAmount: course.discountedPrice || course.price,
+          orderId: courseId,
+          userId: userName
+        });
+        if (res.next_redirect_pc_url) {
+          window.location.href = res.next_redirect_pc_url;
+        }
+        return;
+      }
+
+      const res = await api.enrollCourse(courseId, paymentMethod as "카드" | "계좌이체");
       setCourses((prev) =>
         prev.map((c) => (c.id === courseId ? { ...c, isEnrolled: true, progress: 0 } : c))
       );

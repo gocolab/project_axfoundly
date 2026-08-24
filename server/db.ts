@@ -34,6 +34,13 @@ export interface DatabaseSchema {
   boards: AdminBoard[];
   crmMessages: CRMMessage[];
   applications: JobApplication[];
+  kakao_sessions: Array<{
+    tid: string;
+    orderId: string;
+    userId: string;
+    itemName: string;
+    totalAmount: number;
+  }>;
 }
 
 // ──────────────────────── MongoDB 연결 설정 ────────────────────────
@@ -597,17 +604,21 @@ const SEED_TEAM_REQUESTS: TeamBuildingRequest[] = [
 const SEED_PAYMENTS: PaymentRecord[] = [
   {
     id: "pay-1",
+    courseId: "c1",
     courseTitle: "AI 프로덕트 매니저 부트캠프",
-    amount: 590000,
-    date: "2025-08-01",
+    userId: "user-1",
+    amount: 890000,
+    date: "2025-07-25",
     method: "카드",
     status: "완료",
   },
   {
     id: "pay-2",
+    courseId: "c2",
     courseTitle: "스타트업 비즈니스 모델 설계",
+    userId: "user-2",
     amount: 490000,
-    date: "2025-07-15",
+    date: "2025-07-26",
     method: "카드",
     status: "완료",
   },
@@ -691,6 +702,7 @@ function buildSeedData(): DatabaseSchema {
     boards: SEED_BOARDS,
     crmMessages: SEED_CRM_MESSAGES,
     applications: [],
+    kakao_sessions: [],
   };
 }
 

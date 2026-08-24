@@ -54,10 +54,32 @@ export default function AdminDashboard({
   const [showBroadcastModal, setShowBroadcastModal] = React.useState(false);
   const [newBoardName, setNewBoardName] = React.useState("");
   const [newBoardTemplate, setNewBoardTemplate] = React.useState<"일반형" | "갤러리형" | "카드형">("일반형");
+  const [payments, setPayments] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     setLocalBoards(boards);
   }, [boards]);
+
+  React.useEffect(() => {
+    if (activeTab === "payments") {
+      api.getPayments().then(res => {
+        if (res.payments) setPayments(res.payments);
+      }).catch(console.error);
+    }
+  }, [activeTab]);
+
+  const handleRefund = async (id: string) => {
+    if (window.confirm(`결제 ${id}를 취소(환불)하시겠습니까?`)) {
+      try {
+        const res = await api.refundPayment(id, "관리자 직권 취소");
+        setPayments(prev => prev.map(p => p.id === id ? res.payment : p));
+        alert(`${id} 결제가 취소되었습니다.`);
+      } catch (err) {
+        console.error(err);
+        alert("결제 취소에 실패했습니다.");
+      }
+    }
+  };
 
   const handleDeleteBoard = async (id: string, name: string) => {
     try {
@@ -480,34 +502,34 @@ export default function AdminDashboard({
                   <span>금액</span>
                   <span className="text-right">기능</span>
                 </div>
-                {[
-                  { id: "pay-1", course: "AI 프덤트 매니저", user: "김수강생", date: "2025-08-10", amount: 590000, status: "완료" },
-                  { id: "pay-2", course: "비즈니스 모델 설계", user: "이성수", date: "2025-08-09", amount: 490000, status: "완료" },
-                  { id: "pay-3", course: "그로스 해킹", user: "박시운", date: "2025-08-07", amount: 390000, status: "환불" },
-                ].map((p) => (
-                  <div key={p.id} className="grid grid-cols-7 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors">
-                    <span className="text-[10px] font-mono text-brand-on-surface-variant">{p.id}</span>
-                    <span className="col-span-2 text-xs text-white truncate">{p.course}</span>
-                    <span className="text-[10px] text-brand-on-surface-variant">{p.user}</span>
-                    <span className="text-[10px] text-brand-on-surface-variant">{p.date}</span>
-                    <span className="text-[10px] font-semibold text-white">₩{p.amount.toLocaleString()}</span>
-                    <div className="flex items-center justify-end gap-1">
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                        p.status === "완료" ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"
-                      }`}>{p.status}</span>
-                      {p.status === "완료" && (
-                        <button
-                          onClick={() => { if(window.confirm(`결제 ${p.id}를 취소하시겠습니까?`)) {
-                            alert(`${p.id} 결제가 취소되었습니다.`);
-                          }}}
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer border border-red-500/20"
-                        >
-                          취소
-                        </button>
-                      )}
-                    </div>
+                {payments.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-brand-on-surface-variant">
+                    결제 내역이 없습니다.
                   </div>
-                ))}
+                ) : (
+                  payments.map((p) => (
+                    <div key={p.id} className="grid grid-cols-7 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors">
+                      <span className="text-[10px] font-mono text-brand-on-surface-variant truncate">{p.id}</span>
+                      <span className="col-span-2 text-xs text-white truncate">{p.courseTitle || p.course}</span>
+                      <span className="text-[10px] text-brand-on-surface-variant truncate">{p.userId || p.user}</span>
+                      <span className="text-[10px] text-brand-on-surface-variant">{p.date}</span>
+                      <span className="text-[10px] font-semibold text-white">₩{p.amount.toLocaleString()}</span>
+                      <div className="flex items-center justify-end gap-1">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          p.status === "완료" ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"
+                        }`}>{p.status}</span>
+                        {p.status === "완료" && (
+                          <button
+                            onClick={() => handleRefund(p.id)}
+                            className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer border border-red-500/20 flex-shrink-0"
+                          >
+                            취소
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

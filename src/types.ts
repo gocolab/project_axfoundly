@@ -287,10 +287,12 @@ export interface TeamBuildingRequest {
 // ── Payment / Enrollment ──
 export interface PaymentRecord {
   id: string;
+  courseId: string;
   courseTitle: string;
+  userId: string;
   amount: number;
+  method: "카드" | "계좌이체" | "카카오페이";
   date: string;
-  method: "카드" | "계좌이체";
   status: "완료" | "환불";
 }
 

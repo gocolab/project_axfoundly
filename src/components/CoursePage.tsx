@@ -26,7 +26,7 @@ import Pagination from "./common/Pagination";
 
 interface CoursePageProps {
   courses: Course[];
-  onEnroll: (courseId: string) => void;
+  onEnroll: (courseId: string, paymentMethod?: "카드" | "계좌이체" | "카카오페이") => void;
   isLoggedIn: boolean;
   userRole?: import("../types").UserRole;
   userName?: string;
@@ -67,6 +67,7 @@ export default function CoursePage({
   const itemsPerPage = 6;
 
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
+  const [paymentMethod, setPaymentMethod] = React.useState<"카드" | "카카오페이">("카카오페이");
   const [showInstructorModal, setShowInstructorModal] = React.useState(false);
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = React.useState<string | null>(null);
@@ -794,6 +795,32 @@ export default function CoursePage({
                 </p>
               </div>
 
+              <div className="mb-4">
+                <p className="text-xs text-brand-on-surface-variant mb-2">결제 수단 선택</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPaymentMethod("카카오페이")}
+                    className={`flex-1 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                      paymentMethod === "카카오페이" 
+                        ? "bg-[#FEE500] text-black border-[#FEE500]" 
+                        : "bg-transparent text-brand-on-surface-variant border-brand-border"
+                    }`}
+                  >
+                    카카오페이
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod("카드")}
+                    className={`flex-1 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                      paymentMethod === "카드" 
+                        ? "bg-brand-surface-high text-white border-brand-border" 
+                        : "bg-transparent text-brand-on-surface-variant border-brand-border"
+                    }`}
+                  >
+                    일반 카드
+                  </button>
+                </div>
+              </div>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowPaymentModal(false)}
@@ -803,9 +830,9 @@ export default function CoursePage({
                 </button>
                 <button
                   onClick={() => {
-                    onEnroll(selectedCourse.id);
+                    onEnroll(selectedCourse.id, paymentMethod);
                     setShowPaymentModal(false);
-                    setSelectedCourse({ ...selectedCourse, isEnrolled: true, progress: 0 });
+                    // setSelectedCourse is handled in parent/App if needed
                   }}
                   className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm shadow-md"
                 >

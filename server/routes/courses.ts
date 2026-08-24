@@ -140,7 +140,9 @@ router.post("/:id/enroll", (req, res) => {
   // Add Payment Record
   const newPayment: PaymentRecord = {
     id: `pay-${Date.now()}`,
+    courseId: course.id,
     courseTitle: course.title,
+    userId: "user", // TODO: Get actual user from session
     amount: finalPrice,
     date: new Date().toISOString().split("T")[0],
     method: paymentMethod === "계좌이체" ? "계좌이체" : "카드",
