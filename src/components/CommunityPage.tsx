@@ -30,7 +30,7 @@ export default function CommunityPage({
   posts,
   onAddPost,
   isLoggedIn,
-  userRole = "student",
+  userRole = "member",
   userName = "김수강생",
   onLoginClick,
   initialPostId,

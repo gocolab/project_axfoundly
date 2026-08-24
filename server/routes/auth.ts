@@ -5,10 +5,11 @@ import type { UserRole, AdminMember } from "../../src/types.js";
 const router = Router();
 
 let currentUser = {
-  id: "user-student",
+  id: "user-member",
   name: "김수강생",
   email: "student@mail.com",
-  role: "student" as UserRole,
+  role: "member" as UserRole,
+  assignedRoles: [] as string[],
   avatar: "",
   joinDate: "2025-01-15",
 };
@@ -17,49 +18,98 @@ let currentUser = {
 router.get("/google/url", (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID || "mock-google-client-id";
   const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3005/api/auth/google/callback";
+  
+  // E2E Mock Bypass URL
+  if (process.env.PLAYWRIGHT_AUTH_METHOD === "mock") {
+    return res.redirect(`${redirectUri}?code=mock_playwright_code`);
+  }
+
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email`;
-  res.json({ url: authUrl });
+  res.redirect(authUrl); // 바로 리다이렉트
 });
 
-// POST /api/auth/google (Google OAuth Login & 회원가입)
-router.post("/google", (req, res) => {
-  const { email, name, role, avatar } = req.body as {
-    email?: string;
-    name?: string;
-    role?: UserRole;
-    avatar?: string;
-    credential?: string;
-    code?: string;
-  };
+// GET /api/auth/google/callback (Google OAuth 콜백 처리)
+router.get("/google/callback", async (req, res) => {
+  const { code } = req.query;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3005/api/auth/google/callback";
+  const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3005";
 
-  // Google OAuth 기본 계정: otter.oh@gmail.com
-  const userEmail = email || "otter.oh@gmail.com";
-  const userName = name || (userEmail.includes("otter") ? "오승환" : "구글 사용자");
+  if (!code) {
+    return res.redirect(`${frontendUrl}/?error=no_code`);
+  }
+
+  let userEmail = "";
+  let userName = "";
+  let userAvatar = "";
+
+  // Playwright Mock 우회 처리
+  if (process.env.PLAYWRIGHT_AUTH_METHOD === "mock" && code === "mock_playwright_code") {
+    userEmail = "test-e2e@mail.com";
+    userName = "E2E테스터";
+  } else {
+    try {
+      // 1. Authorization Code로 Access Token 교환
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code: code as string,
+          client_id: process.env.GOOGLE_CLIENT_ID || "",
+          client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+      if (!tokenResponse.ok) {
+        console.error("Google Token Error:", tokenData);
+        return res.redirect(`${frontendUrl}/?error=google_auth_failed`);
+      }
+
+      // 2. Access Token으로 사용자 프로필 가져오기
+      const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      
+      const userInfo = await userInfoResponse.json();
+      if (!userInfoResponse.ok) {
+        console.error("Google UserInfo Error:", userInfo);
+        return res.redirect(`${frontendUrl}/?error=google_user_failed`);
+      }
+
+      userEmail = userInfo.email;
+      userName = userInfo.name || "구글 사용자";
+      userAvatar = userInfo.picture || "";
+    } catch (error) {
+      console.error("OAuth process error:", error);
+      return res.redirect(`${frontendUrl}/?error=server_error`);
+    }
+  }
+
   const today = new Date().toISOString().split("T")[0];
-
-  // DB 회원 조회 또는 생성
-  const members = db.get("members");
+  const members = db.get("members") || [];
   let existingMember = members.find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
   const isOtter = userEmail.toLowerCase() === "otter.oh@gmail.com";
 
-  let userRole: UserRole = role || (isOtter ? "admin" : (existingMember ? existingMember.role : "student"));
+  let assignedRole: UserRole = isOtter ? "admin" : (existingMember ? existingMember.role : "member");
 
   if (existingMember) {
-    // 기존 회원인 경우 role과 lastLogin 갱신
+    // 기존 회원 로그인 처리
     db.update("members", (mList) =>
       mList.map((m) =>
         m.email.toLowerCase() === userEmail.toLowerCase()
-          ? { ...m, role: isOtter && !role ? "admin" : userRole, lastLogin: today }
+          ? { ...m, role: isOtter ? "admin" : assignedRole, lastLogin: today }
           : m
       )
     );
   } else {
-    // 신규 회원이면 DB에 등록
+    // 신규 회원 자동 가입
     const newMember: AdminMember = {
       id: `m-google-${Date.now()}`,
       name: userName,
       email: userEmail,
-      role: userRole,
+      role: assignedRole,
       joinDate: today,
       lastLogin: today,
       status: "활성",
@@ -68,77 +118,22 @@ router.post("/google", (req, res) => {
     db.update("members", (mList) => [newMember, ...mList]);
   }
 
-  currentUser = {
-    id: `user-google-${userEmail.replace(/[^a-zA-Z0-9]/g, "-")}`,
-    name: userName,
-    email: userEmail,
-    role: userRole,
-    avatar: avatar || "",
-    joinDate: existingMember ? existingMember.joinDate : today,
-  };
-
-  res.json({
-    user: currentUser,
-    token: `mock-jwt-token-google-${userEmail === "otter.oh@gmail.com" ? "otter" : userRole}`,
-  });
+  // 3. 내부 JWT (Mock) 발급 및 프론트엔드로 전달
+  const mockToken = `mock-jwt-token-google-${Buffer.from(userEmail).toString('base64')}`;
+  
+  // 프론트엔드로 토큰과 함께 리다이렉트
+  res.redirect(`${frontendUrl}/?token=${mockToken}&role=${assignedRole}`);
 });
 
-// POST /api/auth/signup (회원 등급 가입)
+
+// POST /api/auth/google (기존 테스트용. 하위호환을 위해 남겨두거나 삭제)
+router.post("/google", (req, res) => {
+  res.status(400).json({ error: "Deprecated. Use /api/auth/google/url instead." });
+});
+
+// POST /api/auth/signup (Deprecated)
 router.post("/signup", (req, res) => {
-  const { name, email, password, role } = req.body as {
-    name?: string;
-    email?: string;
-    password?: string;
-    role?: UserRole;
-  };
-
-  if (!email || !name) {
-    return res.status(400).json({ error: "이름과 이메일은 필수 입력값입니다." });
-  }
-
-  const userRole: UserRole = role || "student";
-  const today = new Date().toISOString().split("T")[0];
-
-  // DB에 회원 추가
-  const members = db.get("members");
-  const existing = members.find((m) => m.email.toLowerCase() === email.toLowerCase());
-
-  if (existing) {
-    // 이미 가입된 경우 등급 업데이트 및 로그인
-    db.update("members", (mList) =>
-      mList.map((m) =>
-        m.email.toLowerCase() === email.toLowerCase()
-          ? { ...m, role: userRole, lastLogin: today, name: name || m.name }
-          : m
-      )
-    );
-  } else {
-    const newMember: AdminMember = {
-      id: `m-${Date.now()}`,
-      name,
-      email,
-      role: userRole,
-      joinDate: today,
-      lastLogin: today,
-      status: "활성",
-      courseCount: 0,
-    };
-    db.update("members", (mList) => [newMember, ...mList]);
-  }
-
-  currentUser = {
-    id: `user-${Date.now()}`,
-    name,
-    email,
-    role: userRole,
-    avatar: "",
-    joinDate: today,
-  };
-
-  res.status(201).json({
-    user: currentUser,
-    token: `mock-jwt-token-${userRole}`,
-  });
+  res.status(400).json({ error: "Deprecated. Registration is handled via Google OAuth." });
 });
 
 // POST /api/auth/login
@@ -146,20 +141,16 @@ router.post("/login", (req, res) => {
   const { role, email } = req.body as { role?: UserRole; email?: string; password?: string };
 
   const nameMap: Record<UserRole, string> = {
-    student: "김수강생",
-    instructor: "김소현",
-    investor: "이벤처",
+    member: "김수강생",
     admin: "최관리",
   };
 
   const emailMap: Record<UserRole, string> = {
-    student: "student@mail.com",
-    instructor: "sohyun.kim@mail.com",
-    investor: "sw.han@nexusvc.com",
+    member: "student@mail.com",
     admin: "admin@platform.com",
   };
 
-  let userRole: UserRole = role || "student";
+  let userRole: UserRole = role || "member";
   let userName = nameMap[userRole] || "사용자";
   let userEmail = emailMap[userRole] || `${userRole}@mail.com`;
 
@@ -174,16 +165,18 @@ router.post("/login", (req, res) => {
 
   const today = new Date().toISOString().split("T")[0];
 
+  const member = db.get("members").find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
+  
   currentUser = {
-    id: `user-${userRole}`,
+    id: member ? `user-${member.id}` : `user-${userRole}`,
     name: userName,
     email: userEmail,
     role: userRole,
+    assignedRoles: member?.assignedRoles || [],
     avatar: "",
     joinDate: "2025-01-15",
   };
 
-  // Update member lastLogin in db
   db.update("members", (members) =>
     members.map((m) =>
       m.email.toLowerCase() === userEmail.toLowerCase() || m.role === userRole
@@ -200,30 +193,34 @@ router.get("/me", (req, res) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer mock-jwt-token-")) {
     const tokenPart = authHeader.replace("Bearer mock-jwt-token-", "");
-    if (tokenPart === "google-otter") {
-      return res.json({
-        user: {
-          id: "user-google-otter",
-          name: "오승환",
-          email: "otter.oh@gmail.com",
-          role: "admin" as UserRole,
-          avatar: "",
-          joinDate: "2024-01-01",
-        },
-      });
+    
+    if (tokenPart.startsWith("google-")) {
+      const emailBase64 = tokenPart.replace("google-", "");
+      const email = Buffer.from(emailBase64, 'base64').toString('ascii');
+      
+      const member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
+      if (member) {
+        return res.json({
+          user: {
+            id: `user-${member.id}`,
+            name: member.name,
+            email: member.email,
+            role: member.role,
+            assignedRoles: member.assignedRoles || [],
+            avatar: "",
+            joinDate: member.joinDate,
+          }
+        });
+      }
     }
 
     const role = tokenPart as UserRole;
     const nameMap: Record<UserRole, string> = {
-      student: "김수강생",
-      instructor: "김소현",
-      investor: "한승우",
+      member: "김수강생",
       admin: "관리자",
     };
     const emailMap: Record<UserRole, string> = {
-      student: "student@mail.com",
-      instructor: "sohyun.kim@mail.com",
-      investor: "sw.han@nexusvc.com",
+      member: "student@mail.com",
       admin: "admin@platform.com",
     };
     return res.json({

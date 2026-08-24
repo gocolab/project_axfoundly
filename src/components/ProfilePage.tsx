@@ -25,20 +25,10 @@ interface ProfilePageProps {
 }
 
 const roleConfig: Record<UserRole, { label: string; icon: React.ReactNode; color: string }> = {
-  student: {
+  member: {
     label: "수강생",
     icon: <GraduationCap size={16} className="text-brand-primary" />,
     color: "text-brand-primary border-brand-primary/30 bg-brand-primary/10",
-  },
-  instructor: {
-    label: "강사",
-    icon: <Award size={16} className="text-brand-secondary" />,
-    color: "text-brand-secondary border-brand-secondary/30 bg-brand-secondary/10",
-  },
-  investor: {
-    label: "투자자",
-    icon: <Briefcase size={16} className="text-brand-tertiary" />,
-    color: "text-brand-tertiary border-brand-tertiary/30 bg-brand-tertiary/10",
   },
   admin: {
     label: "관리자",

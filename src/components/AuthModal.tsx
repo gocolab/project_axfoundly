@@ -6,63 +6,27 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (role: UserRole, email?: string) => void;
-  onGoogleLogin?: (role?: UserRole, email?: string) => void;
-  onSignup?: (data: { name: string; email: string; password?: string; role: UserRole }) => void;
 }
 
 export default function AuthModal({
   isOpen,
   onClose,
   onLogin,
-  onGoogleLogin,
-  onSignup,
 }: AuthModalProps) {
-  const [mode, setMode] = React.useState<"login" | "signup">("login");
   const [loading, setLoading] = React.useState(false);
-  const [selectedRole, setSelectedRole] = React.useState<UserRole>("student");
   const [showDemoLogin, setShowDemoLogin] = React.useState(false);
 
   if (!isOpen) return null;
 
-  const handleGoogleClick = async () => {
+  const handleGoogleClick = () => {
     setLoading(true);
-    try {
-      if (onGoogleLogin) {
-        await onGoogleLogin(mode === "signup" ? selectedRole : undefined, "otter.oh@gmail.com");
-      } else {
-        onLogin("admin", "otter.oh@gmail.com");
-      }
-    } finally {
-      setLoading(false);
-    }
-    onClose();
+    // Real Google OAuth - Redirects to Backend URL which redirects to Google
+    window.location.href = "/api/auth/google/url";
   };
 
   const roles = [
-    {
-      value: "student" as const,
-      label: "수강생",
-      desc: "강의 수강 및 창업팀 참여",
-      icon: <GraduationCap size={14} className="text-brand-primary" />,
-    },
-    {
-      value: "instructor" as const,
-      label: "강사",
-      desc: "강의 개설 및 수강생 CRM",
-      icon: <Award size={14} className="text-brand-secondary" />,
-    },
-    {
-      value: "investor" as const,
-      label: "투자자",
-      desc: "스타트업 발굴 & 투자 제안",
-      icon: <Briefcase size={14} className="text-brand-tertiary" />,
-    },
-    {
-      value: "admin" as const,
-      label: "관리자",
-      desc: "플랫폼 총괄 및 회원/강의 승인",
-      icon: <Shield size={14} className="text-brand-accent-rose" />,
-    },
+    { value: "member" as const, label: "수강생" },
+    { value: "admin" as const, label: "관리자" },
   ];
 
   return (
@@ -88,12 +52,10 @@ export default function AuthModal({
               </svg>
             </div>
             <h2 className="font-display text-2xl font-bold text-white">
-              {mode === "login" ? "로그인" : "회원 가입"}
+              로그인
             </h2>
             <p className="text-xs text-brand-on-surface-variant mt-1">
-              {mode === "login"
-                ? "Google 계정으로 AI로 창업하라 플랫폼에 접속하세요"
-                : "Google 계정으로 가입하고 플랫폼 서비스를 이용하세요"}
+              Google 계정으로 AI로 창업하라 플랫폼에 접속하세요
             </p>
           </div>
 
@@ -115,47 +77,8 @@ export default function AuthModal({
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
               </svg>
             )}
-            <span>
-              {mode === "login"
-                ? "Google 계정으로 로그인"
-                : "Google 계정으로 회원 가입"}
-            </span>
+            <span>Google 계정으로 로그인</span>
           </button>
-
-          {/* 회원가입 시 역할 선택 */}
-          {mode === "signup" && (
-            <div className="mt-4 flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold text-brand-on-surface-variant flex items-center justify-between">
-                <span>가입 유형 선택 (Google 로그인 후 설정)</span>
-                <span className="text-[10px] text-brand-primary font-normal">
-                  선택: {roles.find((r) => r.value === selectedRole)?.label}
-                </span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {roles.map((r) => (
-                  <button
-                    key={r.value}
-                    data-testid={`signup-role-${r.value}`}
-                    type="button"
-                    onClick={() => setSelectedRole(r.value)}
-                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      selectedRole === r.value
-                        ? "border-brand-primary-container bg-brand-primary-container/20 text-white shadow-sm ring-1 ring-brand-primary"
-                        : "border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:border-brand-surface-highest"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      {r.icon}
-                      <span className="text-xs font-bold text-white">{r.label}</span>
-                    </div>
-                    <span className="text-[9px] block text-brand-on-surface-variant leading-tight">
-                      {r.desc}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 개발용 빠른 로그인 (접혀 있음) */}
           <div className="mt-4 border-t border-brand-border/30 pt-3">
@@ -189,17 +112,6 @@ export default function AuthModal({
               </div>
             )}
           </div>
-
-          {/* Toggle mode */}
-          <p className="text-center text-xs text-brand-on-surface-variant mt-4">
-            {mode === "login" ? "아직 계정이 없으신가요? " : "이미 계정이 있으신가요? "}
-            <button
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
-              className="text-brand-primary font-semibold hover:underline cursor-pointer"
-            >
-              {mode === "login" ? "회원가입" : "로그인"}
-            </button>
-          </p>
         </div>
       </div>
     </div>

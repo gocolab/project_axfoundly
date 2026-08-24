@@ -242,7 +242,7 @@ export default function CommunityPostDetailModal({
                         <span className="text-xs font-semibold text-white">{comment.author}</span>
                         {comment.authorRole && (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-primary-container/10 text-brand-primary">
-                            {comment.authorRole === "instructor" ? "강사" : comment.authorRole === "admin" ? "관리자" : "수강생"}
+                            {comment.authorRole === "admin" ? "관리자" : "수강생"}
                           </span>
                         )}
                       </div>

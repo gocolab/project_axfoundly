@@ -269,9 +269,7 @@ export default function AdminDashboard({
                     onChange={(e) => onChangeRole(member.id, e.target.value as UserRole)}
                     className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
                   >
-                    <option value="student">수강생</option>
-                    <option value="instructor">강사</option>
-                    <option value="investor">투자자</option>
+                    <option value="member">수강생</option>
                     <option value="admin">관리자</option>
                   </select>
                 </div>

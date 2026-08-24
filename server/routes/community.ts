@@ -111,7 +111,7 @@ router.get("/posts/:id/comments", (req, res) => {
 // POST /api/community/posts/:id/comments (Add comment)
 router.post("/posts/:id/comments", (req, res) => {
   const { id } = req.params;
-  const { author = "김수강생", authorRole = "student", content } = req.body;
+  const { author = "김수강생", authorRole = "member", content } = req.body;
 
   if (!content) {
     return res.status(400).json({ error: "Comment content is required" });

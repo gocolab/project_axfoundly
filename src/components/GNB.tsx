@@ -54,9 +54,7 @@ export default function GNB({
 
 
   const roleLabel: Record<UserRole, string> = {
-    student: "수강생",
-    instructor: "강사",
-    investor: "투자자",
+    member: "수강생",
     admin: "관리자",
   };
 
@@ -224,15 +222,9 @@ export default function GNB({
               <div className="flex items-center gap-2">
                 <button
                   onClick={onLoginClick}
-                  className="text-sm text-brand-on-surface-variant hover:text-white transition-colors cursor-pointer px-3 py-1.5"
-                >
-                  로그인
-                </button>
-                <button
-                  onClick={onLoginClick}
                   className="text-sm font-semibold text-white bg-gradient-to-r from-brand-primary-container to-brand-secondary px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
                 >
-                  회원가입
+                  로그인
                 </button>
               </div>
             )}

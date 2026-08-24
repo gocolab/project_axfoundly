@@ -60,6 +60,14 @@ export const api = {
     return fetchJson<{ url: string }>("/api/auth/google/url");
   },
 
+  getMe: async (token: string) => {
+    return fetchJson<{ user: any }>("/api/auth/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  },
+
   // ── Courses ──
   getCourses: async (params?: { category?: string; search?: string; page?: number; limit?: number }) => {
     const query = new URLSearchParams();

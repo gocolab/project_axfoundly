@@ -5,7 +5,7 @@ import MainPage from "./components/MainPage";
 import CoursePage from "./components/CoursePage";
 import IRPage from "./components/IRPage";
 import CommunityPage from "./components/CommunityPage";
-import StudentDashboard from "./components/StudentDashboard";
+import MemberDashboard from "./components/MemberDashboard";
 import InstructorDashboard from "./components/InstructorDashboard";
 import InvestorDashboard from "./components/InvestorDashboard";
 import AdminDashboard from "./components/AdminDashboard";
@@ -33,13 +33,15 @@ import type {
 export default function App() {
   // Auth state
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const [userRole, setUserRole] = React.useState<UserRole>("student");
+  const [userRole, setUserRole] = React.useState<UserRole>("member");
+  const [userAssignedRoles, setUserAssignedRoles] = React.useState<string[]>([]);
   const [userName, setUserName] = React.useState("게스트");
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const toast = useToast();
 
   // Navigation & Selection
   const [currentPage, setCurrentPage] = React.useState("home");
+  const [dashboardTab, setDashboardTab] = React.useState<"member" | "instructor" | "investor">("member");
   const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
   const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
@@ -112,14 +114,35 @@ export default function App() {
 
   React.useEffect(() => {
     refreshData();
-  }, [refreshData]);
+    
+    // URL에서 token과 role 읽기 (OAuth 콜백 처리)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    const error = urlParams.get("error");
+    
+    if (error) {
+      toast.error("로그인 실패", `오류 코드: ${error}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (token) {
+      api.getMe(token).then(res => {
+        if (res.user) {
+          setIsLoggedIn(true);
+          setUserName(res.user.name);
+          setUserRole(res.user.role);
+          setUserAssignedRoles(res.user.assignedRoles || []);
+          toast.success("로그인 성공", `${res.user.name}님 환영합니다!`);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }).catch(err => {
+        console.error("Token verification failed:", err);
+      });
+    }
+  }, [refreshData, toast]);
 
   // Handlers
   const handleLogin = async (role: UserRole, email?: string) => {
     const names: Record<UserRole, string> = {
-      student: "김수강생",
-      instructor: "김소현",
-      investor: "이벤처",
+      member: "김수강생",
       admin: "최관리",
     };
     setIsLoggedIn(true);
@@ -130,49 +153,20 @@ export default function App() {
       const res = await api.login(role, email);
       setUserName(res.user.name);
       setUserRole(res.user.role);
+      setUserAssignedRoles(res.user.assignedRoles || []);
       refreshData();
     } catch (error) {
       console.error("Login API call failed:", error);
     }
   };
 
-  const handleGoogleLogin = async (role?: UserRole, email?: string) => {
-    setIsLoggedIn(true);
-    const googleEmail = email || "otter.oh@gmail.com";
-    const googleRole = role || (googleEmail === "otter.oh@gmail.com" ? "admin" : "student");
-    setUserRole(googleRole);
-    setUserName(googleEmail.includes("otter") ? "오승환" : "구글 사용자");
 
-    try {
-      const res = await api.googleLogin({ email: googleEmail, role });
-      setUserRole(res.user.role);
-      setUserName(res.user.name);
-      refreshData();
-    } catch (error) {
-      console.error("Google login API failed:", error);
-    }
-  };
-
-  const handleSignup = async (data: { name: string; email: string; password?: string; role: UserRole }) => {
-    setIsLoggedIn(true);
-    setUserRole(data.role);
-    setUserName(data.name);
-
-    try {
-      const res = await api.signup(data);
-      setUserRole(res.user.role);
-      setUserName(res.user.name);
-      refreshData();
-      toast.success("회원가입 완료", `'${data.name}'님, ${data.role === "admin" ? "관리자" : data.role === "instructor" ? "강사" : data.role === "investor" ? "투자자" : "수강생"} 등급으로 가입이 완료되었습니다!`);
-    } catch (error) {
-      console.error("Signup API call failed:", error);
-    }
-  };
 
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setUserRole("student");
+    setUserRole("member");
+    setUserAssignedRoles([]);
     setUserName("게스트");
     setCurrentPage("home");
   };
@@ -373,40 +367,65 @@ export default function App() {
   // Render dashboard based on role
   const renderDashboard = () => {
     switch (userRole) {
-      case "student":
+      case "member":
+        const isInstructor = userAssignedRoles.includes("course_instructor");
+        const isInvestor = userAssignedRoles.includes("investor_active");
+        
         return (
-          <StudentDashboard
-            enrolledCourses={courses}
-            teamRequests={teamRequests}
-            payments={payments}
-            notifications={notifications}
-            myProjects={irProjects.filter((p) => p.members?.some((m) => m.name === "김수강생"))}
-            onViewCourse={handleViewCourse}
-            onViewIR={handleViewIR}
-            onSaveProject={handleSaveProject}
-            onRefundPayment={handleRefundPayment}
-            onUpdateTeamRequest={handleUpdateTeamRequest}
-          />
-        );
-      case "instructor":
-        return (
-          <InstructorDashboard
-            myCourses={courses.filter((c) => c.instructor.includes("김소현") || c.instructor.includes("김수강생"))}
-            settlements={settlements}
-            onSaveCourse={handleSaveCourse}
-            onSendCRMMessage={handleSendCRMMessage}
-            onViewCourse={handleViewCourse}
-          />
-        );
-      case "investor":
-        return (
-          <InvestorDashboard
-            bookmarkedProjects={irProjects.filter((p) => p.bookmarked)}
-            recommendations={recommendations}
-            proposals={proposals}
-            onViewProject={handleViewIR}
-            onRemoveBookmark={handleToggleBookmark}
-          />
+          <div className="flex flex-col space-y-4">
+            {(isInstructor || isInvestor) && (
+              <div className="flex justify-center mt-6 mb-2">
+                <div className="flex gap-2 p-1.5 glass-panel-heavy rounded-2xl shadow-xl border border-brand-border bg-brand-surface/80 backdrop-blur-md">
+                  <button onClick={() => setDashboardTab("member")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${dashboardTab === 'member' ? 'bg-gradient-to-r from-brand-primary-container to-brand-primary text-white shadow-md' : 'text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low'}`}>
+                    🎓 수강생 대시보드
+                  </button>
+                  {isInstructor && (
+                    <button onClick={() => setDashboardTab("instructor")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${dashboardTab === 'instructor' ? 'bg-gradient-to-r from-brand-secondary to-brand-tertiary text-white shadow-md' : 'text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low'}`}>
+                      👨‍🏫 강사 대시보드
+                    </button>
+                  )}
+                  {isInvestor && (
+                    <button onClick={() => setDashboardTab("investor")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${dashboardTab === 'investor' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md' : 'text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low'}`}>
+                      💼 투자자 대시보드
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {dashboardTab === "member" && (
+              <MemberDashboard
+                enrolledCourses={courses}
+                teamRequests={teamRequests}
+                payments={payments}
+                notifications={notifications}
+                myProjects={irProjects.filter((p) => p.members?.some((m) => m.name === "김수강생"))}
+                onViewCourse={handleViewCourse}
+                onViewIR={handleViewIR}
+                onSaveProject={handleSaveProject}
+                onRefundPayment={handleRefundPayment}
+                onUpdateTeamRequest={handleUpdateTeamRequest}
+              />
+            )}
+            {dashboardTab === "instructor" && isInstructor && (
+              <InstructorDashboard
+                myCourses={courses.filter((c) => c.instructor.includes("김소현") || c.instructor.includes("김수강생"))}
+                settlements={settlements}
+                onSaveCourse={handleSaveCourse}
+                onSendCRMMessage={handleSendCRMMessage}
+                onViewCourse={handleViewCourse}
+              />
+            )}
+            {dashboardTab === "investor" && isInvestor && (
+              <InvestorDashboard
+                bookmarkedProjects={irProjects.filter((p) => p.bookmarked)}
+                recommendations={recommendations}
+                proposals={proposals}
+                onViewProject={handleViewIR}
+                onRemoveBookmark={handleToggleBookmark}
+              />
+            )}
+          </div>
         );
       case "admin":
         return (
@@ -471,6 +490,7 @@ export default function App() {
           <IRPage
             projects={irProjects}
             userRole={userRole}
+            userAssignedRoles={userAssignedRoles}
             isLoggedIn={isLoggedIn}
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
@@ -567,8 +587,6 @@ export default function App() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
-        onGoogleLogin={handleGoogleLogin}
-        onSignup={handleSignup}
       />
     </div>
   );

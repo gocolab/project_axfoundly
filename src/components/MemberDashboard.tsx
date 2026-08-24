@@ -23,7 +23,7 @@ import type { Course, TeamBuildingRequest, PaymentRecord, Notification, IRProjec
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import PaymentReceiptModal from "./PaymentReceiptModal";
 
-interface StudentDashboardProps {
+interface MemberDashboardProps {
   enrolledCourses: Course[];
   teamRequests: TeamBuildingRequest[];
   payments: PaymentRecord[];
@@ -36,7 +36,7 @@ interface StudentDashboardProps {
   onUpdateTeamRequest?: (id: string, status: "수락" | "거절") => void;
 }
 
-export default function StudentDashboard({
+export default function MemberDashboard({
   enrolledCourses,
   teamRequests,
   payments,
@@ -47,7 +47,7 @@ export default function StudentDashboard({
   onSaveProject,
   onRefundPayment,
   onUpdateTeamRequest,
-}: StudentDashboardProps) {
+}: MemberDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"courses" | "projects" | "notifications">("courses");
 
   // Modals
