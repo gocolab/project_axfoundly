@@ -196,7 +196,7 @@ router.get("/me", (req, res) => {
     
     if (tokenPart.startsWith("google-")) {
       const emailBase64 = tokenPart.replace("google-", "");
-      const email = Buffer.from(emailBase64, 'base64').toString('ascii');
+      const email = Buffer.from(emailBase64, 'base64').toString('utf-8');
       
       const member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
       if (member) {
@@ -212,6 +212,7 @@ router.get("/me", (req, res) => {
           }
         });
       }
+      return res.status(401).json({ error: "User session expired or invalid" });
     }
 
     const role = tokenPart as UserRole;

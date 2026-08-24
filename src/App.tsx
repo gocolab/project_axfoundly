@@ -31,13 +31,37 @@ import type {
 } from "./types";
 
 export default function App() {
-  // Auth state
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const [userRole, setUserRole] = React.useState<UserRole>("member");
-  const [userAssignedRoles, setUserAssignedRoles] = React.useState<string[]>([]);
-  const [userName, setUserName] = React.useState("게스트");
+  // Auth state (LocalStorage 기반 세션 복원)
+  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(() => !!localStorage.getItem("auth_token"));
+  const [userRole, setUserRole] = React.useState<UserRole>(() => {
+    const saved = localStorage.getItem("user_role");
+    return (saved === "admin" || saved === "member") ? saved : "member";
+  });
+  const [userAssignedRoles, setUserAssignedRoles] = React.useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("user_assigned_roles");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [userName, setUserName] = React.useState<string>(() => localStorage.getItem("user_name") || "게스트");
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const toast = useToast();
+
+  const saveSession = React.useCallback((token: string, user: { name: string; role: UserRole; assignedRoles?: string[] }) => {
+    localStorage.setItem("auth_token", token);
+    localStorage.setItem("user_name", user.name);
+    localStorage.setItem("user_role", user.role);
+    localStorage.setItem("user_assigned_roles", JSON.stringify(user.assignedRoles || []));
+  }, []);
+
+  const clearSession = React.useCallback(() => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("user_assigned_roles");
+  }, []);
 
   // Navigation & Selection
   const [currentPage, setCurrentPage] = React.useState("home");
@@ -133,6 +157,7 @@ export default function App() {
       
       api.getMe(token).then(res => {
         if (res.user) {
+          saveSession(token, res.user);
           setIsLoggedIn(true);
           setUserName(res.user.name);
           setUserRole(res.user.role);
@@ -141,22 +166,42 @@ export default function App() {
         }
       }).catch(err => {
         console.error("Token verification failed:", err);
+        clearSession();
+        setIsLoggedIn(false);
+        setUserName("게스트");
+        setUserRole("member");
+        setUserAssignedRoles([]);
       });
+    } else {
+      // 새로고침 시 저장된 토큰으로 세션 검증
+      const savedToken = localStorage.getItem("auth_token");
+      if (savedToken) {
+        api.getMe(savedToken).then(res => {
+          if (res.user) {
+            saveSession(savedToken, res.user);
+            setIsLoggedIn(true);
+            setUserName(res.user.name);
+            setUserRole(res.user.role);
+            setUserAssignedRoles(res.user.assignedRoles || []);
+          }
+        }).catch(err => {
+          console.warn("Saved token session invalid:", err);
+          clearSession();
+          setIsLoggedIn(false);
+          setUserName("게스트");
+          setUserRole("member");
+          setUserAssignedRoles([]);
+        });
+      }
     }
-  }, [refreshData, toast]);
+  }, [refreshData, toast, saveSession, clearSession]);
 
   // Handlers
   const handleLogin = async (role: UserRole, email?: string) => {
-    const names: Record<UserRole, string> = {
-      member: "김수강생",
-      admin: "최관리",
-    };
-    setIsLoggedIn(true);
-    setUserRole(role);
-    setUserName(names[role] || "사용자");
-
     try {
       const res = await api.login(role, email);
+      saveSession(res.token, res.user);
+      setIsLoggedIn(true);
       setUserName(res.user.name);
       setUserRole(res.user.role);
       setUserAssignedRoles(res.user.assignedRoles || []);
@@ -166,10 +211,8 @@ export default function App() {
     }
   };
 
-
-
-
   const handleLogout = () => {
+    clearSession();
     setIsLoggedIn(false);
     setUserRole("member");
     setUserAssignedRoles([]);
