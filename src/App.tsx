@@ -11,7 +11,7 @@ import InvestorDashboard from "./components/InvestorDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import ProfilePage from "./components/ProfilePage";
 import AITutorWidget from "./components/common/AITutorWidget";
-import { ToastProvider } from "./components/common/Toast";
+import { useToast } from "./components/common/Toast";
 import { api } from "./lib/api";
 import type {
   UserRole,
@@ -36,6 +36,7 @@ export default function App() {
   const [userRole, setUserRole] = React.useState<UserRole>("student");
   const [userName, setUserName] = React.useState("게스트");
   const [showAuthModal, setShowAuthModal] = React.useState(false);
+  const toast = useToast();
 
   // Navigation & Selection
   const [currentPage, setCurrentPage] = React.useState("home");
@@ -162,7 +163,7 @@ export default function App() {
       setUserRole(res.user.role);
       setUserName(res.user.name);
       refreshData();
-      alert(`'${data.name}'님, ${data.role === "admin" ? "관리자" : data.role === "instructor" ? "강사" : data.role === "investor" ? "투자자" : "수강생"} 등급으로 회원가입이 완료되었습니다!`);
+      toast.success("회원가입 완료", `'${data.name}'님, ${data.role === "admin" ? "관리자" : data.role === "instructor" ? "강사" : data.role === "investor" ? "투자자" : "수강생"} 등급으로 가입이 완료되었습니다!`);
     } catch (error) {
       console.error("Signup API call failed:", error);
     }
@@ -186,10 +187,10 @@ export default function App() {
         setPayments((prev) => [res.payment, ...prev]);
       }
       refreshData();
-      alert("수강 신청 및 결제가 완료되었습니다!");
+      toast.success("결제 완료", "수강 신청 및 결제가 완료되었습니다!");
     } catch (error) {
       console.error("Enrollment failed:", error);
-      alert("수강 신청에 실패했습니다.");
+      toast.error("결제 실패", "수강 신청에 실패했습니다.");
     }
   };
 
@@ -216,9 +217,10 @@ export default function App() {
       });
       setPosts((prev) => [res.post, ...prev]);
       refreshData();
+      toast.success("게시글 작성 성공");
     } catch (error) {
-      console.error("Create post failed:", error);
-      alert("게시글 작성에 실패했습니다.");
+      console.error("Add post failed:", error);
+      toast.error("게시글 작성 실패");
     }
   };
 
@@ -238,10 +240,10 @@ export default function App() {
       const res = await api.saveCourse(newCourse);
       setCourses((prev) => [res.course, ...prev]);
       refreshData();
-      alert("강의가 성공적으로 개설/등록되었습니다.");
+      toast.success("강의 개설 성공", "강의가 성공적으로 개설/등록되었습니다.");
     } catch (error) {
       console.error("Save course failed:", error);
-      alert("강의 개설에 실패했습니다.");
+      toast.error("강의 개설 실패");
     }
   };
 
@@ -249,10 +251,10 @@ export default function App() {
     try {
       await api.sendCRMMessage(msg);
       refreshData();
-      alert("수강생 대상 타깃 CRM 메시지가 발송되었습니다.");
+      toast.success("메시지 발송 성공", "수강생 대상 타깃 CRM 메시지가 발송되었습니다.");
     } catch (error) {
-      console.error("Send CRM failed:", error);
-      alert("CRM 메시지 발송에 실패했습니다.");
+      console.error("Send CRM message failed:", error);
+      toast.error("메시지 발송 실패");
     }
   };
 
@@ -271,9 +273,10 @@ export default function App() {
     try {
       await api.approveCourse(courseId);
       refreshData();
-      alert(`강의(${courseId})가 승인되었습니다.`);
+      toast.success("승인 완료", `강의(${courseId})가 승인되었습니다.`);
     } catch (error) {
       console.error("Approve course failed:", error);
+      toast.error("승인 실패");
     }
   };
 
@@ -281,9 +284,10 @@ export default function App() {
     try {
       await api.rejectCourse(courseId);
       refreshData();
-      alert(`강의(${courseId})가 반려되었습니다.`);
+      toast.success("반려 완료", `강의(${courseId})가 반려되었습니다.`);
     } catch (error) {
       console.error("Reject course failed:", error);
+      toast.error("반려 실패");
     }
   };
 
@@ -300,10 +304,10 @@ export default function App() {
         return [res.project, ...prev];
       });
       refreshData();
-      alert("스타트업 프로젝트가 성공적으로 저장되었습니다.");
+      toast.success("저장 완료", "스타트업 프로젝트가 성공적으로 저장되었습니다.");
     } catch (error) {
       console.error("Save project failed:", error);
-      alert("프로젝트 저장에 실패했습니다.");
+      toast.error("저장 실패", "프로젝트 저장에 실패했습니다.");
     }
   };
 
@@ -326,9 +330,10 @@ export default function App() {
         prev.map((r) => (r.id === id ? { ...r, status } : r))
       );
       refreshData();
-      alert(`팀 빌딩 제안이 '${status}' 처리되었습니다.`);
+      toast.success("처리 완료", `팀 빌딩 제안이 '${status}' 처리되었습니다.`);
     } catch (error) {
       console.error("Update team request failed:", error);
+      toast.error("처리 실패");
     }
   };
 
@@ -523,9 +528,8 @@ export default function App() {
   };
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-brand-bg text-brand-on-surface font-sans selection:bg-brand-primary-container selection:text-white">
-        <GNB
+    <div className="min-h-screen bg-brand-bg text-brand-on-surface font-sans selection:bg-brand-primary-container selection:text-white">
+      <GNB
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           isLoggedIn={isLoggedIn}
@@ -544,14 +548,13 @@ export default function App() {
           onNavigate={(page) => setCurrentPage(page)}
         />
 
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onLogin={handleLogin}
-          onGoogleLogin={handleGoogleLogin}
-          onSignup={handleSignup}
-        />
-      </div>
-    </ToastProvider>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleLogin}
+        onGoogleLogin={handleGoogleLogin}
+        onSignup={handleSignup}
+      />
+    </div>
   );
 }
