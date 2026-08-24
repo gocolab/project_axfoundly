@@ -107,8 +107,11 @@ export default function CommunityPostDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/85 backdrop-blur-md p-4 animate-fadeIn">
-      <div className="glass-panel-heavy rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-brand-border overflow-hidden">
+    <div 
+      className="fixed inset-0 z-[100] flex justify-end bg-brand-surface/85 backdrop-blur-md animate-fadeIn"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="glass-panel-heavy rounded-l-2xl w-full max-w-lg h-full flex flex-col shadow-2xl border-l border-brand-border overflow-hidden animate-slideInRight">
         {/* Modal Header */}
         <div className="p-5 border-b border-brand-border/40 flex justify-between items-start bg-brand-surface-low/80">
           <div className="flex items-center gap-2 flex-wrap">
