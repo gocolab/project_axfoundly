@@ -172,33 +172,33 @@ export default function IRPage({
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Header Card — 일관된 바이올렛/인디고 썸네일 헤더 */}
             <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
-              <div className="h-44 sm:h-52 bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center relative overflow-hidden">
-                <span className="text-6xl opacity-40 drop-shadow-lg select-none">🚀</span>
+              <div className="h-24 sm:h-28 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
+                <span className="text-4xl opacity-50 drop-shadow-md select-none">🚀</span>
 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
-                  <span className="text-xs font-semibold px-3 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                <div className="absolute top-3.5 left-4 flex gap-2 flex-wrap">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
                     {selectedProject.field}
                   </span>
-                  <span className="text-xs font-bold px-3 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
                     {selectedProject.investmentStage}
                   </span>
                   {selectedProject.demoVideoUrl && (
-                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 flex items-center gap-1">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 flex items-center gap-1">
                       <Play size={11} /> 동작 영상
                     </span>
                   )}
                 </div>
 
                 {/* Team Hiring Badge & Anonymity Indicator */}
-                <div className="absolute top-4 right-4 flex items-center gap-2">
+                <div className="absolute top-3.5 right-4 flex items-center gap-2">
                   {isAnonymousMode && (
-                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-[#030712]/80 text-brand-tertiary border border-brand-tertiary/40 flex items-center gap-1 backdrop-blur-md">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/80 text-brand-tertiary border border-brand-tertiary/40 flex items-center gap-1 backdrop-blur-md">
                       <Lock size={12} /> 스텔스(비실명) 모드
                     </span>
                   )}
                   {selectedProject.isHiring && (
-                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 backdrop-blur-md">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 backdrop-blur-md">
                       🔥 팀원 모집 중
                     </span>
                   )}
@@ -408,18 +408,21 @@ export default function IRPage({
           {/* Right Column: Team Intro (Real-name / Anonymous) & Actions */}
           <div className="lg:col-span-1 flex flex-col gap-4 sticky top-20 self-start">
             {/* Team Members Card */}
-            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users size={15} className="text-brand-primary" />
-                  팀 소개 ({isAnonymousMode ? "비실명 모드" : "실명 공개"})
-                </h3>
-                <span className="text-[10px] text-brand-on-surface-variant font-mono">
-                  {selectedProject.members.length}명
-                </span>
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+              {/* Header Banner */}
+              <div className="h-16 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
+                <span className="text-2xl opacity-40 drop-shadow-md select-none">👥</span>
+                <div className="absolute top-2.5 left-3 flex gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                    팀 소개 ({isAnonymousMode ? "비실명 모드" : "실명 공개"})
+                  </span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                    {selectedProject.members.length}명
+                  </span>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="p-5 flex flex-col gap-3">
                 {selectedProject.members.map((member, idx) => {
                   const displayName = isAnonymousMode
                     ? member.anonymousName || `팀원 ${idx + 1} (${member.role})`
@@ -431,7 +434,7 @@ export default function IRPage({
                   return (
                     <div
                       key={idx}
-                      className="flex items-center gap-3 p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30"
+                      className="flex items-center gap-3 p-2.5 bg-[#0b1329] rounded-xl border border-slate-800/80"
                     >
                       <div
                         className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow ${
@@ -444,7 +447,7 @@ export default function IRPage({
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-white truncate">{displayName}</p>
-                        <p className="text-[10px] text-brand-on-surface-variant">{displayRole}</p>
+                        <p className="text-[10px] text-slate-400">{displayRole}</p>
                       </div>
                     </div>
                   );
@@ -453,16 +456,26 @@ export default function IRPage({
             </div>
 
             {/* Investor Actions Card */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col gap-3 shadow-md">
-              {userRole === "investor" && isLoggedIn ? (
-                <>
-                  {proposalSent ? (
-                    <div className="text-center py-3 bg-brand-tertiary/10 rounded-xl border border-brand-tertiary/30">
-                      <span className="text-brand-tertiary text-xs font-bold flex items-center justify-center gap-1">
-                        <CheckCircle size={14} /> 투자 제안이 전송되었습니다
-                      </span>
-                    </div>
-                  ) : (
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+              <div className="h-16 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">
+                <span className="text-2xl opacity-40 drop-shadow-md select-none">💼</span>
+                <div className="absolute top-2.5 left-3 flex gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                    투자 연계 & 협업
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-5 flex flex-col gap-3">
+                {userRole === "investor" && isLoggedIn ? (
+                  <>
+                    {proposalSent ? (
+                      <div className="text-center py-3 bg-[#0b1329] rounded-xl border border-emerald-500/30">
+                        <span className="text-[#34d399] text-xs font-bold flex items-center justify-center gap-1">
+                          <CheckCircle size={14} /> 투자 제안이 전송되었습니다
+                        </span>
+                      </div>
+                    ) : (
                       <button
                         onClick={() => setShowProposalModal(true)}
                         className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
@@ -525,6 +538,7 @@ export default function IRPage({
             </div>
           </div>
         </div>
+      </div>
 
         {/* ── Modal 1: Demo Video Player Modal ── */}
         {showVideoModal && (

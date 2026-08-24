@@ -151,10 +151,10 @@ export default function CoursePage({
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Header Card — 일관된 바이올렛/인디고 썸네일 헤더 */}
             <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
-              <div className="h-44 sm:h-52 bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center relative overflow-hidden">
-                <span className="text-6xl opacity-40 drop-shadow-lg select-none">🎓</span>
-                <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-lg backdrop-blur-md border ${
+              <div className="h-24 sm:h-28 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">
+                <span className="text-4xl opacity-50 drop-shadow-md select-none">🎓</span>
+                <div className="absolute top-3.5 left-4 flex gap-2 flex-wrap">
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
                     selectedCourse.status === "모집중"
                       ? "bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]"
                       : selectedCourse.status === "진행중"
@@ -163,10 +163,10 @@ export default function CoursePage({
                   }`}>
                     {selectedCourse.status}
                   </span>
-                  <span className="text-xs font-bold px-3 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
                     {schedule.totalSessions}회차 완강
                   </span>
-                  <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-white/10 text-white border border-white/15 backdrop-blur-md">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white/10 text-white border border-white/15 backdrop-blur-md">
                     {schedule.scheduleType === "stepping_stone" ? "징검다리 일정 연계" : "정기 일정"}
                   </span>
                 </div>
@@ -458,179 +458,196 @@ export default function CoursePage({
           {/* Right Column: Enrollment Card & Instructor Infographic (Sticky sidebar) */}
           <div className="lg:col-span-1 flex flex-col gap-5 sticky top-20 self-start">
             {/* Enrollment Card */}
-            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
-              <div className="text-center mb-4">
-                {selectedCourse.discountedPrice ? (
-                  <>
-                    <span className="text-xs text-slate-500 line-through">
-                      ₩{selectedCourse.price.toLocaleString()}
-                    </span>
-                    <p className="text-3xl font-bold text-[#34d399] font-display mt-1">
-                      ₩{selectedCourse.discountedPrice.toLocaleString()}
-                    </p>
-                    <span className="text-xs text-rose-400 font-bold">
-                      {Math.round((1 - selectedCourse.discountedPrice / selectedCourse.price) * 100)}% 특가 할인
-                    </span>
-                  </>
-                ) : (
-                  <p className="text-3xl font-bold text-[#34d399] font-display">
-                    ₩{selectedCourse.price.toLocaleString()}
-                  </p>
-                )}
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+              {/* Card Header Banner — 바이올렛/인디고 헤더 */}
+              <div className="h-16 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">
+                <span className="text-2xl opacity-40 drop-shadow-md select-none">💳</span>
+                <div className="absolute top-2.5 left-3 flex gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                    수강 신청
+                  </span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                    {schedule.totalSessions}회차
+                  </span>
+                </div>
               </div>
 
-              {isLoggedIn && selectedCourse.isEnrolled ? (
-                <div className="flex flex-col items-center gap-2 p-3 bg-[#0b1329] rounded-xl border border-emerald-500/30">
-                  <div className="flex items-center gap-2 text-[#34d399]">
-                    <CheckCircle size={18} />
-                    <span className="text-sm font-bold">수강 신청 완료</span>
-                  </div>
+              <div className="p-5">
+                <div className="text-center mb-4">
+                  {selectedCourse.discountedPrice ? (
+                    <>
+                      <span className="text-xs text-slate-500 line-through">
+                        ₩{selectedCourse.price.toLocaleString()}
+                      </span>
+                      <p className="text-3xl font-bold text-[#34d399] font-display mt-1">
+                        ₩{selectedCourse.discountedPrice.toLocaleString()}
+                      </p>
+                      <span className="text-xs text-rose-400 font-bold">
+                        {Math.round((1 - selectedCourse.discountedPrice / selectedCourse.price) * 100)}% 특가 할인
+                      </span>
+                    </>
+                  ) : (
+                    <p className="text-3xl font-bold text-[#34d399] font-display">
+                      ₩{selectedCourse.price.toLocaleString()}
+                    </p>
+                  )}
+                </div>
 
-                  <div className="w-full progress-bar mt-2">
-                    <div className="progress-bar-fill" style={{ width: `${selectedCourse.progress || 0}%` }} />
-                  </div>
-                  <span className="text-[10px] text-slate-400">
-                    학습 진도율 {selectedCourse.progress || 0}%
-                  </span>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (!isLoggedIn) {
-                      onLoginClick();
-                      return;
-                    }
-                    setShowPaymentModal(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
-                >
-                  <CreditCard size={16} />
-                  수강 신청하기
-                </button>
-              )}
+                {isLoggedIn && selectedCourse.isEnrolled ? (
+                  <div className="flex flex-col items-center gap-2 p-3 bg-[#0b1329] rounded-xl border border-emerald-500/30">
+                    <div className="flex items-center gap-2 text-[#34d399]">
+                      <CheckCircle size={18} />
+                      <span className="text-sm font-bold">수강 신청 완료</span>
+                    </div>
 
-              {/* Course Features list */}
-              <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-col gap-2.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">강의 형태</span>
-                  <span className="text-white font-semibold">라이브 + VOD 복습</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">진행 기간</span>
-                  <span className="text-[#34d399] font-semibold">
-                    {schedule.startDate.slice(5)} ~ {schedule.endDate.slice(5)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">수업 요일/시간</span>
-                  <span className="text-white font-semibold">
-                    {schedule.daysOfWeek.join(",")} {schedule.timeSlot}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">총 커리큘럼</span>
-                  <span className="text-white font-semibold">{schedule.totalSessions}회차</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">모집 정원</span>
-                  <span className="text-brand-tertiary font-semibold">{selectedCourse.studentCount}명 수강중</span>
+                    <div className="w-full progress-bar mt-2">
+                      <div className="progress-bar-fill" style={{ width: `${selectedCourse.progress || 0}%` }} />
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      학습 진도율 {selectedCourse.progress || 0}%
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        onLoginClick();
+                        return;
+                      }
+                      setShowPaymentModal(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20"
+                  >
+                    <CreditCard size={16} />
+                    수강 신청하기
+                  </button>
+                )}
+
+                {/* Course Features list */}
+                <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-col gap-2.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">강의 형태</span>
+                    <span className="text-white font-semibold">라이브 + VOD 복습</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">진행 기간</span>
+                    <span className="text-[#34d399] font-semibold">
+                      {schedule.startDate.slice(5)} ~ {schedule.endDate.slice(5)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">수업 요일/시간</span>
+                    <span className="text-white font-semibold">
+                      {schedule.daysOfWeek.join(",")} {schedule.timeSlot}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">총 커리큘럼</span>
+                    <span className="text-white font-semibold">{schedule.totalSessions}회차</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">모집 정원</span>
+                    <span className="text-brand-tertiary font-semibold">{selectedCourse.studentCount}명 수강중</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* ── Instructor Infographic Graphic Card ── */}
-            <div className="bg-gradient-to-br from-brand-card via-brand-surface-low to-slate-900 border border-brand-primary/30 rounded-xl p-5 shadow-xl relative overflow-hidden">
-              {/* Background badge decor */}
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-primary/10 rounded-full blur-xl pointer-events-none" />
-              
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-primary">
-                  <Sparkles size={14} />
-                  <span>강사 전문성 인포그래픽</span>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-primary border border-brand-primary/30 font-semibold flex items-center gap-1">
-                  <ShieldCheck size={10} /> 공식 인증 강사
-                </span>
-              </div>
-
-              {/* Instructor profile snippet */}
-              <div
-                onClick={() => setShowInstructorModal(true)}
-                className="flex items-center gap-3 p-2 bg-brand-surface-high/40 rounded-xl border border-brand-border/40 cursor-pointer hover:border-brand-primary/50 transition-all mb-4"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary-container to-brand-secondary flex items-center justify-center text-white font-bold text-lg shadow">
-                  {selectedCourse.instructor.charAt(0)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-1">
-                    {selectedCourse.instructor}
-                    <ExternalLink size={11} className="text-brand-on-surface-variant" />
-                  </h4>
-                  <p className="text-[11px] text-brand-on-surface-variant truncate">
-                    {instructorProfile?.title || selectedCourse.instructorTitle || "AI 스타트업 디렉터"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Infographic Metric Grid */}
-              <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                <div className="p-2.5 bg-brand-surface-low rounded-lg border border-brand-border/30">
-                  <p className="text-[9px] font-mono text-brand-on-surface-variant">경력</p>
-                  <p className="text-sm font-bold text-white font-display mt-0.5">
-                    {instructorProfile?.infographic.experienceYears || 10}년+
-                  </p>
-                </div>
-                <div className="p-2.5 bg-brand-surface-low rounded-lg border border-brand-border/30">
-                  <p className="text-[9px] font-mono text-brand-on-surface-variant">누적 수강생</p>
-                  <p className="text-sm font-bold text-brand-tertiary font-display mt-0.5">
-                    {(instructorProfile?.totalStudents || 3400).toLocaleString()}+
-                  </p>
-                </div>
-                <div className="p-2.5 bg-brand-surface-low rounded-lg border border-brand-border/30">
-                  <p className="text-[9px] font-mono text-brand-on-surface-variant">만족도</p>
-                  <p className="text-sm font-bold text-brand-primary font-display mt-0.5">
-                    {instructorProfile?.infographic.satisfactionRate || 98}%
-                  </p>
-                </div>
-              </div>
-
-              {/* Infographic Highlights */}
-              <div className="space-y-2 text-[11px] text-brand-on-surface-variant mb-4">
-                {(instructorProfile?.infographic.careerHighlights || [
-                  "전) 글로벌 테크 유니콘 AI PM 리드",
-                  "다수 생성형 AI 프로덕트 런칭 및 IR 유치 총괄",
-                  "창업진흥원 및 주요 VC 공식 멘토",
-                ]).map((highlight, hIdx) => (
-                  <div key={hIdx} className="flex items-start gap-1.5">
-                    <CheckCircle size={12} className="text-brand-tertiary flex-shrink-0 mt-0.5" />
-                    <span>{highlight}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Keyword Badges */}
-              <div className="flex flex-wrap gap-1.5 pt-3 border-t border-brand-border/30">
-                {(instructorProfile?.infographic.topKeywords || [
-                  "AI 프로덕트",
-                  "실전 린스타트업",
-                  "1:1 밀착 코칭",
-                  "IR 피칭",
-                ]).map((kw, kwIdx) => (
-                  <span
-                    key={kwIdx}
-                    className="text-[10px] px-2 py-0.5 rounded-md bg-brand-surface-high text-brand-on-surface-variant border border-brand-border/40"
-                  >
-                    #{kw}
+            {/* ── Instructor Infographic Graphic Card (Sticky 같이 유지) ── */}
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl relative">
+              {/* Card Header Banner — 바이올렛/인디고 헤더 */}
+              <div className="h-16 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
+                <span className="text-2xl opacity-40 drop-shadow-md select-none">👨‍🏫</span>
+                <div className="absolute top-2.5 left-3 flex gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                    강사 전문성
                   </span>
-                ))}
+                  <span className="text-[10px] px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center gap-1">
+                    <ShieldCheck size={10} /> 공식 인증
+                  </span>
+                </div>
               </div>
 
-              <button
-                onClick={() => setShowInstructorModal(true)}
-                className="w-full mt-4 text-xs font-semibold py-2 rounded-lg bg-brand-surface-high text-white hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer border border-brand-border/40 flex items-center justify-center gap-1"
-              >
-                진행한 모든 강의 & 전체 리뷰 보기 →
-              </button>
+              <div className="p-5">
+                {/* Instructor profile snippet */}
+                <div
+                  onClick={() => setShowInstructorModal(true)}
+                  className="flex items-center gap-3 p-2 bg-[#0b1329] rounded-xl border border-slate-800/80 cursor-pointer hover:border-brand-primary/50 transition-all mb-4"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary-container to-brand-secondary flex items-center justify-center text-white font-bold text-lg shadow">
+                    {selectedCourse.instructor.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-1">
+                      {selectedCourse.instructor}
+                      <ExternalLink size={11} className="text-slate-400" />
+                    </h4>
+                    <p className="text-[11px] text-slate-400 truncate">
+                      {instructorProfile?.title || selectedCourse.instructorTitle || "AI 스타트업 디렉터"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Infographic Metric Grid */}
+                <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                  <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
+                    <p className="text-[9px] font-mono text-slate-400">경력</p>
+                    <p className="text-sm font-bold text-white font-display mt-0.5">
+                      {instructorProfile?.infographic.experienceYears || 10}년+
+                    </p>
+                  </div>
+                  <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
+                    <p className="text-[9px] font-mono text-slate-400">누적 수강생</p>
+                    <p className="text-sm font-bold text-brand-tertiary font-display mt-0.5">
+                      {(instructorProfile?.totalStudents || 3400).toLocaleString()}+
+                    </p>
+                  </div>
+                  <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
+                    <p className="text-[9px] font-mono text-slate-400">만족도</p>
+                    <p className="text-sm font-bold text-[#34d399] font-display mt-0.5">
+                      {instructorProfile?.infographic.satisfactionRate || 98}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Infographic Highlights */}
+                <div className="space-y-2 text-[11px] text-slate-300 mb-4">
+                  {(instructorProfile?.infographic.careerHighlights || [
+                    "전) 글로벌 테크 유니콘 AI PM 리드",
+                    "다수 생성형 AI 프로덕트 런칭 및 IR 유치 총괄",
+                    "창업진흥원 및 주요 VC 공식 멘토",
+                  ]).map((highlight, hIdx) => (
+                    <div key={hIdx} className="flex items-start gap-1.5">
+                      <CheckCircle size={12} className="text-[#34d399] flex-shrink-0 mt-0.5" />
+                      <span>{highlight}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Keyword Badges */}
+                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-800/80">
+                  {(instructorProfile?.infographic.topKeywords || [
+                    "AI 프로덕트",
+                    "실전 린스타트업",
+                    "1:1 밀착 코칭",
+                    "IR 피칭",
+                  ]).map((kw, kwIdx) => (
+                    <span
+                      key={kwIdx}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-[#0b1329] text-slate-300 border border-slate-800/80"
+                    >
+                      #{kw}
+                    </span>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowInstructorModal(true)}
+                  className="w-full mt-4 text-xs font-semibold py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors cursor-pointer border border-slate-700/60 flex items-center justify-center gap-1"
+                >
+                  진행한 모든 강의 & 전체 리뷰 보기 →
+                </button>
+              </div>
             </div>
           </div>
         </div>
