@@ -170,30 +170,35 @@ export default function IRPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Project Details */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            {/* Header Card */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-lg">
-              <div className="h-48 bg-gradient-to-br from-indigo-800 via-purple-950 to-slate-950 flex items-center justify-center relative">
-                <span className="text-5xl opacity-20">🚀</span>
+            {/* Header Card — 일관된 바이올렛/인디고 썸네일 헤더 */}
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+              <div className="h-44 sm:h-52 bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center relative overflow-hidden">
+                <span className="text-6xl opacity-40 drop-shadow-lg select-none">🚀</span>
 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded bg-brand-primary-container/30 text-brand-primary border border-brand-primary/40 backdrop-blur-xs">
-                    {selectedProject.investmentStage}
-                  </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded bg-brand-surface-high/80 text-brand-on-surface-variant backdrop-blur-xs">
+                <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
                     {selectedProject.field}
                   </span>
+                  <span className="text-xs font-bold px-3 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                    {selectedProject.investmentStage}
+                  </span>
+                  {selectedProject.demoVideoUrl && (
+                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 flex items-center gap-1">
+                      <Play size={11} /> 동작 영상
+                    </span>
+                  )}
                 </div>
 
                 {/* Team Hiring Badge & Anonymity Indicator */}
                 <div className="absolute top-4 right-4 flex items-center gap-2">
                   {isAnonymousMode && (
-                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-surface-high/90 text-brand-tertiary border border-brand-tertiary/40 flex items-center gap-1">
-                      <Lock size={11} /> 스텔스(비실명) 모드
+                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-[#030712]/80 text-brand-tertiary border border-brand-tertiary/40 flex items-center gap-1 backdrop-blur-md">
+                      <Lock size={12} /> 스텔스(비실명) 모드
                     </span>
                   )}
                   {selectedProject.isHiring && (
-                    <span className="badge-recruiting text-xs font-bold px-2.5 py-1 rounded shadow">
+                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 backdrop-blur-md">
                       🔥 팀원 모집 중
                     </span>
                   )}
@@ -401,9 +406,9 @@ export default function IRPage({
           </div>
 
           {/* Right Column: Team Intro (Real-name / Anonymous) & Actions */}
-          <div className="lg:col-span-1 flex flex-col gap-4">
+          <div className="lg:col-span-1 flex flex-col gap-4 sticky top-20 self-start">
             {/* Team Members Card */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md">
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Users size={15} className="text-brand-primary" />

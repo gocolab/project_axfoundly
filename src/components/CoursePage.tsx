@@ -149,18 +149,24 @@ export default function CoursePage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Course Main Details */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            {/* Header Card */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-lg">
-              <div className="h-48 sm:h-56 bg-gradient-to-br from-indigo-800 via-purple-900 to-slate-950 flex items-center justify-center relative">
-                <Play size={48} className="text-white/30" />
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded shadow ${
-                    selectedCourse.status === "모집중" ? "badge-recruiting" :
-                    selectedCourse.status === "진행중" ? "badge-progress" : "badge-closed"
+            {/* Header Card — 일관된 바이올렛/인디고 썸네일 헤더 */}
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+              <div className="h-44 sm:h-52 bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center relative overflow-hidden">
+                <span className="text-6xl opacity-40 drop-shadow-lg select-none">🎓</span>
+                <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+                  <span className={`text-xs font-semibold px-3 py-1 rounded-lg backdrop-blur-md border ${
+                    selectedCourse.status === "모집중"
+                      ? "bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]"
+                      : selectedCourse.status === "진행중"
+                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                      : "bg-slate-700/40 border-slate-600/50 text-slate-300"
                   }`}>
                     {selectedCourse.status}
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded bg-brand-surface-high/90 text-brand-primary border border-brand-border/40">
+                  <span className="text-xs font-bold px-3 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                    {schedule.totalSessions}회차 완강
+                  </span>
+                  <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-white/10 text-white border border-white/15 backdrop-blur-md">
                     {schedule.scheduleType === "stepping_stone" ? "징검다리 일정 연계" : "정기 일정"}
                   </span>
                 </div>
@@ -168,47 +174,47 @@ export default function CoursePage({
 
               <div className="p-6">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-brand-primary px-2 py-0.5 rounded bg-brand-primary/10 border border-brand-primary/20">
+                  <span className="text-xs font-mono font-bold text-brand-primary px-2.5 py-1 rounded-lg bg-brand-primary/10 border border-brand-primary/20">
                     {selectedCourse.category}
                   </span>
-                  <span className="text-xs text-brand-on-surface-variant flex items-center gap-1">
-                    <CalendarIcon size={13} className="text-brand-tertiary" />
+                  <span className="text-xs font-semibold text-[#34d399] flex items-center gap-1.5">
+                    <CalendarIcon size={14} className="text-[#34d399]" />
                     {schedule.startDate} ~ {schedule.endDate}
                   </span>
                 </div>
 
-                <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mt-2">
+                <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mt-2.5 leading-tight">
                   {selectedCourse.title}
                 </h1>
-                <p className="text-sm text-brand-on-surface-variant mt-2.5 leading-relaxed">
+                <p className="text-sm text-slate-400 mt-2.5 leading-relaxed">
                   {selectedCourse.description}
                 </p>
 
                 {/* Course Metadata Banner */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 p-3.5 bg-brand-surface-low rounded-xl border border-brand-border/40">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 p-4 bg-[#0b1329]/90 rounded-xl border border-slate-800/80">
                   <div>
-                    <span className="text-[10px] text-brand-on-surface-variant block font-mono">강의 일정</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">강의 일정</span>
                     <span className="text-xs font-semibold text-white">매주 {schedule.daysOfWeek.join("·")}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-brand-on-surface-variant block font-mono">진행 시간</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">진행 시간</span>
                     <span className="text-xs font-semibold text-white">{schedule.timeSlot}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-brand-on-surface-variant block font-mono">총 회차</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">총 회차</span>
                     <span className="text-xs font-semibold text-brand-tertiary">{schedule.totalSessions}회차 완강</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-brand-on-surface-variant block font-mono">평균 평점</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">평균 평점</span>
                     <div className="flex items-center gap-1 text-xs font-bold text-white">
-                      <Star size={12} className="star-filled" />
+                      <Star size={13} className="text-amber-400 fill-amber-400" />
                       {selectedCourse.rating} ({selectedCourse.reviewCount})
                     </div>
                   </div>
                 </div>
 
                 {/* Instructor Quick Bar (Clickable for Modal) */}
-                <div className="flex items-center justify-between mt-5 pt-4 border-t border-brand-border/30">
+                <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-800/80">
                   <div
                     onClick={() => setShowInstructorModal(true)}
                     className="flex items-center gap-3 p-2 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer group"
@@ -226,28 +232,28 @@ export default function CoursePage({
                           강사 정보 보기 →
                         </span>
                       </div>
-                      <p className="text-[11px] text-brand-on-surface-variant">
+                      <p className="text-[11px] text-slate-400">
                         {selectedCourse.instructorTitle || "AI 및 스타트업 전문 디렉터"}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 text-xs text-brand-on-surface-variant">
-                    <Users size={14} className="text-brand-tertiary" />
-                    <span>{selectedCourse.studentCount}명 수강중</span>
+                  <div className="flex items-center gap-1 text-xs text-slate-400">
+                    <Users size={14} className="text-[#34d399]" />
+                    <span className="font-medium">{selectedCourse.studentCount}명 수강중</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Curriculum with Date & Time */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-6 shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                   <BookOpen size={18} className="text-brand-primary" />
                   커리큘럼 및 회차별 일정
                 </h2>
-                <span className="text-xs text-brand-on-surface-variant font-mono">
+                <span className="text-xs text-slate-400 font-mono">
                   총 {selectedCourse.curriculum.length}개 세션
                 </span>
               </div>
@@ -256,7 +262,7 @@ export default function CoursePage({
                 {selectedCourse.curriculum.map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-brand-surface-low rounded-xl border border-brand-border/40 hover:border-brand-primary/40 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-[#0b1329]/80 rounded-xl border border-slate-800/80 hover:border-brand-primary/40 transition-colors"
                   >
                     <div className="flex items-start gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-brand-primary-container/20 text-brand-primary flex items-center justify-center flex-shrink-0 text-xs font-bold border border-brand-primary/30">
@@ -269,20 +275,20 @@ export default function CoursePage({
                           </span>
                           <h3 className="text-xs font-bold text-white">{item.title}</h3>
                         </div>
-                        <p className="text-[11px] text-brand-on-surface-variant mt-0.5 leading-relaxed">
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
                           {item.description}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:self-center flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-brand-border/20">
+                    <div className="flex items-center gap-2 sm:self-center flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
                       {item.date && (
-                        <span className="text-[11px] font-semibold text-brand-primary bg-brand-primary/10 px-2 py-1 rounded-md border border-brand-primary/20 flex items-center gap-1">
+                        <span className="text-[11px] font-semibold text-[#34d399] bg-[#34d399]/10 px-2 py-1 rounded-md border border-[#34d399]/20 flex items-center gap-1">
                           <CalendarIcon size={11} />
                           {item.date} ({item.dayOfWeek || "화"})
                         </span>
                       )}
-                      <span className="text-[10px] text-brand-on-surface-variant flex items-center gap-1 bg-brand-surface-high px-2 py-1 rounded-md">
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded-md">
                         <Clock size={11} /> {item.time || item.duration}
                       </span>
                     </div>
@@ -292,21 +298,21 @@ export default function CoursePage({
             </div>
 
             {/* Interactive Course Schedule Calendar Section */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-6 shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                     <CalendarIcon size={18} className="text-brand-tertiary" />
                     강의 달력 & 수강 일정
                   </h2>
-                  <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     달력에서 강의 날짜를 확인하고 수강 계획을 세워보세요
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}
-                    className="p-1.5 rounded-lg border border-brand-border/40 hover:bg-brand-surface-high text-brand-on-surface-variant hover:text-white transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg border border-slate-700/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <ChevronLeft size={14} />
                   </button>
@@ -315,7 +321,7 @@ export default function CoursePage({
                   </span>
                   <button
                     onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}
-                    className="p-1.5 rounded-lg border border-brand-border/40 hover:bg-brand-surface-high text-brand-on-surface-variant hover:text-white transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg border border-slate-700/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <ChevronRight size={14} />
                   </button>
@@ -323,9 +329,9 @@ export default function CoursePage({
               </div>
 
               {/* Month Calendar Grid */}
-              <div className="bg-brand-surface-low rounded-xl p-4 border border-brand-border/40">
-                <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-mono text-brand-on-surface-variant pb-2 border-b border-brand-border/30">
-                  <span className="text-brand-accent-rose">일</span>
+              <div className="bg-[#0b1329]/80 rounded-xl p-4 border border-slate-800/80">
+                <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-mono text-slate-400 pb-2 border-b border-slate-800/60">
+                  <span className="text-rose-400">일</span>
                   <span>월</span>
                   <span>화</span>
                   <span>수</span>
@@ -357,8 +363,8 @@ export default function CoursePage({
                           hasSession
                             ? isSelected
                               ? "bg-brand-primary-container text-white border-brand-primary shadow-lg cursor-pointer scale-105"
-                              : "bg-brand-primary-container/15 text-white border-brand-primary/40 hover:bg-brand-primary-container/25 cursor-pointer"
-                            : "bg-brand-surface/40 text-brand-on-surface-variant/70 border-brand-border/20"
+                              : "bg-brand-primary-container/20 text-white border-brand-primary/40 hover:bg-brand-primary-container/30 cursor-pointer"
+                            : "bg-slate-900/40 text-slate-500 border-slate-800/40"
                         }`}
                       >
                         <div className="flex justify-between items-center text-[10px] font-mono">
@@ -411,23 +417,23 @@ export default function CoursePage({
             </div>
 
             {/* Reviews Section */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-6 shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                   <MessageSquare size={18} className="text-brand-primary" />
                   수강 후기 ({selectedCourse.reviews.length})
                 </h2>
                 <div className="flex items-center gap-1">
-                  <Star size={14} className="star-filled" />
+                  <Star size={14} className="text-amber-400 fill-amber-400" />
                   <span className="text-sm font-bold text-white">{selectedCourse.rating}</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3">
                 {selectedCourse.reviews.map((review) => (
-                  <div key={review.id} className="p-3.5 bg-brand-surface-low rounded-xl border border-brand-border/30">
+                  <div key={review.id} className="p-3.5 bg-[#0b1329]/80 rounded-xl border border-slate-800/80">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-full bg-brand-surface-high flex items-center justify-center text-[10px] font-bold text-brand-primary">
+                      <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-brand-primary">
                         {review.author.charAt(0)}
                       </div>
                       <span className="text-xs font-semibold text-white">{review.author}</span>
@@ -436,47 +442,46 @@ export default function CoursePage({
                           <Star
                             key={i}
                             size={10}
-                            className={i < review.rating ? "star-filled" : "star-empty"}
-                            fill={i < review.rating ? "currentColor" : "none"}
+                            className={i < review.rating ? "text-amber-400 fill-amber-400" : "text-slate-600"}
                           />
                         ))}
                       </div>
-                      <span className="text-[10px] text-brand-on-surface-variant ml-auto">{review.date}</span>
+                      <span className="text-[10px] text-slate-400 ml-auto">{review.date}</span>
                     </div>
-                    <p className="text-xs text-brand-on-surface-variant leading-relaxed">{review.content}</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">{review.content}</p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Enrollment Card & Instructor Infographic */}
-          <div className="lg:col-span-1 flex flex-col gap-5">
+          {/* Right Column: Enrollment Card & Instructor Infographic (Sticky sidebar) */}
+          <div className="lg:col-span-1 flex flex-col gap-5 sticky top-20 self-start">
             {/* Enrollment Card */}
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-xl sticky top-20">
+            <div className="bg-[#0f172a] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
               <div className="text-center mb-4">
                 {selectedCourse.discountedPrice ? (
                   <>
-                    <span className="text-xs text-brand-on-surface-variant line-through">
+                    <span className="text-xs text-slate-500 line-through">
                       ₩{selectedCourse.price.toLocaleString()}
                     </span>
-                    <p className="text-3xl font-bold text-white font-display mt-1">
+                    <p className="text-3xl font-bold text-[#34d399] font-display mt-1">
                       ₩{selectedCourse.discountedPrice.toLocaleString()}
                     </p>
-                    <span className="text-xs text-brand-accent-rose font-bold">
+                    <span className="text-xs text-rose-400 font-bold">
                       {Math.round((1 - selectedCourse.discountedPrice / selectedCourse.price) * 100)}% 특가 할인
                     </span>
                   </>
                 ) : (
-                  <p className="text-3xl font-bold text-white font-display">
+                  <p className="text-3xl font-bold text-[#34d399] font-display">
                     ₩{selectedCourse.price.toLocaleString()}
                   </p>
                 )}
               </div>
 
               {isLoggedIn && selectedCourse.isEnrolled ? (
-                <div className="flex flex-col items-center gap-2 p-3 bg-brand-surface-low rounded-xl border border-brand-tertiary/30">
-                  <div className="flex items-center gap-2 text-brand-tertiary">
+                <div className="flex flex-col items-center gap-2 p-3 bg-[#0b1329] rounded-xl border border-emerald-500/30">
+                  <div className="flex items-center gap-2 text-[#34d399]">
                     <CheckCircle size={18} />
                     <span className="text-sm font-bold">수강 신청 완료</span>
                   </div>
@@ -484,7 +489,7 @@ export default function CoursePage({
                   <div className="w-full progress-bar mt-2">
                     <div className="progress-bar-fill" style={{ width: `${selectedCourse.progress || 0}%` }} />
                   </div>
-                  <span className="text-[10px] text-brand-on-surface-variant">
+                  <span className="text-[10px] text-slate-400">
                     학습 진도율 {selectedCourse.progress || 0}%
                   </span>
                 </div>
@@ -505,29 +510,29 @@ export default function CoursePage({
               )}
 
               {/* Course Features list */}
-              <div className="mt-5 pt-4 border-t border-brand-border/30 flex flex-col gap-2.5">
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-col gap-2.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-brand-on-surface-variant">강의 형태</span>
+                  <span className="text-slate-400">강의 형태</span>
                   <span className="text-white font-semibold">라이브 + VOD 복습</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-brand-on-surface-variant">진행 기간</span>
-                  <span className="text-white font-semibold">
+                  <span className="text-slate-400">진행 기간</span>
+                  <span className="text-[#34d399] font-semibold">
                     {schedule.startDate.slice(5)} ~ {schedule.endDate.slice(5)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-brand-on-surface-variant">수업 요일/시간</span>
+                  <span className="text-slate-400">수업 요일/시간</span>
                   <span className="text-white font-semibold">
                     {schedule.daysOfWeek.join(",")} {schedule.timeSlot}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-brand-on-surface-variant">총 커리큘럼</span>
+                  <span className="text-slate-400">총 커리큘럼</span>
                   <span className="text-white font-semibold">{schedule.totalSessions}회차</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-brand-on-surface-variant">모집 정원</span>
+                  <span className="text-slate-400">모집 정원</span>
                   <span className="text-brand-tertiary font-semibold">{selectedCourse.studentCount}명 수강중</span>
                 </div>
               </div>
