@@ -50,11 +50,7 @@ lerna-debug.log*
 # Testing & Coverage
 coverage/
 .nyc_output/
-
-# OS Metadata
-.DS_Store
-.DS_Store?
-Thumbs.db
-ehthumbs.db
+playwright/.auth/
+*.auth.json
 playwright-report/
 test-results/

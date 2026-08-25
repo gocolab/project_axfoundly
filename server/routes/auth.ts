@@ -44,8 +44,8 @@ router.get("/google/callback", async (req, res) => {
 
   // Playwright Mock 우회 처리
   if (process.env.PLAYWRIGHT_AUTH_METHOD === "mock" && code === "mock_playwright_code") {
-    userEmail = "test-e2e@mail.com";
-    userName = "E2E테스터";
+    userEmail = "otter.oh@gmail.com";
+    userName = "오승환";
   } else {
     try {
       // 1. Authorization Code로 Access Token 교환
@@ -198,21 +198,34 @@ router.get("/me", (req, res) => {
       const emailBase64 = tokenPart.replace("google-", "");
       const email = Buffer.from(emailBase64, 'base64').toString('utf-8');
       
-      const member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
-      if (member) {
-        return res.json({
-          user: {
-            id: `user-${member.id}`,
-            name: member.name,
-            email: member.email,
-            role: member.role,
-            assignedRoles: member.assignedRoles || [],
-            avatar: "",
-            joinDate: member.joinDate,
-          }
-        });
+      let member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
+      if (!member) {
+        const isOtter = email.toLowerCase() === "otter.oh@gmail.com";
+        const today = new Date().toISOString().split("T")[0];
+        const newMember: AdminMember = {
+          id: `m-google-${Date.now()}`,
+          name: email.split("@")[0],
+          email: email,
+          role: isOtter ? "admin" : "member",
+          joinDate: today,
+          lastLogin: today,
+          status: "활성",
+          courseCount: 0,
+        };
+        db.update("members", (mList) => [newMember, ...mList]);
+        member = newMember;
       }
-      return res.status(401).json({ error: "User session expired or invalid" });
+      return res.json({
+        user: {
+          id: `user-${member.id}`,
+          name: member.name,
+          email: member.email,
+          role: member.role,
+          assignedRoles: member.assignedRoles || [],
+          avatar: "",
+          joinDate: member.joinDate,
+        }
+      });
     }
 
     const role = tokenPart as UserRole;

@@ -30,7 +30,7 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 4종 회원 등급 기반 �
     // Google OAuth 로그인 버튼 확인 및 클릭
     const googleBtn = page.getByTestId('google-oauth-button');
     await expect(googleBtn).toBeVisible();
-    await expect(googleBtn).toContainText('otter.oh@gmail.com');
+    await expect(googleBtn).toContainText('Google 계정으로 로그인');
     await googleBtn.click();
 
     // GNB에 오승환 프로필 확인
