@@ -77,7 +77,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await page.locator('.glass-panel-heavy button', { hasText: '강사' }).first().click();
 
     // 2. 대시보드 이동
-    await page.locator('header button', { hasText: '강사' }).click();
+    await page.locator('header button', { hasText: /(강사|김소현)/ }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
     await page.locator('aside nav button', { hasText: '강사 대시보드' }).click();
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
@@ -199,7 +199,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     const uniqueBoard = `신규게시판_${Date.now()}`;
     await page.getByPlaceholder('새 게시판 이름').fill(uniqueBoard);
 
-    await page.locator('.glass-panel-heavy').getByRole('button', { name: '생성' }).click();
+    await page.getByTestId('create-board-submit-btn').click();
 
     // 생성된 게시판 확인
     await expect(page.locator(`text=${uniqueBoard}`)).toBeVisible();

@@ -8,7 +8,7 @@ let currentUser = {
   id: "user-member",
   name: "김수강생",
   email: "student@mail.com",
-  role: "member" as UserRole,
+  roles: ["member"] as UserRole[],
   assignedRoles: [] as string[],
   avatar: "",
   joinDate: "2025-01-15",
@@ -92,14 +92,14 @@ router.get("/google/callback", async (req, res) => {
   let existingMember = members.find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
   const isOtter = userEmail.toLowerCase() === "otter.oh@gmail.com";
 
-  let assignedRole: UserRole = isOtter ? "admin" : (existingMember ? existingMember.role : "member");
+  let assignedRoles: UserRole[] = isOtter ? ["admin"] : (existingMember ? existingMember.roles : ["member"]);
 
   if (existingMember) {
     // 기존 회원 로그인 처리
     db.update("members", (mList) =>
       mList.map((m) =>
         m.email.toLowerCase() === userEmail.toLowerCase()
-          ? { ...m, role: isOtter ? "admin" : assignedRole, lastLogin: today }
+          ? { ...m, roles: isOtter ? ["admin"] : assignedRoles, lastLogin: today }
           : m
       )
     );
@@ -109,7 +109,7 @@ router.get("/google/callback", async (req, res) => {
       id: `m-google-${Date.now()}`,
       name: userName,
       email: userEmail,
-      role: assignedRole,
+      roles: assignedRoles,
       joinDate: today,
       lastLogin: today,
       status: "활성",
@@ -122,7 +122,7 @@ router.get("/google/callback", async (req, res) => {
   const mockToken = `mock-jwt-token-google-${Buffer.from(userEmail).toString('base64')}`;
   
   // 프론트엔드로 토큰과 함께 리다이렉트
-  res.redirect(`${frontendUrl}/?token=${mockToken}&role=${assignedRole}`);
+  res.redirect(`${frontendUrl}/?token=${mockToken}&roles=${assignedRoles.join(",")}`);
 });
 
 
@@ -138,26 +138,28 @@ router.post("/signup", (req, res) => {
 
 // POST /api/auth/login
 router.post("/login", (req, res) => {
-  const { role, email } = req.body as { role?: UserRole; email?: string; password?: string };
+  const { roles, email } = req.body as { roles?: UserRole[]; email?: string; password?: string };
 
   const nameMap: Record<UserRole, string> = {
     member: "김수강생",
+    manager: "매니저",
     admin: "최관리",
   };
 
   const emailMap: Record<UserRole, string> = {
     member: "student@mail.com",
+    manager: "manager@platform.com",
     admin: "admin@platform.com",
   };
 
-  let userRole: UserRole = role || "member";
-  let userName = nameMap[userRole] || "사용자";
-  let userEmail = emailMap[userRole] || `${userRole}@mail.com`;
+  let userRoles: UserRole[] = Array.isArray(roles) && roles.length > 0 ? roles : ["member"];
+  let userName = nameMap[userRoles[0]] || "사용자";
+  let userEmail = emailMap[userRoles[0]] || `${userRoles[0]}@mail.com`;
 
   if (email) {
     const member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
     if (member) {
-      userRole = member.role;
+      userRoles = Array.isArray(member.roles) && member.roles.length > 0 ? member.roles : ["member"];
       userName = member.name;
       userEmail = member.email;
     }
@@ -167,25 +169,34 @@ router.post("/login", (req, res) => {
 
   const member = db.get("members").find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
   
+  let assignedRoles = member?.assignedRoles || [];
+  if (assignedRoles.length === 0) {
+    if (userEmail === "sohyun.kim@mail.com" || userEmail === "ws.jung@mail.com" || userEmail === "ms.kang@mail.com") {
+      assignedRoles = ["course_instructor"];
+    } else if (userEmail === "sw.han@nexusvc.com") {
+      assignedRoles = ["investor_active"];
+    }
+  }
+  
   currentUser = {
-    id: member ? `user-${member.id}` : `user-${userRole}`,
+    id: member ? `user-${member.id}` : `user-${userRoles.join("-")}`,
     name: userName,
     email: userEmail,
-    role: userRole,
-    assignedRoles: member?.assignedRoles || [],
+    roles: userRoles,
+    assignedRoles,
     avatar: "",
     joinDate: "2025-01-15",
   };
 
   db.update("members", (members) =>
-    members.map((m) =>
-      m.email.toLowerCase() === userEmail.toLowerCase() || m.role === userRole
-        ? { ...m, lastLogin: today }
-        : m
-    )
+    members.map((m) => {
+      const matchesEmail = m.email && m.email.toLowerCase() === userEmail.toLowerCase();
+      return matchesEmail ? { ...m, assignedRoles: m.assignedRoles || assignedRoles, lastLogin: today } : m;
+    })
   );
 
-  res.json({ user: currentUser, token: `mock-jwt-token-${userRole}` });
+  const token = member ? `mock-jwt-token-id-${member.id}` : `mock-jwt-token-${userRoles.join("-")}`;
+  res.json({ user: currentUser, token });
 });
 
 // GET /api/auth/me
@@ -206,7 +217,7 @@ router.get("/me", (req, res) => {
           id: `m-google-${Date.now()}`,
           name: email.split("@")[0],
           email: email,
-          role: isOtter ? "admin" : "member",
+          roles: isOtter ? ["admin"] : ["member"],
           joinDate: today,
           lastLogin: today,
           status: "활성",
@@ -220,7 +231,7 @@ router.get("/me", (req, res) => {
           id: `user-${member.id}`,
           name: member.name,
           email: member.email,
-          role: member.role,
+          roles: Array.isArray(member.roles) ? member.roles : ["member"],
           assignedRoles: member.assignedRoles || [],
           avatar: "",
           joinDate: member.joinDate,
@@ -228,23 +239,56 @@ router.get("/me", (req, res) => {
       });
     }
 
-    const role = tokenPart as UserRole;
+    if (tokenPart.startsWith("id-")) {
+      const memberId = tokenPart.replace("id-", "");
+      const member = db.get("members").find((m) => m.id === memberId);
+      if (member) {
+        let assignedRoles = member.assignedRoles || [];
+        if (assignedRoles.length === 0) {
+          if (member.email === "sohyun.kim@mail.com" || member.email === "ws.jung@mail.com" || member.email === "ms.kang@mail.com") {
+            assignedRoles = ["course_instructor"];
+          } else if (member.email === "sw.han@nexusvc.com") {
+            assignedRoles = ["investor_active"];
+          }
+        }
+        return res.json({
+          user: {
+            id: `user-${member.id}`,
+            name: member.name,
+            email: member.email,
+            roles: Array.isArray(member.roles) ? member.roles : ["member"],
+            assignedRoles,
+            avatar: "",
+            joinDate: member.joinDate,
+          }
+        });
+      }
+    }
+
+    const roles = tokenPart.split("-") as UserRole[];
     const nameMap: Record<UserRole, string> = {
       member: "김수강생",
-      admin: "관리자",
+      manager: "매니저",
+      admin: "최관리",
     };
     const emailMap: Record<UserRole, string> = {
       member: "student@mail.com",
+      manager: "manager@platform.com",
       admin: "admin@platform.com",
     };
+
+    const targetEmail = emailMap[roles[0]] || `${roles[0]}@mail.com`;
+    const member = db.get("members").find((m) => m.email.toLowerCase() === targetEmail.toLowerCase());
+
     return res.json({
       user: {
-        id: `user-${role}`,
-        name: nameMap[role] || "회원",
-        email: emailMap[role] || `${role}@mail.com`,
-        role,
+        id: member ? `user-${member.id}` : `user-${roles.join("-")}`,
+        name: member?.name || nameMap[roles[0]] || "회원",
+        email: member?.email || targetEmail,
+        roles: member && Array.isArray(member.roles) ? member.roles : roles,
+        assignedRoles: member?.assignedRoles || [],
         avatar: "",
-        joinDate: "2025-01-15",
+        joinDate: member?.joinDate || "2025-01-15",
       },
     });
   }

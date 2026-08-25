@@ -19,7 +19,7 @@ interface CommunityPageProps {
   posts: BoardPost[];
   onAddPost: (post: Omit<BoardPost, "id" | "viewCount" | "commentCount" | "authorAvatar">) => void;
   isLoggedIn: boolean;
-  userRole?: UserRole;
+  userRoles?: UserRole[];
   userName?: string;
   onLoginClick: () => void;
   initialPostId?: string | null;
@@ -30,7 +30,7 @@ export default function CommunityPage({
   posts,
   onAddPost,
   isLoggedIn,
-  userRole = "member",
+  userRoles = ["member"],
   userName = "김수강생",
   onLoginClick,
   initialPostId,
@@ -293,7 +293,7 @@ export default function CommunityPage({
               post={selectedPost}
               onClose={handleCloseDetail}
               isLoggedIn={isLoggedIn}
-              userRole={userRole}
+              userRoles={userRoles}
               userName={userName}
               onLoginClick={onLoginClick}
               onCommentAdded={(newComment) => {

@@ -11,13 +11,13 @@ test.describe('TC-08: 백엔드 11개 도메인 REST API 전수 무결성 및 C/
 
   // 2. Auth Domain
   test('POST /api/auth/login and GET /api/auth/me operate correctly', async ({ request }) => {
-    // 1. Login as instructor
+    // 1. Login as admin
     const loginRes = await request.post('/api/auth/login', {
-      data: { role: 'instructor' },
+      data: { roles: ['admin'] },
     });
     expect(loginRes.status()).toBe(200);
     const loginData = await loginRes.json();
-    expect(loginData.user.role).toBe('instructor');
+    expect(loginData.user.roles).toContain('admin');
 
     // 2. Check me with token
     const meRes = await request.get('/api/auth/me', {
@@ -27,7 +27,7 @@ test.describe('TC-08: 백엔드 11개 도메인 REST API 전수 무결성 및 C/
     });
     expect(meRes.status()).toBe(200);
     const meData = await meRes.json();
-    expect(meData.user.role).toBe('instructor');
+    expect(meData.user.roles).toContain('admin');
   });
 
   // 3. Courses Domain (List, Get, Create, Enroll, Review, Approve, Reject)
@@ -307,8 +307,8 @@ test.describe('TC-08: 백엔드 11개 도메인 REST API 전수 무결성 및 C/
     const firstMemberId = targetMember.id;
 
     // Change Role
-    const roleRes = await request.patch(`/api/admin/members/${firstMemberId}/role`, {
-      data: { role: 'instructor' },
+    const roleRes = await request.patch(`/api/admin/members/${firstMemberId}/roles`, {
+      data: { roles: ['admin'] },
     });
     expect(roleRes.status()).toBe(200);
 

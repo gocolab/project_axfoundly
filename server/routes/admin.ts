@@ -16,16 +16,19 @@ router.get("/members", (req, res) => {
   res.json({ members });
 });
 
-// PATCH /api/admin/members/:id/role
-router.patch("/members/:id/role", (req, res) => {
+// PATCH /api/admin/members/:id/roles & /members/:id/role
+router.patch(["/members/:id/roles", "/members/:id/role"], (req, res) => {
   const { id } = req.params;
-  const { role } = req.body as { role: UserRole };
+  const { roles, role } = req.body as { roles?: UserRole[]; role?: string };
+  const targetRoles: UserRole[] = Array.isArray(roles) && roles.length > 0 
+    ? roles 
+    : (role === "admin" ? ["admin"] : role === "manager" ? ["manager"] : ["member"]);
 
   let updatedMember: AdminMember | null = null;
   db.update("members", (members) =>
     members.map((m) => {
       if (m.id === id) {
-        updatedMember = { ...m, role };
+        updatedMember = { ...m, roles: targetRoles };
         return updatedMember;
       }
       return m;

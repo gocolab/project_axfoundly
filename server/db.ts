@@ -16,6 +16,7 @@ import type {
   AdminBoard,
   CRMMessage,
   JobApplication,
+  UserRole,
 } from "../src/types";
 
 export interface DatabaseSchema {
@@ -496,7 +497,7 @@ const SEED_COMMENTS: Comment[] = [
     postId: "p-1",
     author: "이지훈",
     authorAvatar: "",
-    authorRole: "member",
+    authorRoles: ["member"],
     content: "이번 3기 프로그램에 저희 팀도 꼭 지원하겠습니다! 선발 절차가 어떻게 되나요?",
     createdAt: "2025-08-10 14:20",
   },
@@ -505,7 +506,7 @@ const SEED_COMMENTS: Comment[] = [
     postId: "p-1",
     author: "관리자",
     authorAvatar: "",
-    authorRole: "admin",
+    authorRoles: ["admin"],
     content: "1차 서류 심사 후 2차 비대면 피칭 인터뷰로 최종 10팀을 선발합니다.",
     createdAt: "2025-08-10 14:45",
   },
@@ -514,7 +515,7 @@ const SEED_COMMENTS: Comment[] = [
     postId: "p-2",
     author: "김수강생",
     authorAvatar: "",
-    authorRole: "member",
+    authorRoles: ["member"],
     content: "안녕하세요! React와 Next.js 3년차입니다. 포트폴리오 전달드릴 수 있을까요?",
     createdAt: "2025-08-12 16:30",
   },
@@ -523,7 +524,7 @@ const SEED_COMMENTS: Comment[] = [
     postId: "p-3",
     author: "강민수",
     authorAvatar: "",
-    authorRole: "member",
+    authorRoles: ["member"],
     content: "SSE 연결 시 타임아웃 처리와 재연결 로직도 신경쓰시면 프로덕션 안정성이 올라갑니다!",
     createdAt: "2025-08-11 20:10",
   },
@@ -532,7 +533,7 @@ const SEED_COMMENTS: Comment[] = [
     postId: "p-5",
     author: "정우석",
     authorAvatar: "",
-    authorRole: "member",
+    authorRoles: ["member"],
     content: "초기 단계에서는 마케팅비 외에 대표의 세일즈 인건비와 POC 전환율을 감안한 블렌디드 CAC로 산출하는 것이 설득력 있습니다.",
     createdAt: "2025-08-08 21:00",
   },
@@ -652,16 +653,16 @@ const SEED_STATS: DashboardStats = {
 };
 
 const SEED_MEMBERS: AdminMember[] = [
-  { id: "m-otter", name: "오승환", email: "otter.oh@gmail.com", role: "admin", joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
-  { id: "m-mahau", name: "마하우", email: "mahau.master@gmail.com", role: "member", joinDate: "2025-02-01", lastLogin: "2025-08-20", status: "활성", courseCount: 1 },
-  { id: "m0", name: "최관리", email: "admin@platform.com", role: "admin", joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
-  { id: "m1", name: "김수강생", email: "student@mail.com", role: "member", joinDate: "2025-01-15", lastLogin: "2025-08-12", status: "활성", courseCount: 2 },
-  { id: "m2", name: "김소현", email: "sohyun.kim@mail.com", role: "member", assignedRoles: ["course_instructor"], joinDate: "2024-03-01", lastLogin: "2025-08-12", status: "활성", courseCount: 3 },
-  { id: "m3", name: "이지훈", email: "jh.lee@documind.ai", role: "member", joinDate: "2025-04-10", lastLogin: "2025-08-11", status: "활성", courseCount: 1 },
-  { id: "m4", name: "정우석", email: "ws.jung@mail.com", role: "member", assignedRoles: ["course_instructor"], joinDate: "2024-06-01", lastLogin: "2025-08-10", status: "활성", courseCount: 2 },
-  { id: "m5", name: "한승우", email: "sw.han@nexusvc.com", role: "member", assignedRoles: ["investor_active"], joinDate: "2024-11-10", lastLogin: "2025-08-12", status: "활성", courseCount: 0 },
-  { id: "m6", name: "오세진", email: "sj.oh@mail.com", role: "member", joinDate: "2025-05-20", lastLogin: "2025-07-15", status: "정지", courseCount: 1 },
-  { id: "m7", name: "강민수", email: "ms.kang@mail.com", role: "member", assignedRoles: ["course_instructor"], joinDate: "2024-09-01", lastLogin: "2025-08-10", status: "활성", courseCount: 1 },
+  { id: "m-otter", name: "오승환", email: "otter.oh@gmail.com", roles: ["admin"], joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
+  { id: "m-mahau", name: "마하우", email: "mahau.master@gmail.com", roles: ["member"], joinDate: "2025-02-01", lastLogin: "2025-08-20", status: "활성", courseCount: 1 },
+  { id: "m0", name: "최관리", email: "admin@platform.com", roles: ["admin"], joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
+  { id: "m1", name: "김수강생", email: "student@mail.com", roles: ["member"], joinDate: "2025-01-15", lastLogin: "2025-08-12", status: "활성", courseCount: 2 },
+  { id: "m2", name: "김소현", email: "sohyun.kim@mail.com", roles: ["member"], assignedRoles: ["course_instructor"], joinDate: "2024-03-01", lastLogin: "2025-08-12", status: "활성", courseCount: 3 },
+  { id: "m3", name: "이지훈", email: "jh.lee@documind.ai", roles: ["member"], joinDate: "2025-04-10", lastLogin: "2025-08-11", status: "활성", courseCount: 1 },
+  { id: "m4", name: "정우석", email: "ws.jung@mail.com", roles: ["member"], assignedRoles: ["course_instructor"], joinDate: "2024-06-01", lastLogin: "2025-08-10", status: "활성", courseCount: 2 },
+  { id: "m5", name: "한승우", email: "sw.han@nexusvc.com", roles: ["member"], assignedRoles: ["investor_active"], joinDate: "2024-11-10", lastLogin: "2025-08-12", status: "활성", courseCount: 0 },
+  { id: "m6", name: "오세진", email: "sj.oh@mail.com", roles: ["member"], joinDate: "2025-05-20", lastLogin: "2025-07-15", status: "정지", courseCount: 1 },
+  { id: "m7", name: "강민수", email: "ms.kang@mail.com", roles: ["member"], assignedRoles: ["course_instructor"], joinDate: "2024-09-01", lastLogin: "2025-08-10", status: "활성", courseCount: 1 },
 ];
 
 const SEED_BOARDS: AdminBoard[] = [
@@ -765,6 +766,18 @@ class Database {
           const docs = await collection.find({}).toArray();
           (this.cache as any)[key] = docs.map((d: any) => {
             const { _id, ...rest } = d;
+            if (key === "members") {
+              const roles: UserRole[] = Array.isArray(rest.roles) && rest.roles.length > 0
+                ? rest.roles
+                : (rest.role === "admin" ? ["admin"] : rest.role === "manager" ? ["manager"] : ["member"]);
+              return { ...rest, roles };
+            }
+            if (key === "comments") {
+              const authorRoles: UserRole[] = Array.isArray(rest.authorRoles) && rest.authorRoles.length > 0
+                ? rest.authorRoles
+                : (rest.authorRole ? [rest.authorRole as UserRole] : ["member"]);
+              return { ...rest, authorRoles };
+            }
             return rest;
           });
         }
@@ -796,10 +809,13 @@ class Database {
           { upsert: true }
         );
       } else {
-        const arr = this.cache[key] as unknown[];
+        const arr = ((this.cache[key] as unknown[]) || []).map((item: any) => {
+          const { _id, ...rest } = item || {};
+          return rest;
+        });
         await collection.deleteMany({});
         if (arr.length > 0) {
-          await collection.insertMany(arr as any[]);
+          await collection.insertMany(arr);
         }
       }
     } catch (error) {

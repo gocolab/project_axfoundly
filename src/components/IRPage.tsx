@@ -32,7 +32,7 @@ import { api } from "../lib/api";
 
 interface IRPageProps {
   projects: IRProject[];
-  userRole: UserRole;
+  userRoles: UserRole[];
   userAssignedRoles?: string[];
   isLoggedIn: boolean;
   userName?: string;
@@ -46,7 +46,7 @@ interface IRPageProps {
 
 export default function IRPage({
   projects,
-  userRole,
+  userRoles,
   userAssignedRoles = [],
   isLoggedIn,
   userName,

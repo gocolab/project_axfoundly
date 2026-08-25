@@ -21,7 +21,7 @@ import InvestorDashboard from "./InvestorDashboard";
 interface MyPageProps {
   isLoggedIn: boolean;
   userName: string;
-  userRole: UserRole;
+  userRoles: UserRole[];
   userAssignedRoles: string[];
   courses: Course[];
   teamRequests: TeamBuildingRequest[];
@@ -51,6 +51,11 @@ const roleConfig: Record<UserRole, { label: string; icon: React.ReactNode; color
     icon: <GraduationCap size={16} className="text-brand-primary" />,
     color: "text-brand-primary border-brand-primary/30 bg-brand-primary/10",
   },
+  manager: {
+    label: "매니저",
+    icon: <Briefcase size={16} className="text-brand-secondary" />,
+    color: "text-brand-secondary border-brand-secondary/30 bg-brand-secondary/10",
+  },
   admin: {
     label: "관리자",
     icon: <Shield size={16} className="text-brand-accent-rose" />,
@@ -59,7 +64,7 @@ const roleConfig: Record<UserRole, { label: string; icon: React.ReactNode; color
 };
 
 export default function MyPage({
-  isLoggedIn, userName, userRole, userAssignedRoles,
+  isLoggedIn, userName, userRoles, userAssignedRoles,
   courses, teamRequests, payments, notifications, irProjects, settlements, recommendations, proposals,
   onNavigate, onLoginClick,
   handleViewCourse, handleViewIR, handleSaveProject, handleRefundPayment, handleUpdateTeamRequest,
@@ -90,8 +95,8 @@ export default function MyPage({
     );
   }
 
-  const isInstructor = userAssignedRoles.includes("course_instructor") || userRole === "admin";
-  const isInvestor = userAssignedRoles.includes("investor_active") || userRole === "admin";
+  const isInstructor = userAssignedRoles.includes("course_instructor") || userRoles.includes("admin");
+  const isInvestor = userAssignedRoles.includes("investor_active") || userRoles.includes("admin");
 
   const tabs = [
     { id: "profile" as const, label: "내 프로필", icon: <User size={16} /> },
@@ -100,9 +105,10 @@ export default function MyPage({
     ...(isInvestor ? [{ id: "investor" as const, label: "투자자 대시보드", icon: <CreditCard size={16} /> }] : []),
   ];
 
-  const rc = roleConfig[userRole];
+  const rc = roleConfig[userRoles[0]] || roleConfig["member"];
   const permissionLabel: Record<string, string> = {
     admin: "관리자 (Admin)",
+    manager: "매니저 (Manager)",
     member: "일반 회원 (Member)",
   };
 
@@ -165,7 +171,7 @@ export default function MyPage({
                   </div>
                   <div className="w-full p-2.5 bg-brand-surface-low rounded-lg border border-brand-border/30">
                     <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase mb-0.5">역할 그룹</p>
-                    <p className="text-xs font-semibold text-white">{permissionLabel[userRole]}</p>
+                    <p className="text-xs font-semibold text-white">{permissionLabel[userRoles[0]] || permissionLabel["member"]}</p>
                   </div>
                 </div>
 

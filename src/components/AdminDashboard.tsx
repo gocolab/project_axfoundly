@@ -33,7 +33,7 @@ interface AdminDashboardProps {
   members: AdminMember[];
   boards: AdminBoard[];
   pendingCourses: Course[];
-  onChangeRole: (memberId: string, newRole: UserRole) => void;
+  onChangeRole: (memberId: string, newRoles: UserRole[]) => void;
   onApproveCourse: (courseId: string) => void;
   onRejectCourse: (courseId: string) => void;
   onViewCourse?: (courseId: string) => void;
@@ -118,7 +118,7 @@ export default function AdminDashboard({
                 <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
                 <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
                 <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
-                <p><span className="font-semibold text-white">권한:</span> {selectedPanelItem.data.role === 'admin' ? '관리자' : '수강생'}</p>
+                <p><span className="font-semibold text-white">권한:</span> {selectedPanelItem.data.roles.includes('admin') ? '관리자' : '수강생'}</p>
               </div>
             </div>
           )}
@@ -448,9 +448,9 @@ export default function AdminDashboard({
                           {!selectedPanelItem && <span className="col-span-2 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>}
                           <div>
                             <select
-                              value={member.role}
+                              value={member.roles.includes("admin") ? "admin" : "member"}
                               onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => onChangeRole(member.id, e.target.value as UserRole)}
+                              onChange={(e) => onChangeRole(member.id, [e.target.value as UserRole])}
                               className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
                             >
                               <option value="member">수강생</option>
@@ -878,7 +878,7 @@ export default function AdminDashboard({
               isOpen={showCreateBoardModal}
               onClose={() => setShowCreateBoardModal(false)}
               onSuccess={(newBoard) => {
-                setLocalBoards((prev) => [...prev, newBoard]);
+                setLocalBoards((prev) => [newBoard, ...prev]);
                 alert(`"${newBoard.name}" 게시판이 생성되었습니다!`);
               }}
             />

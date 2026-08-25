@@ -30,9 +30,14 @@ import type {
 export default function App() {
   // Auth state (LocalStorage 기반 세션 복원)
   const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(() => !!localStorage.getItem("auth_token"));
-  const [userRole, setUserRole] = React.useState<UserRole>(() => {
-    const saved = localStorage.getItem("user_role");
-    return (saved === "admin" || saved === "member") ? saved : "member";
+  const [userRoles, setUserRoles] = React.useState<UserRole[]>(() => {
+    try {
+      const saved = localStorage.getItem("user_roles");
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["member"];
+    } catch {
+      return ["member"];
+    }
   });
   const [userAssignedRoles, setUserAssignedRoles] = React.useState<string[]>(() => {
     try {
@@ -46,17 +51,17 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const toast = useToast();
 
-  const saveSession = React.useCallback((token: string, user: { name: string; role: UserRole; assignedRoles?: string[] }) => {
+  const saveSession = React.useCallback((token: string, user: { name: string; roles: UserRole[]; assignedRoles?: string[] }) => {
     localStorage.setItem("auth_token", token);
     localStorage.setItem("user_name", user.name);
-    localStorage.setItem("user_role", user.role);
+    localStorage.setItem("user_roles", JSON.stringify(user.roles));
     localStorage.setItem("user_assigned_roles", JSON.stringify(user.assignedRoles || []));
   }, []);
 
   const clearSession = React.useCallback(() => {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_name");
-    localStorage.removeItem("user_role");
+    localStorage.removeItem("user_roles");
     localStorage.removeItem("user_assigned_roles");
   }, []);
 
@@ -157,7 +162,7 @@ export default function App() {
           saveSession(token, res.user);
           setIsLoggedIn(true);
           setUserName(res.user.name);
-          setUserRole(res.user.role);
+          setUserRoles(res.user.roles);
           setUserAssignedRoles(res.user.assignedRoles || []);
           toast.success("로그인 성공", `${res.user.name}님 환영합니다!`);
         }
@@ -166,7 +171,7 @@ export default function App() {
         clearSession();
         setIsLoggedIn(false);
         setUserName("게스트");
-        setUserRole("member");
+        setUserRoles(["member"]);
         setUserAssignedRoles([]);
       });
     } else {
@@ -178,7 +183,7 @@ export default function App() {
             saveSession(savedToken, res.user);
             setIsLoggedIn(true);
             setUserName(res.user.name);
-            setUserRole(res.user.role);
+            setUserRoles(res.user.roles);
             setUserAssignedRoles(res.user.assignedRoles || []);
           }
         }).catch(err => {
@@ -186,7 +191,7 @@ export default function App() {
           clearSession();
           setIsLoggedIn(false);
           setUserName("게스트");
-          setUserRole("member");
+          setUserRoles(["member"]);
           setUserAssignedRoles([]);
         });
       }
@@ -194,13 +199,13 @@ export default function App() {
   }, [refreshData, toast, saveSession, clearSession]);
 
   // Handlers
-  const handleLogin = async (role: UserRole, email?: string) => {
+  const handleLogin = async (roles: UserRole[], email?: string) => {
     try {
-      const res = await api.login(role, email);
+      const res = await api.login(roles, email);
       saveSession(res.token, res.user);
       setIsLoggedIn(true);
       setUserName(res.user.name);
-      setUserRole(res.user.role);
+      setUserRoles(res.user.roles);
       setUserAssignedRoles(res.user.assignedRoles || []);
       refreshData();
     } catch (error) {
@@ -211,7 +216,7 @@ export default function App() {
   const handleLogout = () => {
     clearSession();
     setIsLoggedIn(false);
-    setUserRole("member");
+    setUserRoles(["member"]);
     setUserAssignedRoles([]);
     setUserName("게스트");
     setCurrentPage("home");
@@ -318,11 +323,11 @@ export default function App() {
     }
   };
 
-  const handleAdminChangeRole = async (memberId: string, newRole: UserRole) => {
+  const handleAdminChangeRole = async (memberId: string, newRoles: UserRole[]) => {
     try {
-      await api.changeMemberRole(memberId, newRole);
+      await api.changeMemberRole(memberId, newRoles);
       setAdminMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
+        prev.map((m) => (m.id === memberId ? { ...m, roles: newRoles } : m))
       );
     } catch (error) {
       console.error("Change member role failed:", error);
@@ -426,7 +431,7 @@ export default function App() {
       <MyPage
         isLoggedIn={isLoggedIn}
         userName={userName}
-        userRole={userRole}
+        userRoles={userRoles}
         userAssignedRoles={userAssignedRoles}
         courses={courses}
         teamRequests={teamRequests}
@@ -484,7 +489,7 @@ export default function App() {
         return (
           <IRPage
             projects={irProjects}
-            userRole={userRole}
+            userRoles={userRoles}
             userAssignedRoles={userAssignedRoles}
             isLoggedIn={isLoggedIn}
             userName={userName}
@@ -502,7 +507,7 @@ export default function App() {
             posts={posts}
             onAddPost={handleAddPost}
             isLoggedIn={isLoggedIn}
-            userRole={userRole}
+            userRoles={userRoles}
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
             initialPostId={selectedPostId}
@@ -517,7 +522,7 @@ export default function App() {
         }
         return renderDashboard();
       case "admin":
-        if (!isLoggedIn || userRole !== "admin") {
+        if (!isLoggedIn || !userRoles.includes("admin")) {
           setCurrentPage("home");
           return null;
         }
@@ -555,7 +560,7 @@ export default function App() {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           isLoggedIn={isLoggedIn}
-          userRole={userRole}
+          userRoles={userRoles}
           userName={userName}
           onLoginClick={() => setShowAuthModal(true)}
           onLogout={handleLogout}

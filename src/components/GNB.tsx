@@ -19,7 +19,7 @@ interface GNBProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   isLoggedIn: boolean;
-  userRole: UserRole;
+  userRoles: UserRole[];
   userName: string;
   onLoginClick: () => void;
   onLogout: () => void;
@@ -31,7 +31,7 @@ export default function GNB({
   currentPage,
   setCurrentPage,
   isLoggedIn,
-  userRole,
+  userRoles,
   userName,
   onLoginClick,
   onLogout,
@@ -55,6 +55,7 @@ export default function GNB({
 
   const roleLabel: Record<UserRole, string> = {
     member: "수강생",
+    manager: "매니저",
     admin: "관리자",
   };
 
@@ -175,7 +176,7 @@ export default function GNB({
                     </div>
                     <div className="hidden sm:block text-left">
                       <span className="text-xs font-semibold text-white block leading-tight">{userName}</span>
-                      <span className="text-[10px] text-brand-tertiary font-mono">{roleLabel[userRole]}</span>
+                      <span className="text-[10px] text-brand-tertiary font-mono">{roleLabel[userRoles[0]]}</span>
                     </div>
                     <ChevronDown size={14} className="text-brand-on-surface-variant" />
                   </button>
@@ -190,7 +191,7 @@ export default function GNB({
                         마이페이지
                       </button>
 
-                      {userRole === "admin" && (
+                      {userRoles.includes("admin") && (
                         <button
                           onClick={() => { setCurrentPage("admin"); setShowUserMenu(false); }}
                           className="w-full text-left px-4 py-2.5 text-xs text-brand-tertiary hover:bg-brand-surface-low transition-colors cursor-pointer flex items-center gap-2"

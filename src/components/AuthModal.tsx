@@ -5,7 +5,7 @@ import type { UserRole } from "../types";
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (role: UserRole, email?: string) => void;
+  onLogin: (roles: UserRole[], email?: string) => void;
 }
 
 export default function AuthModal({
@@ -25,10 +25,10 @@ export default function AuthModal({
   };
 
   const demoUsers = [
-    { role: "member" as const, email: "student@mail.com", label: "수강생" },
-    { role: "member" as const, email: "sohyun.kim@mail.com", label: "강사" },
-    { role: "member" as const, email: "sw.han@nexusvc.com", label: "투자자" },
-    { role: "admin" as const, email: "admin@platform.com", label: "관리자" },
+    { roles: ["member"] as UserRole[], email: "student@mail.com", label: "수강생" },
+    { roles: ["member"] as UserRole[], email: "sohyun.kim@mail.com", label: "강사" },
+    { roles: ["member"] as UserRole[], email: "sw.han@nexusvc.com", label: "투자자" },
+    { roles: ["admin"] as UserRole[], email: "admin@platform.com", label: "관리자" },
   ];
 
   return (
@@ -82,37 +82,31 @@ export default function AuthModal({
             <span>Google 계정으로 로그인</span>
           </button>
 
-          {/* 개발용 빠른 로그인 (접혀 있음) */}
+          {/* 개발용 빠른 로그인 */}
           <div className="mt-4 border-t border-brand-border/30 pt-3">
             <button
               type="button"
-              onClick={() => setShowDemoLogin(!showDemoLogin)}
-              className="w-full flex items-center justify-between text-[10px] text-brand-on-surface-variant/60 hover:text-brand-on-surface-variant transition-colors cursor-pointer px-1"
+              onClick={() => {}}
+              className="w-full flex items-center justify-between text-[10px] text-brand-on-surface-variant/60 hover:text-brand-on-surface-variant transition-colors cursor-pointer px-1 mb-2"
             >
               <span className="uppercase tracking-wider font-mono">개발용 데모 로그인</span>
-              <ChevronDown
-                size={12}
-                className={`transition-transform ${showDemoLogin ? "rotate-180" : ""}`}
-              />
             </button>
-            {showDemoLogin && (
-              <div className="mt-2 grid grid-cols-4 gap-1.5 animate-fadeIn">
-                {demoUsers.map((u) => (
-                  <button
-                    key={u.label}
-                    data-testid={`quick-login-${u.label}`}
-                    type="button"
-                    onClick={() => {
-                      onLogin(u.role, u.email);
-                      onClose();
-                    }}
-                    className="text-[10px] py-1.5 rounded-lg border border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:text-white hover:border-brand-primary-container/50 transition-colors cursor-pointer font-medium text-center"
-                  >
-                    {u.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-4 gap-1.5 animate-fadeIn">
+              {demoUsers.map((u) => (
+                <button
+                  key={u.label}
+                  data-testid={`quick-login-${u.label}`}
+                  type="button"
+                  onClick={() => {
+                    onLogin(u.roles, u.email);
+                    onClose();
+                  }}
+                  className="text-[10px] py-1.5 rounded-lg border border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:text-white hover:border-brand-primary-container/50 transition-colors cursor-pointer font-medium text-center"
+                >
+                  {u.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

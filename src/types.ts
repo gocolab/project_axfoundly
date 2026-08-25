@@ -3,13 +3,13 @@
  */
 
 // ── User / Auth ──
-export type UserRole = "member" | "admin";
+export type UserRole = "member" | "manager" | "admin";
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  roles: UserRole[];
   avatar: string;
   joinDate: string;
   bio?: string;
@@ -158,7 +158,7 @@ export interface Comment {
   postId: string;
   author: string;
   authorAvatar: string;
-  authorRole?: UserRole;
+  authorRoles?: UserRole[];
   content: string;
   createdAt: string;
 }
@@ -293,7 +293,7 @@ export interface AdminMember {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  roles: UserRole[];
   assignedRoles?: ("course_instructor" | "ir_owner" | "investor_active")[];
   joinDate: string;
   lastLogin: string;

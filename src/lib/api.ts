@@ -35,21 +35,21 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // ── Auth ──
-  login: async (role?: UserRole, email?: string, password?: string) => {
+  login: async (roles?: UserRole[], email?: string, password?: string) => {
     return fetchJson<{ user: any; token: string }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ role, email, password }),
+      body: JSON.stringify({ roles, email, password }),
     });
   },
 
-  googleLogin: async (data?: { email?: string; name?: string; role?: UserRole; credential?: string; code?: string }) => {
+  googleLogin: async (data?: { email?: string; name?: string; roles?: UserRole[]; credential?: string; code?: string }) => {
     return fetchJson<{ user: any; token: string }>("/api/auth/google", {
       method: "POST",
       body: JSON.stringify(data || { email: "otter.oh@gmail.com" }),
     });
   },
 
-  signup: async (data: { name: string; email: string; password?: string; role: UserRole }) => {
+  signup: async (data: { name: string; email: string; password?: string; roles: UserRole[] }) => {
     return fetchJson<{ user: any; token: string }>("/api/auth/signup", {
       method: "POST",
       body: JSON.stringify(data),
@@ -232,7 +232,7 @@ export const api = {
     return fetchJson<{ comments: Comment[] }>(`/api/community/posts/${postId}/comments`);
   },
 
-  addComment: async (postId: string, commentData: { author: string; authorRole?: UserRole; content: string }) => {
+  addComment: async (postId: string, commentData: { author: string; authorRoles?: UserRole[]; content: string }) => {
     return fetchJson<{ comment: Comment }>(`/api/community/posts/${postId}/comments`, {
       method: "POST",
       body: JSON.stringify(commentData),
@@ -311,10 +311,10 @@ export const api = {
     return fetchJson<{ members: AdminMember[] }>("/api/admin/members");
   },
 
-  changeMemberRole: async (id: string, role: UserRole) => {
-    return fetchJson<{ member: AdminMember }>(`/api/admin/members/${id}/role`, {
+  changeMemberRole: async (id: string, roles: UserRole[]) => {
+    return fetchJson<{ member: AdminMember }>(`/api/admin/members/${id}/roles`, {
       method: "PATCH",
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ roles }),
     });
   },
 

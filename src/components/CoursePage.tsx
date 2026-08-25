@@ -29,7 +29,7 @@ interface CoursePageProps {
   courses: Course[];
   onEnroll: (courseId: string, paymentMethod?: "카드" | "계좌이체" | "카카오페이") => void;
   isLoggedIn: boolean;
-  userRole?: import("../types").UserRole;
+  userRoles?: import("../types").UserRole[];
   userName?: string;
   onLoginClick: () => void;
   onSaveCourse?: (course: Course) => void;

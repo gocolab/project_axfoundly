@@ -17,7 +17,7 @@ interface CommunityPostDetailModalProps {
   post: BoardPost | null;
   onClose: () => void;
   isLoggedIn: boolean;
-  userRole: UserRole;
+  userRoles: UserRole[];
   userName: string;
   onLoginClick: () => void;
   onCommentAdded?: (newComment: Comment) => void;
@@ -29,7 +29,7 @@ export default function CommunityPostDetailModal({
   post,
   onClose,
   isLoggedIn,
-  userRole,
+  userRoles,
   userName,
   onLoginClick,
   onCommentAdded,
@@ -71,7 +71,7 @@ export default function CommunityPostDetailModal({
     try {
       const res = await api.addComment(post.id, {
         author: userName,
-        authorRole: userRole,
+        authorRoles: userRoles,
         content: commentInput.trim(),
       });
       setComments((prev) => [...prev, res.comment]);
@@ -240,9 +240,9 @@ export default function CommunityPostDetailModal({
                           {comment.author.charAt(0)}
                         </div>
                         <span className="text-xs font-semibold text-white">{comment.author}</span>
-                        {comment.authorRole && (
+                        {comment.authorRoles && comment.authorRoles.length > 0 && (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-primary-container/10 text-brand-primary">
-                            {comment.authorRole === "admin" ? "관리자" : "수강생"}
+                            {comment.authorRoles.includes("admin") ? "관리자" : "수강생"}
                           </span>
                         )}
                       </div>
