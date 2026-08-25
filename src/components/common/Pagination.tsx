@@ -44,10 +44,10 @@ export default function Pagination({
   };
 
   return (
-    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 mt-4 border-t border-brand-border/30 ${className}`}>
+    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${className}`}>
       {/* Items summary */}
       {totalItems !== undefined && (
-        <div className="text-xs text-brand-on-surface-variant">
+        <div className="text-xs text-brand-on-surface-variant whitespace-nowrap shrink-0">
           총 <span className="font-semibold text-white">{totalItems}</span>개 항목 중{" "}
           <span className="font-semibold text-brand-primary">
             {Math.min((currentPage - 1) * (itemsPerPage || 6) + 1, totalItems)} -{" "}

@@ -41,6 +41,7 @@ export default function CommunityPage({
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
 
+  const [isClosing, setIsClosing] = React.useState(false);
   const [selectedPost, setSelectedPost] = React.useState<BoardPost | null>(() => {
     if (initialPostId) {
       return posts.find((p) => p.id === initialPostId) || null;
@@ -86,7 +87,27 @@ export default function CommunityPage({
 
   React.useEffect(() => {
     setCurrentPage(1);
+    if (selectedPost) {
+      setSelectedPost(null);
+      setIsClosing(false);
+    }
   }, [activeBoard, searchText]);
+
+  React.useEffect(() => {
+    if (selectedPost) {
+      setSelectedPost(null);
+      setIsClosing(false);
+    }
+  }, [currentPage]);
+
+  const handleCloseDetail = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setSelectedPost(null);
+      setIsClosing(false);
+      if (onClearSelectedPost) onClearSelectedPost();
+    }, 300);
+  };
 
   const handleSubmit = () => {
     if (!newTitle.trim() || !newContent.trim()) return;
@@ -144,15 +165,28 @@ export default function CommunityPage({
           ))}
         </div>
 
-        <div className="relative w-full sm:w-60">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-          <input
-            type="text"
-            placeholder="게시글 검색..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-          />
+        <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+          <div className="relative w-full xl:w-60">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <input
+              type="text"
+              placeholder="게시글 검색..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+            />
+          </div>
+          {totalPages > 1 && (
+            <div className="ml-auto">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filtered.length}
+                itemsPerPage={itemsPerPage}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -248,26 +282,16 @@ export default function CommunityPage({
             )}
           </div>
 
-          {/* Pagination Component */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            totalItems={filtered.length}
-            itemsPerPage={itemsPerPage}
-          />
+          {/* Pagination is now next to Search bar */}
         </div>
 
         {/* Right Side: Inline Post Detail & Comments Panel (Detail View) */}
         {selectedPost && (
-          <div className="w-96 lg:w-[460px] flex-shrink-0 sticky top-20 animate-slideInFromRight">
+          <div className={`w-96 lg:w-[460px] flex-shrink-0 sticky top-20 ${isClosing ? "animate-slideOutToRight" : "animate-slideInFromRight"}`}>
             <CommunityPostDetailModal
               inline
               post={selectedPost}
-              onClose={() => {
-                setSelectedPost(null);
-                onClearSelectedPost?.();
-              }}
+              onClose={handleCloseDetail}
               isLoggedIn={isLoggedIn}
               userRole={userRole}
               userName={userName}

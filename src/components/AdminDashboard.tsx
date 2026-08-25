@@ -58,9 +58,131 @@ export default function AdminDashboard({
   const [payments, setPayments] = React.useState<any[]>([]);
   const [selectedPanelItem, setSelectedPanelItem] = React.useState<{type: 'member', data: AdminMember} | {type: 'course', data: Course} | {type: 'board', data: AdminBoard} | {type: 'payment', data: any} | {type: 'crm', data: any} | null>(null);
 
+  const [isClosing, setIsClosing] = React.useState(false);
+
   React.useEffect(() => {
     setLocalBoards(boards);
   }, [boards]);
+
+  React.useEffect(() => {
+    if (selectedPanelItem) {
+      setSelectedPanelItem(null);
+      setIsClosing(false);
+    }
+  }, [activeTab]);
+
+  const handleCloseDetail = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setSelectedPanelItem(null);
+      setIsClosing(false);
+    }, 300);
+  };
+
+  const renderDetailPanel = () => {
+    if (!selectedPanelItem) return null;
+    return (
+      <div className={`w-80 lg:w-[400px] flex-shrink-0 bg-brand-surface-high border border-brand-border/60 rounded-2xl shadow-xl flex flex-col overflow-hidden sticky top-20 ${isClosing ? "animate-slideOutToRight" : "animate-slideInFromRight"}`}>
+        <div className="p-4 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
+            <h3 className="font-bold text-white text-sm">상세 정보</h3>
+          </div>
+          <button
+            onClick={handleCloseDetail}
+            className="text-brand-on-surface-variant hover:text-white p-1 rounded-lg hover:bg-brand-surface-low transition-colors cursor-pointer"
+            title="닫기"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 overflow-y-auto max-h-[calc(100vh-140px)] space-y-4">
+          {selectedPanelItem.type === 'member' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <div className="w-16 h-16 rounded-full bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-4 border-2 border-brand-primary/30 shadow-inner">
+                {selectedPanelItem.data.name.charAt(0)}
+              </div>
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">이름:</span> {selectedPanelItem.data.name}</p>
+                <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
+                <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
+                <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
+                <p><span className="font-semibold text-white">권한:</span> {selectedPanelItem.data.role === 'admin' ? '관리자' : '수강생'}</p>
+              </div>
+            </div>
+          )}
+          {selectedPanelItem.type === 'course' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <h4 className="text-base font-bold text-white mb-2">{selectedPanelItem.data.title}</h4>
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">카테고리:</span> {selectedPanelItem.data.category}</p>
+                <p><span className="font-semibold text-white">강사:</span> {selectedPanelItem.data.instructor}</p>
+                <p><span className="font-semibold text-white">가격:</span> ₩{(selectedPanelItem.data.discountedPrice || selectedPanelItem.data.price).toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/30">
+                <p className="font-semibold text-white mb-2 text-xs">커리큘럼 요약</p>
+                <ul className="list-disc pl-5 space-y-1 text-xs">
+                  {selectedPanelItem.data.curriculum.slice(0, 5).map((curr: any, i: number) => (
+                    <li key={i}>{curr.title}</li>
+                  ))}
+                  {selectedPanelItem.data.curriculum.length > 5 && <li>...</li>}
+                </ul>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => { onApproveCourse(selectedPanelItem.data.id); setSelectedPanelItem(null); }}
+                  className="flex-1 py-2 bg-brand-tertiary/20 text-brand-tertiary font-bold rounded-xl border border-brand-tertiary/30 hover:bg-brand-tertiary/30 transition-colors cursor-pointer text-xs"
+                >
+                  강의 승인
+                </button>
+                <button
+                  onClick={() => { onRejectCourse(selectedPanelItem.data.id); setSelectedPanelItem(null); }}
+                  className="flex-1 py-2 bg-error/20 text-error font-bold rounded-xl border border-error/30 hover:bg-error/30 transition-colors cursor-pointer text-xs"
+                >
+                  강의 반려
+                </button>
+              </div>
+            </div>
+          )}
+          {selectedPanelItem.type === 'board' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">게시판명:</span> {selectedPanelItem.data.name}</p>
+                <p><span className="font-semibold text-white">읽기 권한:</span> {selectedPanelItem.data.readPermission}</p>
+                <p><span className="font-semibold text-white">쓰기 권한:</span> {selectedPanelItem.data.writePermission}</p>
+                <p><span className="font-semibold text-white">템플릿:</span> {selectedPanelItem.data.template}</p>
+                <p><span className="font-semibold text-white">게시글 수:</span> {selectedPanelItem.data.postCount}</p>
+              </div>
+            </div>
+          )}
+          {selectedPanelItem.type === 'payment' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">주문번호:</span> {selectedPanelItem.data.id}</p>
+                <p><span className="font-semibold text-white">결제 항목:</span> {selectedPanelItem.data.courseTitle || selectedPanelItem.data.course}</p>
+                <p><span className="font-semibold text-white">결제자:</span> {selectedPanelItem.data.userId || selectedPanelItem.data.user}</p>
+                <p><span className="font-semibold text-white">결제 금액:</span> ₩{selectedPanelItem.data.amount.toLocaleString()}</p>
+                <p><span className="font-semibold text-white">결제일:</span> {selectedPanelItem.data.date}</p>
+                <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
+              </div>
+            </div>
+          )}
+          {selectedPanelItem.type === 'crm' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">유형:</span> {selectedPanelItem.data.type}</p>
+                <p><span className="font-semibold text-white">대상:</span> {selectedPanelItem.data.target}</p>
+                <p><span className="font-semibold text-white">제목:</span> {selectedPanelItem.data.subject}</p>
+                <p><span className="font-semibold text-white">발송일시:</span> {selectedPanelItem.data.sentAt}</p>
+                <p><span className="font-semibold text-white">수신 건수:</span> {selectedPanelItem.data.count}</p>
+                <p><span className="font-semibold text-white">결과:</span> {selectedPanelItem.data.status}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   React.useEffect(() => {
     if (activeTab === "payments") {
@@ -154,10 +276,10 @@ export default function AdminDashboard({
           </nav>
         </aside>
 
-        {/* ── 우측 콘텐츠 영역 (Master-Detail Split View Container) ── */}
-        <div className="flex-1 min-w-0 flex gap-5 items-start">
+        {/* ── 우측 콘텐츠 영역 ── */}
+        <div className="flex-1 min-w-0 flex flex-col gap-5 items-start">
           {/* Main Master Content (Tables / Lists) */}
-          <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+          <div className="w-full">
             {/* ── 통계 홈 ── */}
             {activeTab === "stats" && (
               <div className="flex flex-col gap-6 animate-fadeIn">
@@ -248,65 +370,70 @@ export default function AdminDashboard({
                   <span className="text-xs text-brand-on-surface-variant">총 {members.length}명</span>
                 </div>
 
-                <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                  <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                    <span className="col-span-2">이름</span>
-                    {!selectedPanelItem && <span className="col-span-2">이메일</span>}
-                    <span>역할</span>
-                    {!selectedPanelItem && <span>가입일</span>}
-                    {!selectedPanelItem && <span>상태</span>}
-                    <span className="text-right">액션</span>
-                  </div>
-                  {filteredMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      onClick={() => setSelectedPanelItem({ type: 'member', data: member })}
-                      className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1"} px-5 py-2.5 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
-                        selectedPanelItem?.type === 'member' && selectedPanelItem.data.id === member.id
-                          ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                          : "hover:bg-brand-surface-low"
-                      }`}
-                    >
-                      <div className="col-span-2 flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-brand-surface-high flex items-center justify-center text-[9px] font-bold text-brand-primary flex-shrink-0">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-xs text-white truncate block">{member.name}</span>
-                          {selectedPanelItem && <span className="text-[9px] text-brand-on-surface-variant truncate block">{member.email}</span>}
-                        </div>
+                <div className="flex gap-5 items-start">
+                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
+                      <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
+                        <span className="col-span-2">이름</span>
+                        {!selectedPanelItem && <span className="col-span-2">이메일</span>}
+                        <span>역할</span>
+                        {!selectedPanelItem && <span>가입일</span>}
+                        {!selectedPanelItem && <span>상태</span>}
+                        <span className="text-right">액션</span>
                       </div>
-                      {!selectedPanelItem && <span className="col-span-2 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>}
-                      <div>
-                        <select
-                          value={member.role}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => onChangeRole(member.id, e.target.value as UserRole)}
-                          className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
+                      {filteredMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          onClick={() => setSelectedPanelItem({ type: 'member', data: member })}
+                          className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1"} px-5 py-2.5 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                            selectedPanelItem?.type === 'member' && selectedPanelItem.data.id === member.id
+                              ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
+                              : "hover:bg-brand-surface-low"
+                          }`}
                         >
-                          <option value="member">수강생</option>
-                          <option value="admin">관리자</option>
-                        </select>
-                      </div>
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{member.joinDate}</span>}
-                      {!selectedPanelItem && (
-                        <span className={`text-[9px] font-bold ${
-                          member.status === "활성" ? "text-brand-tertiary" :
-                          member.status === "정지" ? "text-brand-accent-orange" : "text-error"
-                        }`}>
-                          {member.status}
-                        </span>
-                      )}
-                      <div className="flex justify-end gap-1">
-                        <button className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer p-0.5" title="상세">
-                          <Eye size={11} />
-                        </button>
-                        <button className="text-[9px] text-brand-accent-orange hover:text-brand-accent-rose cursor-pointer p-0.5" title="제재">
-                          <AlertTriangle size={11} />
-                        </button>
-                      </div>
+                          <div className="col-span-2 flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-full bg-brand-surface-high flex items-center justify-center text-[9px] font-bold text-brand-primary flex-shrink-0">
+                              {member.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs text-white truncate block">{member.name}</span>
+                              {selectedPanelItem && <span className="text-[9px] text-brand-on-surface-variant truncate block">{member.email}</span>}
+                            </div>
+                          </div>
+                          {!selectedPanelItem && <span className="col-span-2 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>}
+                          <div>
+                            <select
+                              value={member.role}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => onChangeRole(member.id, e.target.value as UserRole)}
+                              className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
+                            >
+                              <option value="member">수강생</option>
+                              <option value="admin">관리자</option>
+                            </select>
+                          </div>
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{member.joinDate}</span>}
+                          {!selectedPanelItem && (
+                            <span className={`text-[9px] font-bold ${
+                              member.status === "활성" ? "text-brand-tertiary" :
+                              member.status === "정지" ? "text-brand-accent-orange" : "text-error"
+                            }`}>
+                              {member.status}
+                            </span>
+                          )}
+                          <div className="flex justify-end gap-1">
+                            <button className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer p-0.5" title="상세">
+                              <Eye size={11} />
+                            </button>
+                            <button className="text-[9px] text-brand-accent-orange hover:text-brand-accent-rose cursor-pointer p-0.5" title="제재">
+                              <AlertTriangle size={11} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                  {renderDetailPanel()}
                 </div>
               </div>
             )}
@@ -322,68 +449,73 @@ export default function AdminDashboard({
                   <p className="text-xs text-brand-on-surface-variant mt-0.5">강사가 개설 신청한 강의의 커리큘럼과 일정을 검토하여 승인 또는 반려합니다.</p>
                 </div>
 
-                {pendingCourses.length === 0 ? (
-                  <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
-                    <CheckCircle size={32} className="text-brand-tertiary mx-auto mb-3" />
-                    <p className="text-sm text-brand-on-surface-variant">검수 대기 중인 강의가 없습니다</p>
-                  </div>
-                ) : (
-                  pendingCourses.map((course) => (
-                    <div
-                      key={course.id}
-                      onClick={() => setSelectedPanelItem({ type: 'course', data: course })}
-                      className={`bg-brand-card border rounded-xl p-4 transition-all cursor-pointer ${
-                        selectedPanelItem?.type === 'course' && selectedPanelItem.data.id === course.id
-                          ? "border-brand-primary bg-brand-primary-container/10 ring-1 ring-brand-primary/40 shadow-md"
-                          : "border-brand-border/60 hover:bg-brand-surface-low"
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0">
-                          <BookOpen size={20} className="text-white/50" />
+                <div className="flex gap-5 items-start">
+                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+                    {pendingCourses.length === 0 ? (
+                      <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+                        <CheckCircle size={32} className="text-brand-tertiary mx-auto mb-3" />
+                        <p className="text-sm text-brand-on-surface-variant">검수 대기 중인 강의가 없습니다</p>
+                      </div>
+                    ) : (
+                      pendingCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          onClick={() => setSelectedPanelItem({ type: 'course', data: course })}
+                          className={`bg-brand-card border rounded-xl p-4 transition-all cursor-pointer ${
+                            selectedPanelItem?.type === 'course' && selectedPanelItem.data.id === course.id
+                              ? "border-brand-primary bg-brand-primary-container/10 ring-1 ring-brand-primary/40 shadow-md"
+                              : "border-brand-border/60 hover:bg-brand-surface-low"
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0">
+                              <BookOpen size={20} className="text-white/50" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-xs font-bold text-white truncate">{course.title}</h3>
+                              <p className="text-[10px] text-brand-on-surface-variant mt-0.5 truncate">
+                                {course.instructor} · {course.category} · {course.curriculum.length}주 과정
+                              </p>
+                              <p className="text-[10px] text-brand-on-surface-variant">
+                                수강료: ₩{(course.discountedPrice || course.price).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex gap-1.5 flex-shrink-0">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onApproveCourse(course.id); }}
+                                className="text-[10px] bg-brand-tertiary/15 text-brand-tertiary py-1 px-2.5 rounded-lg border border-brand-tertiary/25 hover:bg-brand-tertiary/25 transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <CheckCircle size={11} /> 승인
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onRejectCourse(course.id); }}
+                                className="text-[10px] bg-error/10 text-error py-1 px-2.5 rounded-lg border border-error/20 hover:bg-error/20 transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <XCircle size={11} /> 반려
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setSelectedPanelItem({ type: 'course', data: course }); }}
+                                className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <Eye size={11} /> 상세
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xs font-bold text-white truncate">{course.title}</h3>
-                          <p className="text-[10px] text-brand-on-surface-variant mt-0.5 truncate">
-                            {course.instructor} · {course.category} · {course.curriculum.length}주 과정
-                          </p>
-                          <p className="text-[10px] text-brand-on-surface-variant">
-                            수강료: ₩{(course.discountedPrice || course.price).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex gap-1.5 flex-shrink-0">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onApproveCourse(course.id); }}
-                            className="text-[10px] bg-brand-tertiary/15 text-brand-tertiary py-1 px-2.5 rounded-lg border border-brand-tertiary/25 hover:bg-brand-tertiary/25 transition-colors cursor-pointer flex items-center gap-1"
-                          >
-                            <CheckCircle size={11} /> 승인
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onRejectCourse(course.id); }}
-                            className="text-[10px] bg-error/10 text-error py-1 px-2.5 rounded-lg border border-error/20 hover:bg-error/20 transition-colors cursor-pointer flex items-center gap-1"
-                          >
-                            <XCircle size={11} /> 반려
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedPanelItem({ type: 'course', data: course }); }}
-                            className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                          >
-                            <Eye size={11} /> 상세
-                          </button>
-                        </div>
+                      ))
+                    )}
+
+                    <div className="border-t border-brand-border/30 pt-4 mt-2">
+                      <h2 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                        <RefreshCw size={14} className="text-brand-primary" />
+                        환불 처리
+                      </h2>
+                      <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
+                        <p className="text-xs text-brand-on-surface-variant">처리 대기 중인 환불 요청이 없습니다</p>
                       </div>
                     </div>
-                  ))
-                )}
-
-                <div className="border-t border-brand-border/30 pt-4 mt-2">
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
-                    <RefreshCw size={14} className="text-brand-primary" />
-                    환불 처리
-                  </h2>
-                  <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
-                    <p className="text-xs text-brand-on-surface-variant">처리 대기 중인 환불 요청이 없습니다</p>
                   </div>
+                  {renderDetailPanel()}
                 </div>
               </div>
             )}
@@ -405,49 +537,54 @@ export default function AdminDashboard({
                   </button>
                 </div>
 
-                <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                  <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                    <span className="col-span-2">게시판명</span>
-                    {!selectedPanelItem && <span>읽기 권한</span>}
-                    {!selectedPanelItem && <span>쓰기 권한</span>}
-                    {!selectedPanelItem && <span>템플릿</span>}
-                    <span>게시글 수</span>
-                    <span className="text-right">액션</span>
-                  </div>
-                  {localBoards.map((board) => (
-                    <div
-                      key={board.id}
-                      onClick={() => setSelectedPanelItem({ type: 'board', data: board })}
-                      className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
-                        selectedPanelItem?.type === 'board' && selectedPanelItem.data.id === board.id
-                          ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                          : "hover:bg-brand-surface-low"
-                      }`}
-                    >
-                      <span className="col-span-2 text-xs font-semibold text-white truncate">{board.name}</span>
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.readPermission}</span>}
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.writePermission}</span>}
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.template}</span>}
-                      <span className="text-[10px] text-brand-on-surface-variant">{board.postCount}</span>
-                      <div className="flex justify-end gap-1.5">
-                        <button onClick={(e) => e.stopPropagation()} className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer"><Edit size={11} /></button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteBoard(board.id, board.name); }}
-                          className="text-[9px] text-error hover:text-brand-accent-rose cursor-pointer"
-                        >
-                          <Trash2 size={11} />
-                        </button>
+                <div className="flex gap-5 items-start">
+                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
+                      <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
+                        <span className="col-span-2">게시판명</span>
+                        {!selectedPanelItem && <span>읽기 권한</span>}
+                        {!selectedPanelItem && <span>쓰기 권한</span>}
+                        {!selectedPanelItem && <span>템플릿</span>}
+                        <span>게시글 수</span>
+                        <span className="text-right">액션</span>
                       </div>
+                      {localBoards.map((board) => (
+                        <div
+                          key={board.id}
+                          onClick={() => setSelectedPanelItem({ type: 'board', data: board })}
+                          className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                            selectedPanelItem?.type === 'board' && selectedPanelItem.data.id === board.id
+                              ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
+                              : "hover:bg-brand-surface-low"
+                          }`}
+                        >
+                          <span className="col-span-2 text-xs font-semibold text-white truncate">{board.name}</span>
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.readPermission}</span>}
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.writePermission}</span>}
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.template}</span>}
+                          <span className="text-[10px] text-brand-on-surface-variant">{board.postCount}</span>
+                          <div className="flex justify-end gap-1.5">
+                            <button onClick={(e) => e.stopPropagation()} className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer"><Edit size={11} /></button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteBoard(board.id, board.name); }}
+                              className="text-[9px] text-error hover:text-brand-accent-rose cursor-pointer"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                <h3 className="text-sm font-bold text-white flex items-center gap-2 mt-2">
-                  <Eye size={14} className="text-brand-on-surface-variant" />
-                  게시글 모니터링
-                </h3>
-                <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
-                  <p className="text-xs text-brand-on-surface-variant">신고된 불량 게시물이 없습니다 ✓</p>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2 mt-2">
+                      <Eye size={14} className="text-brand-on-surface-variant" />
+                      게시글 모니터링
+                    </h3>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
+                      <p className="text-xs text-brand-on-surface-variant">신고된 불량 게시물이 없습니다 ✓</p>
+                    </div>
+                  </div>
+                  {renderDetailPanel()}
                 </div>
               </div>
             )}
@@ -470,39 +607,44 @@ export default function AdminDashboard({
                 </div>
 
                 <h3 className="text-xs font-bold text-brand-on-surface-variant mt-2">발송 로그</h3>
-                <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                  <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                    <span>유형</span>
-                    {!selectedPanelItem && <span>대상</span>}
-                    <span className="col-span-2">제목</span>
-                    {!selectedPanelItem && <span>발송일</span>}
-                    {!selectedPanelItem && <span>수신 수</span>}
-                    <span className="text-right">상태</span>
-                  </div>
-                  {sendLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      onClick={() => setSelectedPanelItem({ type: 'crm', data: log })}
-                      className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
-                        selectedPanelItem?.type === 'crm' && selectedPanelItem.data.id === log.id
-                          ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                          : "hover:bg-brand-surface-low"
-                      }`}
-                    >
-                      <span className={`text-[10px] font-bold ${log.type === "이메일" ? "text-brand-primary" : "text-brand-accent-orange"}`}>
-                        {log.type}
-                      </span>
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.target}</span>}
-                      <span className="col-span-2 text-xs text-white truncate">{log.subject}</span>
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.sentAt}</span>}
-                      {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.count}건</span>}
-                      <span className={`text-[9px] font-bold text-right ${
-                        log.status === "성공" ? "text-brand-tertiary" : "text-brand-accent-orange"
-                      }`}>
-                        {log.status}
-                      </span>
+                <div className="flex gap-5 items-start">
+                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
+                      <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
+                        <span>유형</span>
+                        {!selectedPanelItem && <span>대상</span>}
+                        <span className="col-span-2">제목</span>
+                        {!selectedPanelItem && <span>발송일</span>}
+                        {!selectedPanelItem && <span>수신 수</span>}
+                        <span className="text-right">상태</span>
+                      </div>
+                      {sendLogs.map((log) => (
+                        <div
+                          key={log.id}
+                          onClick={() => setSelectedPanelItem({ type: 'crm', data: log })}
+                          className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                            selectedPanelItem?.type === 'crm' && selectedPanelItem.data.id === log.id
+                              ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
+                              : "hover:bg-brand-surface-low"
+                          }`}
+                        >
+                          <span className={`text-[10px] font-bold ${log.type === "이메일" ? "text-brand-primary" : "text-brand-accent-orange"}`}>
+                            {log.type}
+                          </span>
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.target}</span>}
+                          <span className="col-span-2 text-xs text-white truncate">{log.subject}</span>
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.sentAt}</span>}
+                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.count}건</span>}
+                          <span className={`text-[9px] font-bold text-right ${
+                            log.status === "성공" ? "text-brand-tertiary" : "text-brand-accent-orange"
+                          }`}>
+                            {log.status}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                  {renderDetailPanel()}
                 </div>
               </div>
             )}
@@ -531,7 +673,9 @@ export default function AdminDashboard({
                 </div>
 
                 {/* 모의 결제 내역 */}
-                <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
+                <div className="flex gap-5 items-start">
+                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
                   <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
                     {!selectedPanelItem && <span>주문번호</span>}
                     <span className="col-span-2">강의명</span>
@@ -576,6 +720,9 @@ export default function AdminDashboard({
                       </div>
                     ))
                   )}
+                    </div>
+                  </div>
+                  {renderDetailPanel()}
                 </div>
               </div>
             )}
@@ -644,109 +791,6 @@ export default function AdminDashboard({
               </div>
             )}
           </div>
-
-          {/* Inline Right Detail Panel (Master-Detail Split View) */}
-          {selectedPanelItem && (
-            <div className="w-80 lg:w-[400px] flex-shrink-0 bg-brand-surface-high border border-brand-border/60 rounded-2xl shadow-xl flex flex-col overflow-hidden animate-slideInFromRight sticky top-20">
-              <div className="p-4 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
-                  <h3 className="font-bold text-white text-sm">상세 정보</h3>
-                </div>
-                <button
-                  onClick={() => setSelectedPanelItem(null)}
-                  className="text-brand-on-surface-variant hover:text-white p-1 rounded-lg hover:bg-brand-surface-low transition-colors cursor-pointer"
-                  title="닫기"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="p-5 overflow-y-auto max-h-[calc(100vh-140px)] space-y-4">
-                {selectedPanelItem.type === 'member' && (
-                  <div className="space-y-4 text-sm text-brand-on-surface-variant">
-                    <div className="w-16 h-16 rounded-full bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-4 border-2 border-brand-primary/30 shadow-inner">
-                      {selectedPanelItem.data.name.charAt(0)}
-                    </div>
-                    <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
-                      <p><span className="font-semibold text-white">이름:</span> {selectedPanelItem.data.name}</p>
-                      <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
-                      <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
-                      <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
-                      <p><span className="font-semibold text-white">권한:</span> {selectedPanelItem.data.role === 'admin' ? '관리자' : '수강생'}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedPanelItem.type === 'course' && (
-                  <div className="space-y-4 text-sm text-brand-on-surface-variant">
-                    <h4 className="text-base font-bold text-white mb-2">{selectedPanelItem.data.title}</h4>
-                    <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
-                      <p><span className="font-semibold text-white">카테고리:</span> {selectedPanelItem.data.category}</p>
-                      <p><span className="font-semibold text-white">강사:</span> {selectedPanelItem.data.instructor}</p>
-                      <p><span className="font-semibold text-white">가격:</span> ₩{(selectedPanelItem.data.discountedPrice || selectedPanelItem.data.price).toLocaleString()}</p>
-                    </div>
-                    <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/30">
-                      <p className="font-semibold text-white mb-2 text-xs">커리큘럼 요약</p>
-                      <ul className="list-disc pl-5 space-y-1 text-xs">
-                        {selectedPanelItem.data.curriculum.slice(0, 5).map((curr: any, i: number) => (
-                          <li key={i}>{curr.title}</li>
-                        ))}
-                        {selectedPanelItem.data.curriculum.length > 5 && <li>...</li>}
-                      </ul>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={() => { onApproveCourse(selectedPanelItem.data.id); setSelectedPanelItem(null); }}
-                        className="flex-1 py-2 bg-brand-tertiary/20 text-brand-tertiary font-bold rounded-xl border border-brand-tertiary/30 hover:bg-brand-tertiary/30 transition-colors cursor-pointer text-xs"
-                      >
-                        강의 승인
-                      </button>
-                      <button
-                        onClick={() => { onRejectCourse(selectedPanelItem.data.id); setSelectedPanelItem(null); }}
-                        className="flex-1 py-2 bg-error/20 text-error font-bold rounded-xl border border-error/30 hover:bg-error/30 transition-colors cursor-pointer text-xs"
-                      >
-                        강의 반려
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {selectedPanelItem.type === 'board' && (
-                  <div className="space-y-4 text-sm text-brand-on-surface-variant">
-                    <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
-                      <p><span className="font-semibold text-white">게시판명:</span> {selectedPanelItem.data.name}</p>
-                      <p><span className="font-semibold text-white">읽기 권한:</span> {selectedPanelItem.data.readPermission}</p>
-                      <p><span className="font-semibold text-white">쓰기 권한:</span> {selectedPanelItem.data.writePermission}</p>
-                      <p><span className="font-semibold text-white">템플릿:</span> {selectedPanelItem.data.template}</p>
-                      <p><span className="font-semibold text-white">게시글 수:</span> {selectedPanelItem.data.postCount}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedPanelItem.type === 'payment' && (
-                  <div className="space-y-4 text-sm text-brand-on-surface-variant">
-                    <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
-                      <p><span className="font-semibold text-white">주문번호:</span> {selectedPanelItem.data.id}</p>
-                      <p><span className="font-semibold text-white">결제 항목:</span> {selectedPanelItem.data.courseTitle || selectedPanelItem.data.course}</p>
-                      <p><span className="font-semibold text-white">결제자:</span> {selectedPanelItem.data.userId || selectedPanelItem.data.user}</p>
-                      <p><span className="font-semibold text-white">결제 금액:</span> ₩{selectedPanelItem.data.amount.toLocaleString()}</p>
-                      <p><span className="font-semibold text-white">결제일:</span> {selectedPanelItem.data.date}</p>
-                      <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedPanelItem.type === 'crm' && (
-                  <div className="space-y-4 text-sm text-brand-on-surface-variant">
-                    <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
-                      <p><span className="font-semibold text-white">유형:</span> {selectedPanelItem.data.type}</p>
-                      <p><span className="font-semibold text-white">대상:</span> {selectedPanelItem.data.target}</p>
-                      <p><span className="font-semibold text-white">제목:</span> {selectedPanelItem.data.subject}</p>
-                      <p><span className="font-semibold text-white">발송일시:</span> {selectedPanelItem.data.sentAt}</p>
-                      <p><span className="font-semibold text-white">수신 건수:</span> {selectedPanelItem.data.count}</p>
-                      <p><span className="font-semibold text-white">결과:</span> {selectedPanelItem.data.status}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>{/* end flex sidebar+content */}
     </div>
