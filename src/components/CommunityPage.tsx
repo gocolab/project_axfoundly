@@ -260,7 +260,7 @@ export default function CommunityPage({
 
         {/* Right Side: Inline Post Detail & Comments Panel (Detail View) */}
         {selectedPost && (
-          <div className="w-96 lg:w-[460px] flex-shrink-0 sticky top-20">
+          <div className="w-96 lg:w-[460px] flex-shrink-0 sticky top-20 animate-slideInFromRight">
             <CommunityPostDetailModal
               inline
               post={selectedPost}

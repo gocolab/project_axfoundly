@@ -108,7 +108,7 @@ export default function CommunityPostDetailModal({
   };
 
   const content = (
-    <div className={`glass-panel-heavy ${inline ? "rounded-2xl border border-brand-border/60 shadow-xl" : "rounded-l-2xl border-l border-brand-border shadow-2xl"} w-full h-full flex flex-col overflow-hidden animate-fadeIn`}>
+    <div className={`glass-panel-heavy ${inline ? "rounded-2xl border border-brand-border/60 shadow-xl" : "rounded-l-2xl border-l border-brand-border shadow-2xl"} w-full h-full flex flex-col overflow-hidden animate-slideInFromRight`}>
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-brand-border/40 flex justify-between items-start bg-brand-surface-low/80">
           <div className="flex items-center gap-2 flex-wrap">

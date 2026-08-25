@@ -647,7 +647,7 @@ export default function AdminDashboard({
 
           {/* Inline Right Detail Panel (Master-Detail Split View) */}
           {selectedPanelItem && (
-            <div className="w-80 lg:w-[400px] flex-shrink-0 bg-brand-surface-high border border-brand-border/60 rounded-2xl shadow-xl flex flex-col overflow-hidden animate-fadeIn sticky top-20">
+            <div className="w-80 lg:w-[400px] flex-shrink-0 bg-brand-surface-high border border-brand-border/60 rounded-2xl shadow-xl flex flex-col overflow-hidden animate-slideInFromRight sticky top-20">
               <div className="p-4 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
