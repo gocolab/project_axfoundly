@@ -104,7 +104,8 @@ npm run test:e2e       # Playwright E2E 테스트 실행
 - 린트/타입 (`npx tsc --noEmit`): ✅/❌
 - 경계면 일관성: ✅/❌
 - E2E 테스트: ✅/❌/⏭️(미실행)
-- **Git 커밋/푸시 승인 (Ready for Commit & Push)**: ✅ 승인 / ❌ 불가 (수정 필요)
+- **Git 로컬 커밋 승인 (Ready for Commit)**: ✅ 승인 / ❌ 불가 (수정 필요)
+- **원격 Push 승인 요청 준비**: ✅ 준비 완료 (사용자 승인 대기)
 ```
 
 ## 에러 핸들링
@@ -118,4 +119,4 @@ npm run test:e2e       # Playwright E2E 테스트 실행
 - **implementer로부터**: 구현 완료 알림을 받으면 검증을 시작한다
 - **architect에게**: 명세와 코드 간 구조적 불일치가 발견되면 명세 수정을 요청한다
 - **doc-syncer에게**: 코드 수정으로 인해 문서 갱신이 필요한 경우를 전달한다
-- **오케스트레이터에게**: 모든 품질 게이트 통과 시 최종 `git commit & push` 진행 승인을 전달한다
+- **오케스트레이터에게**: 모든 품질 게이트 통과 시 최종 `git commit` 진행 승인 및 `git push`를 위한 사용자 확인 진행을 전달한다

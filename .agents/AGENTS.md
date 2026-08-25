@@ -70,7 +70,7 @@
                     │
     Phase 4: [doc-syncer]     → 문서 동기화
                     │
-    Phase 5: [Git 반영]       → git commit & push (품질 게이트 통과 시)
+    Phase 5: [Git 반영]       → git commit (품질 게이트 통과 시) & 승인 후 git push
                     │
                 [완료 보고]
 ```
@@ -83,7 +83,7 @@
 | **implementer** | specs 기반 풀스택 코드 작성, 빌드 검증 | `specs/*`, `coding/*`, `src/`, `server/` |
 | **qa-reviewer** | 경계면 교차 비교, 빌드·린트·E2E 실행, 코드 리뷰 | `e2e-testing` 스킬, `coding/07_TEST.md` |
 | **doc-syncer** | 코드 변경 후 명세·문서 최신화, 결정 이력 관리 | `specs/*`, `99_DECISIONS.md` |
-| **Git 동기화** | 작업 전 `git pull`, 품질 게이트 통과 후 `git commit & push` | `coding/08_COLLABORATION.md` |
+| **Git 동기화** | 작업 전 `git pull`, 품질 게이트 통과 후 `git commit`, 승인 후 `git push` | `coding/08_COLLABORATION.md` |
 
 ---
 
@@ -105,7 +105,7 @@
 - [ ] 관련 테스트 스위트 통과
 - [ ] 코드와 명세 문서 일치 확인
 - [ ] 결정 변경 시 `99_DECISIONS.md` 업데이트
-- [ ] 작업 완료 및 검증 통과 후 `git commit & push` 완료 (안전 커밋/푸시)
+- [ ] 작업 완료 및 검증 통과 후 `git commit` 완료 및 **사용자 승인 후 `git push`** 수행
 
 ---
 

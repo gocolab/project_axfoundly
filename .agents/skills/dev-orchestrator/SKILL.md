@@ -1,7 +1,7 @@
 ---
 name: dev-orchestrator
 description: |
-  「AI로 창업하라」 개발 파이프라인 오케스트레이터. 사전 Git pull → architect(설계) → implementer(구현) → qa-reviewer(검증) → doc-syncer(문서화) → Git commit/push 순서로 에이전트 스킬을 조율하여 기능을 완성한다.
+  「AI로 창업하라」 개발 파이프라인 오케스트레이터. 사전 Git pull → architect(설계) → implementer(구현) → qa-reviewer(검증) → doc-syncer(문서화) → Git commit → 사용자 승인 후 push 순서로 에이전트 스킬을 조율하여 기능을 완성한다.
   (1) '기능 개발해줘', '메뉴 구현해줘', '전체 개발 플로우', '파이프라인 실행' 요청 시,
   (2) '[교육/IR/커뮤니티/대시보드] 기능 만들어줘' 등 메뉴 단위 개발 요청 시,
   (3) '설계부터 검증까지', '풀 사이클 개발', '전체 프로세스' 요청 시,
@@ -12,7 +12,7 @@ description: |
 
 # Dev Orchestrator — 개발 파이프라인 통합 조율
 
-「AI로 창업하라」 플랫폼의 기능 개발을 소스 동기화부터 설계, 구현, 검증, 문서화, 원격 Git 배포까지 완전한 파이프라인으로 실행하는 통합 스킬.
+「AI로 창업하라」 플랫폼의 기능 개발을 소스 동기화부터 설계, 구현, 검증, 문서화, 로컬 커밋 및 승인 기반 원격 Git 푸시까지 완전한 파이프라인으로 실행하는 통합 스킬.
 
 ## 실행 모드: 파이프라인 (순차 실행)
 
@@ -25,7 +25,7 @@ description: |
 | Phase 2 | [`implementer`](file:///apps/project_launch_bizs/.agents/skills/implementer/SKILL.md) | 코드 구현 (프론트+백엔드) | `src/`, `server/` 코드 |
 | Phase 3 | [`qa-reviewer`](file:///apps/project_launch_bizs/.agents/skills/qa-reviewer/SKILL.md) | 품질 검증 (경계면+빌드+린트) | 검증 보고서 + 수정 (품질 게이트 통과) |
 | Phase 4 | [`doc-syncer`](file:///apps/project_launch_bizs/.agents/skills/doc-syncer/SKILL.md) | 문서 동기화 | `specs/*`, `99_DECISIONS.md` 갱신 |
-| Phase 5 | 오케스트레이터 | 안전한 Git 커밋 & 원격 푸시 | `git add`, `git commit`, `git push origin <branch>` |
+| Phase 5 | 오케스트레이터 | 안전한 Git 커밋 & **사용자 승인 후 원격 푸시** | `git add`, `git commit` 완료 후 사용자 승인 확인 → `git push origin <branch>` |
 | Phase 6 | 오케스트레이터 | 최종 완료 보고 | 작업 결과 및 커밋/푸시 상태 요약 보고 |
 
 ## 워크플로우
@@ -99,9 +99,9 @@ description: |
 3. 문서 drift 검사를 수행한다
 4. 동기화 결과를 확인한다
 
-### Phase 5: Git 커밋 & 원격 푸시
+### Phase 5: Git 커밋 및 승인 후 원격 푸시
 
-> 품질 게이트(빌드/린트/테스트/문서동기화)가 모두 통과된 경우에만 실행한다.
+> 품질 게이트(빌드/린트/테스트/문서동기화)가 모두 통과된 경우에만 로컬 커밋을 수행하고, 푸시는 반드시 사용자 승인을 거친다.
 
 1. **변경 파일 검토**:
    ```bash
@@ -115,11 +115,15 @@ description: |
    git add <변경파일들>
    git commit -m "feat(scope): 기능 및 명세 동기화 완료"
    ```
-3. **원격 저장소 푸시**:
+3. **사용자 푸시 승인 확인**:
+   - 커밋 완료 후 사용자에게 커밋 해시, 커밋 메시지, 대상 원격 브랜치를 안내하고 푸시 여부를 확인한다:
+     > "로컬 커밋이 완료되었습니다 (`<commit-hash>` `<commit-message>`). 원격 브랜치(`origin/<branch>`)로 push를 진행할까요?"
+4. **승인 시 원격 저장소 푸시 실행**:
+   - 사용자가 승인하면 원격 푸시를 실행한다:
    ```bash
    git push origin $(git branch --show-current)
    ```
-4. **푸시 결과 확인**: 커밋 해시 및 원격 반영 상태 확인
+5. **푸시 결과 확인**: 원격 반영 상태 확인
 
 ### Phase 6: 최종 완료 보고
 
@@ -129,7 +133,7 @@ description: |
    - ✅ 구현 완료: 생성/수정된 소스 파일 목록
    - ✅ 검증 통과: 빌드·린트·경계면 검증 100% 성공
    - ✅ 문서 동기화: 갱신된 문서 목록
-   - ✅ Git 반영: 커밋 메시지, 커밋 해시, 푸시 브랜치
+   - ✅ Git 반영: 커밋 완료 (메시지, 커밋 해시) 및 푸시 상태 (승인 후 푸시 완료 또는 푸시 대기 중)
 2. 미완료 항목이 있으면 명시한다
 3. 다음 단계 제안 (추가 기능 개발, E2E 테스트, 배포 등)
 
@@ -148,7 +152,7 @@ description: |
       ↓
   Phase 4: doc-syncer → specs/* 최종 동기화
       ↓
-  Phase 5: Git 반영 (git commit & git push)
+  Phase 5: Git 로컬 커밋 → [사용자 승인 요청] → 승인 시 git push
       ↓
   Phase 6: 최종 완료 보고
 ```
@@ -162,6 +166,7 @@ description: |
 | Phase 2 빌드 실패 | 에러 분석 → 코드 수정 → 재빌드 (최대 3회). 3회 실패 시 사용자에게 보고 |
 | Phase 3 경계면 불일치 | 직접 수정 후 Phase 2 재빌드. 구조적 문제면 Phase 1(설계)로 회귀 |
 | Phase 4 문서 충돌 | 사용자에게 확인 후 처리 |
+| Phase 5 Git Push 거절/보류 | 로컬 커밋 상태를 안전하게 보존하고 완료 보고에 '푸시 대기' 상태 명시 |
 | Phase 5 Git Push 실패 | 원격 충돌 여부 확인 (`git fetch` / `git log`), upstream 설정 점검, force push 금지 |
 
 ## 테스트 시나리오
@@ -173,13 +178,13 @@ description: |
 4. Phase 2: courses 라우트, CoursePage 컴포넌트, 타입 정의 구현, 빌드 성공
 5. Phase 3: 경계면 검증 통과, 빌드·린트 통과 (`npm run build`, `npx tsc --noEmit`)
 6. Phase 4: specs 문서 갱신 및 drift 0건 확인
-7. Phase 5: `git add .`, `git commit -m "feat(course): 강의 목록 페이지 및 API 연동"`, `git push origin loop_engineerings` 성공
-8. Phase 6: 커밋 해시 및 푸시 브랜치 포함 완료 보고
+7. Phase 5: `git add .`, `git commit -m "feat(course): 강의 목록 페이지 및 API 연동"` 실행 후 사용자에게 푸시 승인 확인 → 사용자 승인 시 `git push origin loop_engineerings` 실행
+8. Phase 6: 커밋 해시 및 푸시 브랜치 상태 포함 완료 보고
 
 ### 에러 흐름
 1. Phase 2에서 빌드 실패 (타입 에러)
 2. 에러 분석: types.ts의 Course 인터페이스와 API 응답 불일치
 3. types.ts 수정 후 재빌드 → 성공
 4. Phase 3에서 추가 경계면 불일치 발견 → 수정 후 재빌드 성공
-5. Phase 4~5 정상 진행 후 원격 Git 푸시 완료
+5. Phase 4~5 로컬 커밋 완료 및 사용자 승인 후 원격 Git 푸시 완료
 6. Phase 6 최종 완료 보고

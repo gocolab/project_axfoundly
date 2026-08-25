@@ -79,7 +79,8 @@ description: |
 ### 4단계: 검증 및 종료 판정 (Evaluate)
 - 검증 명령을 재실행합니다:
   - **성공(모든 검증 통과)**: 
-    - `auto_git_push: true`이거나 사용자가 요청한 경우: Conventional Commits 형식으로 `git commit` 및 `git push origin <branch>`를 실행합니다.
+    - Conventional Commits 형식으로 로컬 `git commit`을 완료합니다.
+    - `auto_git_push: true`이거나 사용자의 명시적 승인/요청이 확인된 경우에만 `git push origin <branch>`를 실행합니다.
     - 완료 보고서 작성 후 루프를 성공적으로 종료합니다.
   - **실패(에러 잔존)**: 현재 반복 횟수가 `max_iterations` 미만이면 남은 에러를 가지고 2단계로 이동하여 다음 루프를 시작합니다.
   - **최대 횟수 도달**: 루프를 중단하고 현재까지의 진행 상황 및 잔여 에러를 요약하여 사용자에게 보고합니다.
