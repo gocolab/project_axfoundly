@@ -75,6 +75,14 @@ export default function MainPage({
                 >
                   강의 둘러보기 <ArrowRight size={16} />
                 </button>
+                {!isLoggedIn && (
+                  <button
+                    onClick={onLoginClick}
+                    className="px-6 py-3 rounded-xl bg-brand-primary text-white font-bold text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary/30"
+                  >
+                    무료 가입하기
+                  </button>
+                )}
                 <button
                   onClick={() => onNavigate("ir")}
                   className="px-6 py-3 rounded-xl bg-brand-surface-high border border-brand-border text-white font-semibold text-sm hover:bg-brand-surface-highest transition-all cursor-pointer flex items-center gap-2"

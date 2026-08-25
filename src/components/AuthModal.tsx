@@ -24,9 +24,11 @@ export default function AuthModal({
     window.location.href = "/api/auth/google/url";
   };
 
-  const roles = [
-    { value: "member" as const, label: "수강생" },
-    { value: "admin" as const, label: "관리자" },
+  const demoUsers = [
+    { role: "member" as const, email: "student@mail.com", label: "수강생" },
+    { role: "member" as const, email: "sohyun.kim@mail.com", label: "강사" },
+    { role: "member" as const, email: "sw.han@nexusvc.com", label: "투자자" },
+    { role: "admin" as const, email: "admin@platform.com", label: "관리자" },
   ];
 
   return (
@@ -95,18 +97,18 @@ export default function AuthModal({
             </button>
             {showDemoLogin && (
               <div className="mt-2 grid grid-cols-4 gap-1.5 animate-fadeIn">
-                {roles.map((r) => (
+                {demoUsers.map((u) => (
                   <button
-                    key={r.value}
-                    data-testid={`quick-login-${r.value}`}
+                    key={u.label}
+                    data-testid={`quick-login-${u.label}`}
                     type="button"
                     onClick={() => {
-                      onLogin(r.value);
+                      onLogin(u.role, u.email);
                       onClose();
                     }}
                     className="text-[10px] py-1.5 rounded-lg border border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:text-white hover:border-brand-primary-container/50 transition-colors cursor-pointer font-medium text-center"
                   >
-                    {r.label}
+                    {u.label}
                   </button>
                 ))}
               </div>

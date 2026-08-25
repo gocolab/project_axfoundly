@@ -69,6 +69,7 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 4종 회원 등급 기반 �
     await profileBtn.click();
 
     await page.getByRole('button', { name: '마이페이지' }).click();
+    await page.locator('aside nav button', { hasText: '강사 대시보드' }).click();
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
   });
 
@@ -85,6 +86,7 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 4종 회원 등급 기반 �
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
+    await page.locator('aside nav button', { hasText: '수강생 대시보드' }).click();
     // 수강생 대시보드 타이틀 확인
     await expect(page.locator('h1', { hasText: '수강생 대시보드' })).toBeVisible();
     await expect(page.getByRole('button', { name: '내 강의실' })).toBeVisible();
@@ -104,6 +106,7 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 4종 회원 등급 기반 �
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
+    await page.locator('aside nav button', { hasText: '강사 대시보드' }).click();
     // 강사 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
     await expect(page.getByRole('button', { name: '내 강의 목록' })).toBeVisible();
@@ -124,6 +127,7 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 4종 회원 등급 기반 �
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
+    await page.locator('aside nav button', { hasText: '투자자 대시보드' }).click();
     // 투자자 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
     await expect(page.getByRole('button', { name: '관심 스타트업' })).toBeVisible();

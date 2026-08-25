@@ -18,6 +18,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     // 2. 마이페이지 이동
     await page.locator('header button', { hasText: '김수강생' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
+    await page.locator('aside nav button', { hasText: '수강생 대시보드' }).click();
     await expect(page.locator('h1', { hasText: '수강생 대시보드' })).toBeVisible();
 
     // 3. 프로젝트 & 팀 빌딩 탭으로 이동
@@ -76,8 +77,9 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await page.locator('.glass-panel-heavy button', { hasText: '강사' }).first().click();
 
     // 2. 대시보드 이동
-    await page.locator('header button', { hasText: '김소현' }).click();
+    await page.locator('header button', { hasText: '강사' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
+    await page.locator('aside nav button', { hasText: '강사 대시보드' }).click();
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
 
     // 3. [AI 강의 개설] 모달 열기
@@ -140,6 +142,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await expect(page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ })).toBeVisible();
     await page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
+    await page.locator('aside nav button', { hasText: '투자자 대시보드' }).click();
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
 
     // 3. 관심 스타트업 탭 확인
