@@ -21,7 +21,7 @@ description: |
 | `completion_promise` | "BUILD & LINT SUCCESS" | 루프 종료를 판단하는 성공 기준 |
 | `max_iterations` | 5 | 최대 반복 횟수 (최대 10 권장) |
 | `verify_command` | `npm run build && npm run lint` | 각 루프 끝에 실행할 검증 명령 |
-| `auto_git_push` | false | 검증 성공 시 자동 git commit & push 수행 여부 |
+| `auto_git_push` | false | 검증 성공 시 로컬 git commit 자동 수행 및 사용자 승인 후 push 수행 여부 |
 
 ---
 
@@ -51,10 +51,12 @@ description: |
                   [성공?] ────────┴──────── [실패?]
                      │                         │
                      ▼                         ▼
-            [Git Commit & Push]          (Iteration < Max)
-            (auto_git_push=true)               │
-                     │                         ▼
-                     ▼                   [다음 루프로 회귀]
+            [Git Commit 자동]            (Iteration < Max)
+                     │                         │
+                     ▼                         ▼
+            [사용자 승인 시 Push]         [다음 루프로 회귀]
+                     │
+                     ▼
                  [루프 종료]
 ```
 
