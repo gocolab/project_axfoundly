@@ -168,7 +168,7 @@ export default function CommunityPage({
       {/* Master-Detail Split View Container */}
       <div className="flex gap-5 items-start">
         {/* Left Side: Posts List Table + Pagination (Master View) */}
-        <div className={`transition-all duration-300 min-w-0 ${selectedPost ? "flex-1" : "w-full"}`}>
+        <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPost ? "flex-1" : "w-full"}`}>
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
             {/* Header row */}
             <div className={`grid ${selectedPost ? "grid-cols-4 gap-2" : "grid-cols-12 gap-2"} px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>

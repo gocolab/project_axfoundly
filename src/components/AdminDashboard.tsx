@@ -157,7 +157,7 @@ export default function AdminDashboard({
         {/* ── 우측 콘텐츠 영역 (Master-Detail Split View Container) ── */}
         <div className="flex-1 min-w-0 flex gap-5 items-start">
           {/* Main Master Content (Tables / Lists) */}
-          <div className={`transition-all duration-300 min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+          <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
             {/* ── 통계 홈 ── */}
             {activeTab === "stats" && (
               <div className="flex flex-col gap-6 animate-fadeIn">
