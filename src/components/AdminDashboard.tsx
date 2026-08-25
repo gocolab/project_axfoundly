@@ -1,4 +1,5 @@
 import React from "react";
+import Pagination from "./common/Pagination";
 import {
   BarChart3,
   Users,
@@ -49,7 +50,8 @@ export default function AdminDashboard({
   onViewCourse,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm" | "payments">("stats");
-  const [memberSearch, setMemberSearch] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
   const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);
   const [showCreateBoardModal, setShowCreateBoardModal] = React.useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = React.useState(false);
@@ -65,11 +67,20 @@ export default function AdminDashboard({
   }, [boards]);
 
   React.useEffect(() => {
+    setSearchQuery("");
+    setCurrentPage(1);
     if (selectedPanelItem) {
       setSelectedPanelItem(null);
       setIsClosing(false);
     }
   }, [activeTab]);
+
+  React.useEffect(() => {
+    if (selectedPanelItem) {
+      setSelectedPanelItem(null);
+      setIsClosing(false);
+    }
+  }, [currentPage, searchQuery]);
 
   const handleCloseDetail = () => {
     setIsClosing(true);
@@ -225,10 +236,7 @@ export default function AdminDashboard({
   ];
 
 
-  const filteredMembers = members.filter(
-    (m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-           m.email.toLowerCase().includes(memberSearch.toLowerCase())
-  );
+
 
   // Mock chart data
   const chartBars = [35, 52, 48, 70, 65, 82, 90, 78, 95, 88, 72, 60];
@@ -240,6 +248,31 @@ export default function AdminDashboard({
     { id: "log2", type: "알림톡", target: "수강생 (Active)", subject: "결제 완료 확인", sentAt: "2025-08-09 14:30", status: "성공", count: 156 },
     { id: "log3", type: "이메일", target: "투자자", subject: "월간 스타트업 하이라이트", sentAt: "2025-08-08 10:00", status: "실패 (3건)", count: 45 },
   ];
+
+  // --- Pagination & Filtering ---
+  const itemsPerPage = 8;
+  const lcSearch = searchQuery.toLowerCase();
+
+  const filteredMembers = members.filter(m => m.name.toLowerCase().includes(lcSearch) || m.email.toLowerCase().includes(lcSearch));
+  const totalMemberPages = Math.max(1, Math.ceil(filteredMembers.length / itemsPerPage));
+  const paginatedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const filteredCourses = pendingCourses.filter(c => c.title.toLowerCase().includes(lcSearch) || c.instructor.toLowerCase().includes(lcSearch));
+  const totalCoursePages = Math.max(1, Math.ceil(filteredCourses.length / itemsPerPage));
+  const paginatedCourses = filteredCourses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const filteredBoards = localBoards.filter(b => b.name.toLowerCase().includes(lcSearch));
+  const totalBoardPages = Math.max(1, Math.ceil(filteredBoards.length / itemsPerPage));
+  const paginatedBoards = filteredBoards.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const filteredLogs = sendLogs.filter(l => l.subject.toLowerCase().includes(lcSearch) || l.target.toLowerCase().includes(lcSearch));
+  const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const filteredPayments = payments.filter(p => (p.courseTitle || p.course)?.toLowerCase().includes(lcSearch) || (p.userId || p.user)?.toLowerCase().includes(lcSearch));
+  const totalPaymentPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // ------------------------------
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -349,25 +382,37 @@ export default function AdminDashboard({
             {/* ── 회원 관리 ── */}
             {activeTab === "members" && (
               <div className="flex flex-col gap-4 animate-fadeIn">
-                <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Users size={14} className="text-brand-primary" />
-                    플랫폼 가입 회원 목록
-                  </h2>
-                  <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 회원의 권한 및 계정 상태를 조회하고 변경합니다.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 justify-between">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                    <input
-                      type="text"
-                      placeholder="회원 검색..."
-                      value={memberSearch}
-                      onChange={(e) => setMemberSearch(e.target.value)}
-                      className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full sm:w-64"
-                    />
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Users size={14} className="text-brand-primary" />
+                      플랫폼 가입 회원 목록
+                    </h2>
+                    <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 회원의 권한 및 계정 상태를 조회하고 변경합니다.</p>
                   </div>
-                  <span className="text-xs text-brand-on-surface-variant">총 {members.length}명</span>
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <div className="relative w-full xl:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                      <input
+                        type="text"
+                        placeholder="회원 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      />
+                    </div>
+                    {totalMemberPages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalMemberPages}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredMembers.length}
+                          itemsPerPage={itemsPerPage}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-5 items-start">
@@ -381,7 +426,7 @@ export default function AdminDashboard({
                         {!selectedPanelItem && <span>상태</span>}
                         <span className="text-right">액션</span>
                       </div>
-                      {filteredMembers.map((member) => (
+                      {paginatedMembers.map((member) => (
                         <div
                           key={member.id}
                           onClick={() => setSelectedPanelItem({ type: 'member', data: member })}
@@ -441,23 +486,48 @@ export default function AdminDashboard({
             {/* ── 강의/콘텐츠 관리 ── */}
             {activeTab === "courses" && (
               <div className="flex flex-col gap-4 animate-fadeIn">
-                <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <BookOpen size={14} className="text-brand-accent-orange" />
-                    신청/등록된 강의 커리큘럼 검수 & 승인
-                  </h2>
-                  <p className="text-xs text-brand-on-surface-variant mt-0.5">강사가 개설 신청한 강의의 커리큘럼과 일정을 검토하여 승인 또는 반려합니다.</p>
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <BookOpen size={14} className="text-brand-accent-orange" />
+                      신청/등록된 강의 커리큘럼 검수 & 승인
+                    </h2>
+                    <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 강의 커리큘럼을 검수하고 승인/반려합니다.</p>
+                  </div>
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <div className="relative w-full xl:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                      <input
+                        type="text"
+                        placeholder="강의 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      />
+                    </div>
+                    {totalCoursePages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalCoursePages}
+                        onPageChange={setCurrentPage}
+                        totalItems={filteredCourses.length}
+                        itemsPerPage={itemsPerPage}
+                      />
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="flex gap-5 items-start">
+              <div className="flex gap-5 items-start">
                   <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
-                    {pendingCourses.length === 0 ? (
+                    {filteredCourses.length === 0 ? (
                       <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
                         <CheckCircle size={32} className="text-brand-tertiary mx-auto mb-3" />
                         <p className="text-sm text-brand-on-surface-variant">검수 대기 중인 강의가 없습니다</p>
                       </div>
                     ) : (
-                      pendingCourses.map((course) => (
+                      paginatedCourses.map((course) => (
                         <div
                           key={course.id}
                           onClick={() => setSelectedPanelItem({ type: 'course', data: course })}
@@ -523,21 +593,44 @@ export default function AdminDashboard({
             {/* ── 게시판 관리 ── */}
             {activeTab === "boards" && (
               <div className="flex flex-col gap-4 animate-fadeIn">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
                   <h2 className="text-sm font-bold text-white flex items-center gap-2">
                     <MessageSquare size={14} className="text-brand-primary" />
                     멀티 게시판 관리
                   </h2>
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <div className="relative w-full xl:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                      <input
+                        type="text"
+                        placeholder="게시판 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      />
+                    </div>
+                    {totalBoardPages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalBoardPages}
+                        onPageChange={setCurrentPage}
+                        totalItems={filteredBoards.length}
+                        itemsPerPage={itemsPerPage}
+                      />
+                    </div>
+                  )}
                   <button
                     onClick={() => setShowCreateBoardModal(true)}
-                    className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 ml-2"
                   >
                     <Plus size={14} />
                     새 게시판 만들기
                   </button>
                 </div>
+              </div>
 
-                <div className="flex gap-5 items-start">
+              <div className="flex gap-5 items-start">
                   <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
                     <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
                       <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
@@ -548,7 +641,7 @@ export default function AdminDashboard({
                         <span>게시글 수</span>
                         <span className="text-right">액션</span>
                       </div>
-                      {localBoards.map((board) => (
+                      {paginatedBoards.map((board) => (
                         <div
                           key={board.id}
                           onClick={() => setSelectedPanelItem({ type: 'board', data: board })}
@@ -606,8 +699,34 @@ export default function AdminDashboard({
                   </button>
                 </div>
 
-                <h3 className="text-xs font-bold text-brand-on-surface-variant mt-2">발송 로그</h3>
-                <div className="flex gap-5 items-start">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                  <h3 className="text-xs font-bold text-brand-on-surface-variant m-0">발송 로그</h3>
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <div className="relative w-full xl:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                      <input
+                        type="text"
+                        placeholder="발송 로그 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      />
+                    </div>
+                    {totalLogPages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalLogPages}
+                        onPageChange={setCurrentPage}
+                        totalItems={filteredLogs.length}
+                        itemsPerPage={itemsPerPage}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-5 items-start">
                   <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
                     <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
                       <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
@@ -618,7 +737,7 @@ export default function AdminDashboard({
                         {!selectedPanelItem && <span>수신 수</span>}
                         <span className="text-right">상태</span>
                       </div>
-                      {sendLogs.map((log) => (
+                      {paginatedLogs.map((log) => (
                         <div
                           key={log.id}
                           onClick={() => setSelectedPanelItem({ type: 'crm', data: log })}
@@ -673,7 +792,34 @@ export default function AdminDashboard({
                 </div>
 
                 {/* 모의 결제 내역 */}
-                <div className="flex gap-5 items-start">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                  <h3 className="text-xs font-bold text-brand-on-surface-variant m-0">모의 결제 내역</h3>
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <div className="relative w-full xl:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                      <input
+                        type="text"
+                        placeholder="결제 내역 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      />
+                    </div>
+                    {totalPaymentPages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPaymentPages}
+                        onPageChange={setCurrentPage}
+                        totalItems={filteredPayments.length}
+                        itemsPerPage={itemsPerPage}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-5 items-start">
                   <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
                     <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
                   <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
@@ -684,12 +830,12 @@ export default function AdminDashboard({
                     <span>금액</span>
                     <span className="text-right">기능</span>
                   </div>
-                  {payments.length === 0 ? (
+                  {filteredPayments.length === 0 ? (
                     <div className="py-10 text-center text-sm text-brand-on-surface-variant">
                       결제 내역이 없습니다.
                     </div>
                   ) : (
-                    payments.map((p) => (
+                    paginatedPayments.map((p) => (
                       <div
                         key={p.id}
                         onClick={() => setSelectedPanelItem({ type: 'payment', data: p })}
