@@ -5,11 +5,8 @@ import MainPage from "./components/MainPage";
 import CoursePage from "./components/CoursePage";
 import IRPage from "./components/IRPage";
 import CommunityPage from "./components/CommunityPage";
-import MemberDashboard from "./components/MemberDashboard";
-import InstructorDashboard from "./components/InstructorDashboard";
-import InvestorDashboard from "./components/InvestorDashboard";
+import MyPage from "./components/MyPage";
 import AdminDashboard from "./components/AdminDashboard";
-import ProfilePage from "./components/ProfilePage";
 import AITutorWidget from "./components/common/AITutorWidget";
 import { useToast } from "./components/common/Toast";
 import { api } from "./lib/api";
@@ -425,93 +422,32 @@ export default function App() {
 
   // Render dashboard based on role
   const renderDashboard = () => {
-    switch (userRole) {
-      case "member":
-        const isInstructor = userAssignedRoles.includes("course_instructor");
-        const isInvestor = userAssignedRoles.includes("investor_active");
-        
-        return (
-          <div className="flex flex-col space-y-4">
-            {(isInstructor || isInvestor) && (
-              <div className="flex justify-center mt-6 mb-2">
-                <div className="flex gap-2 p-1.5 glass-panel-heavy rounded-2xl shadow-xl border border-brand-border bg-brand-surface/80 backdrop-blur-md">
-                  <button onClick={() => setDashboardTab("member")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${dashboardTab === 'member' ? 'bg-gradient-to-r from-brand-primary-container to-brand-primary text-white shadow-md' : 'text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low'}`}>
-                    🎓 수강생 대시보드
-                  </button>
-                  {isInstructor && (
-                    <button onClick={() => setDashboardTab("instructor")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${dashboardTab === 'instructor' ? 'bg-gradient-to-r from-brand-secondary to-brand-tertiary text-white shadow-md' : 'text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low'}`}>
-                      👨‍🏫 강사 대시보드
-                    </button>
-                  )}
-                  {isInvestor && (
-                    <button onClick={() => setDashboardTab("investor")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${dashboardTab === 'investor' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md' : 'text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low'}`}>
-                      💼 투자자 대시보드
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {dashboardTab === "member" && (
-              <MemberDashboard
-                enrolledCourses={courses}
-                teamRequests={teamRequests}
-                payments={payments}
-                notifications={notifications}
-                myProjects={irProjects.filter((p) => p.members?.some((m) => m.name === "김수강생"))}
-                onViewCourse={handleViewCourse}
-                onViewIR={handleViewIR}
-                onSaveProject={handleSaveProject}
-                onRefundPayment={handleRefundPayment}
-                onUpdateTeamRequest={handleUpdateTeamRequest}
-              />
-            )}
-            {dashboardTab === "instructor" && isInstructor && (
-              <InstructorDashboard
-                myCourses={courses.filter((c) => c.instructor.includes("김소현") || c.instructor.includes("김수강생"))}
-                settlements={settlements}
-                onSaveCourse={handleSaveCourse}
-                onSendCRMMessage={handleSendCRMMessage}
-                onViewCourse={handleViewCourse}
-              />
-            )}
-            {dashboardTab === "investor" && isInvestor && (
-              <InvestorDashboard
-                bookmarkedProjects={irProjects.filter((p) => p.bookmarked)}
-                recommendations={recommendations}
-                proposals={proposals}
-                onViewProject={handleViewIR}
-                onRemoveBookmark={handleToggleBookmark}
-              />
-            )}
-          </div>
-        );
-      case "admin":
-        return (
-          <AdminDashboard
-            stats={
-              adminStats || {
-                dailySignups: 42,
-                monthlySignups: 1280,
-                totalRevenue: 84200000,
-                monthlyRevenue: 28400000,
-                activeCourses: courses.length,
-                teamMatchCount: 38,
-                investmentMatchCount: 12,
-              }
-            }
-            members={adminMembers}
-            boards={adminBoards}
-            pendingCourses={pendingCourses.slice(0, 2)}
-            onChangeRole={handleAdminChangeRole}
-            onApproveCourse={handleApproveCourse}
-            onRejectCourse={handleRejectCourse}
-            onViewCourse={handleViewCourse}
-          />
-        );
-      default:
-        return null;
-    }
+    return (
+      <MyPage
+        isLoggedIn={isLoggedIn}
+        userName={userName}
+        userRole={userRole}
+        userAssignedRoles={userAssignedRoles}
+        courses={courses}
+        teamRequests={teamRequests}
+        payments={payments}
+        notifications={notifications}
+        irProjects={irProjects}
+        settlements={settlements}
+        recommendations={recommendations}
+        proposals={proposals}
+        onNavigate={setCurrentPage}
+        onLoginClick={() => setShowAuthModal(true)}
+        handleViewCourse={handleViewCourse}
+        handleViewIR={handleViewIR}
+        handleSaveProject={handleSaveProject}
+        handleRefundPayment={handleRefundPayment}
+        handleUpdateTeamRequest={handleUpdateTeamRequest}
+        handleSaveCourse={handleSaveCourse}
+        handleSendCRMMessage={handleSendCRMMessage}
+        handleToggleBookmark={handleToggleBookmark}
+      />
+    );
   };
 
   // Render current page
@@ -607,16 +543,7 @@ export default function App() {
             onViewCourse={handleViewCourse}
           />
         );
-      case "profile":
-        return (
-          <ProfilePage
-            isLoggedIn={isLoggedIn}
-            userName={userName}
-            userRole={userRole}
-            onNavigate={setCurrentPage}
-            onLoginClick={() => setShowAuthModal(true)}
-          />
-        );
+
       default:
         return null;
     }

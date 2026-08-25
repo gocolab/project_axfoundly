@@ -189,13 +189,6 @@ export default function GNB({
                         <LayoutDashboard size={14} />
                         마이페이지
                       </button>
-                      <button
-                        onClick={() => { setCurrentPage("profile"); setShowUserMenu(false); }}
-                        className="w-full text-left px-4 py-2.5 text-xs text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-low transition-colors cursor-pointer flex items-center gap-2"
-                      >
-                        <User size={14} />
-                        프로필 설정
-                      </button>
 
                       {userRole === "admin" && (
                         <button

@@ -5,29 +5,11 @@
 // ── User / Auth ──
 export type UserRole = "member" | "admin";
 
-/** 권한 계층: admin(관리자) > manager(강사·투자자) > member(수강생) */
-export type UserPermission = "admin" | "manager" | "member";
-
-/** UserRole → UserPermission 매핑 헬퍼 */
-export const roleToPermission = (role: UserRole): UserPermission => {
-  if (role === "admin") return "admin";
-  return "member"; // manager(강사·투자자)는 이제 assignedRoles로 구분됨
-};
-
-/** 권한이 최소 요구 수준을 충족하는지 확인 (임시 유지) */
-export const hasPermission = (role: UserRole, required: UserPermission): boolean => {
-  const order: UserPermission[] = ["member", "manager", "admin"];
-  const userLevel = order.indexOf(roleToPermission(role));
-  const requiredLevel = order.indexOf(required);
-  return userLevel >= requiredLevel;
-};
-
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  permission: UserPermission;
   avatar: string;
   joinDate: string;
   bio?: string;
