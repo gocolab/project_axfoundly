@@ -9,6 +9,7 @@
 
 | 날짜 | 문서 | 항목 | 이전 결정 | 새 결정 | 변경 이유 |
 |---|---|---|---|---|---|
+| 2026-08-25 | specs/11_SCREEN_SPEC.md | 상세 보기 UI 패턴 전환 | 화면 전체를 덮는 오버레이(Overlay) 드로어 방식 | 마스터-디테일 스플릿 뷰 (Master-Detail Split View) + 조건부 컬럼 자동 숨김/압축 | 상세 정보 확인 중에도 좌측 목록 탐색과 컨텍스트를 유지하고, 공간에 맞게 중요 컬럼만 남기는 현대적 대시보드 UX 제공 |
 | 2026-08-24 | .agents/* | 하네스 Git Pull & Push 연동 | 수동 Git 관리 / 미정의 | 작업 시작 시 `git pull` 사전 동기화 및 품질 게이트 통과 후 `git commit & push` 자동화 파이프라인 연동 | 에이전틱 개발 파이프라인에서 원격 코드 동기화 누락 방지 및 검증 완료된 코드의 안정적인 형상 관리/원격 배포 보장 |
 | 2026-08-21 | .agents/plugins/* | Ralph-Loop 플러그인 도입 | 수동 빌드/테스트 후 단발성 수정 | `.agents/plugins/ralph-loop/` 네이티브 플러그인 및 스킬 도입 (Antigravity 환경 맞춤 자율 루프) | Claude Code 전용 플러그인(`ralph-loop@claude-plugins-official`)의 기능을 Antigravity 환경에 맞게 네이티브 플러그인으로 전환 구현하여 자율 반복 개선 지원 |
 | 2026-08-20 | specs/*, docs/bizs/* | 핵심 누락 기능 완비 | AI 튜터/가상 IR/전자계약 미구현 상태 | 플로팅 AI 창업 튜터 위젯(`AITutorWidget`), 원클릭 자체 지원서(`JobApplicationModal`), 가상 IR 화상 피칭룸 & NDA 전자계약(`VirtualIRModal`), 멀티 게시판 생성 마법사(`AdminBoardCreateModal`) 통합 완료 | biz_flows.md 및 menus.md 비즈니스 지시서 상의 전 주기 올인원 파이프라인 완성 |

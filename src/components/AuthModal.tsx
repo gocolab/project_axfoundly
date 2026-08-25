@@ -14,7 +14,7 @@ export default function AuthModal({
   onLogin,
 }: AuthModalProps) {
   const [loading, setLoading] = React.useState(false);
-  const [showDemoLogin, setShowDemoLogin] = React.useState(false);
+  const [showDemoLogin, setShowDemoLogin] = React.useState(true);
 
   if (!isOpen) return null;
 

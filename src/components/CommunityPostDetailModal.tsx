@@ -22,6 +22,7 @@ interface CommunityPostDetailModalProps {
   onLoginClick: () => void;
   onCommentAdded?: (newComment: Comment) => void;
   onSendTeamRequest?: (projectName: string, message: string) => void;
+  inline?: boolean;
 }
 
 export default function CommunityPostDetailModal({
@@ -33,6 +34,7 @@ export default function CommunityPostDetailModal({
   onLoginClick,
   onCommentAdded,
   onSendTeamRequest,
+  inline = false,
 }: CommunityPostDetailModalProps) {
   const [comments, setComments] = React.useState<Comment[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -59,12 +61,11 @@ export default function CommunityPostDetailModal({
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentInput.trim()) return;
-
     if (!isLoggedIn) {
       onLoginClick();
       return;
     }
+    if (!commentInput.trim()) return;
 
     setSubmitting(true);
     try {
@@ -106,14 +107,10 @@ export default function CommunityPostDetailModal({
     setShowTeamProposalInput(false);
   };
 
-  return (
-    <div 
-      className="fixed inset-0 z-[100] flex justify-end bg-brand-surface/85 backdrop-blur-md animate-fadeIn"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="glass-panel-heavy rounded-l-2xl w-full max-w-lg h-full flex flex-col shadow-2xl border-l border-brand-border overflow-hidden animate-slideInRight">
+  const content = (
+    <div className={`glass-panel-heavy ${inline ? "rounded-2xl border border-brand-border/60 shadow-xl" : "rounded-l-2xl border-l border-brand-border shadow-2xl"} w-full h-full flex flex-col overflow-hidden animate-fadeIn`}>
         {/* Modal Header */}
-        <div className="p-5 border-b border-brand-border/40 flex justify-between items-start bg-brand-surface-low/80">
+        <div className="p-4 sm:p-5 border-b border-brand-border/40 flex justify-between items-start bg-brand-surface-low/80">
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -280,6 +277,22 @@ export default function CommunityPostDetailModal({
             </button>
           </form>
         </div>
+      </div>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex justify-end bg-brand-surface/85 backdrop-blur-md animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-lg h-full flex flex-col">
+        {content}
       </div>
     </div>
   );

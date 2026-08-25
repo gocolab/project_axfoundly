@@ -165,101 +165,121 @@ export default function CommunityPage({
         </div>
       )}
 
-      {/* Posts List Table */}
-      <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
-        {/* Header row */}
-        <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
-          <span className="col-span-2 sm:col-span-1">분류</span>
-          <span className="col-span-6 sm:col-span-6">제목</span>
-          <span className="col-span-2 hidden sm:block">작성자</span>
-          <span className="col-span-2 sm:col-span-1 text-center">조회</span>
-          <span className="col-span-2 text-right">날짜</span>
-        </div>
+      {/* Master-Detail Split View Container */}
+      <div className="flex gap-5 items-start">
+        {/* Left Side: Posts List Table + Pagination (Master View) */}
+        <div className={`transition-all duration-300 min-w-0 ${selectedPost ? "flex-1" : "w-full"}`}>
+          <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
+            {/* Header row */}
+            <div className={`grid ${selectedPost ? "grid-cols-4 gap-2" : "grid-cols-12 gap-2"} px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
+              <span className="col-span-1">분류</span>
+              <span className={selectedPost ? "col-span-3" : "col-span-6 sm:col-span-6"}>제목</span>
+              {!selectedPost && <span className="col-span-2 hidden sm:block">작성자</span>}
+              {!selectedPost && <span className="col-span-2 sm:col-span-1 text-center">조회</span>}
+              {!selectedPost && <span className="col-span-2 text-right">날짜</span>}
+            </div>
 
-        {filtered.length === 0 ? (
-          <div className="px-5 py-14 text-center text-sm text-brand-on-surface-variant">
-            게시글이 없습니다
-          </div>
-        ) : (
-          paginatedPosts.map((post, idx) => (
-            <div
-              key={post.id}
-              data-testid="community-post-row"
-              onClick={() => setSelectedPost(post)}
-              className={`grid grid-cols-12 gap-2 px-5 py-3.5 items-center hover:bg-brand-surface-low transition-colors cursor-pointer ${
-                idx < paginatedPosts.length - 1 ? "border-b border-brand-border/20" : ""
-              } ${post.isPinned ? "bg-brand-primary-container/5" : ""}`}
-            >
-              <div className="col-span-2 sm:col-span-1">
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                    post.boardType === "공지사항"
-                      ? "bg-brand-accent-rose/10 text-brand-accent-rose"
-                      : post.boardType === "팀빌딩"
-                      ? "bg-brand-tertiary/10 text-brand-tertiary"
-                      : "bg-brand-primary-container/10 text-brand-primary"
+            {filtered.length === 0 ? (
+              <div className="px-5 py-14 text-center text-sm text-brand-on-surface-variant">
+                게시글이 없습니다
+              </div>
+            ) : (
+              paginatedPosts.map((post, idx) => (
+                <div
+                  key={post.id}
+                  data-testid="community-post-row"
+                  onClick={() => setSelectedPost(post)}
+                  className={`grid ${selectedPost ? "grid-cols-4 gap-2" : "grid-cols-12 gap-2"} px-5 py-3.5 items-center transition-all cursor-pointer ${
+                    idx < paginatedPosts.length - 1 ? "border-b border-brand-border/20" : ""
+                  } ${
+                    selectedPost?.id === post.id
+                      ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
+                      : post.isPinned
+                      ? "bg-brand-primary-container/5 hover:bg-brand-surface-low"
+                      : "hover:bg-brand-surface-low"
                   }`}
                 >
-                  {post.boardType === "공지사항" ? "공지" : post.boardType === "팀빌딩" ? "팀" : "Q&A"}
-                </span>
-              </div>
-              <div className="col-span-6 sm:col-span-6 flex items-center gap-1.5 min-w-0">
-                {post.isPinned && <Pin size={11} className="text-brand-accent-rose flex-shrink-0" />}
-                <span className="text-xs text-white truncate font-medium hover:text-brand-primary transition-colors">
-                  {post.title}
-                </span>
-                {post.commentCount > 0 && (
-                  <span className="text-[9px] text-brand-primary flex-shrink-0 font-mono">
-                    [{post.commentCount}]
-                  </span>
-                )}
-              </div>
-              <div className="col-span-2 hidden sm:flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-brand-surface-high flex items-center justify-center text-[8px] font-bold text-brand-primary">
-                  {post.author.charAt(0)}
+                  <div className="col-span-1">
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                        post.boardType === "공지사항"
+                          ? "bg-brand-accent-rose/10 text-brand-accent-rose"
+                          : post.boardType === "팀빌딩"
+                          ? "bg-brand-tertiary/10 text-brand-tertiary"
+                          : "bg-brand-primary-container/10 text-brand-primary"
+                      }`}
+                    >
+                      {post.boardType === "공지사항" ? "공지" : post.boardType === "팀빌딩" ? "팀" : "Q&A"}
+                    </span>
+                  </div>
+                  <div className={`${selectedPost ? "col-span-3" : "col-span-6 sm:col-span-6"} flex items-center gap-1.5 min-w-0`}>
+                    {post.isPinned && <Pin size={11} className="text-brand-accent-rose flex-shrink-0" />}
+                    <span className="text-xs text-white truncate font-medium hover:text-brand-primary transition-colors">
+                      {post.title}
+                    </span>
+                    {post.commentCount > 0 && (
+                      <span className="text-[9px] text-brand-primary flex-shrink-0 font-mono">
+                        [{post.commentCount}]
+                      </span>
+                    )}
+                  </div>
+                  {!selectedPost && (
+                    <div className="col-span-2 hidden sm:flex items-center gap-1.5">
+                      <div className="w-4 h-4 rounded-full bg-brand-surface-high flex items-center justify-center text-[8px] font-bold text-brand-primary">
+                        {post.author.charAt(0)}
+                      </div>
+                      <span className="text-[10px] text-brand-on-surface-variant truncate">{post.author}</span>
+                    </div>
+                  )}
+                  {!selectedPost && (
+                    <div className="col-span-2 sm:col-span-1 text-center">
+                      <span className="text-[10px] text-brand-on-surface-variant flex items-center justify-center gap-0.5">
+                        <Eye size={10} /> {post.viewCount}
+                      </span>
+                    </div>
+                  )}
+                  {!selectedPost && (
+                    <div className="col-span-2 text-right">
+                      <span className="text-[10px] text-brand-on-surface-variant">{post.createdAt}</span>
+                    </div>
+                  )}
                 </div>
-                <span className="text-[10px] text-brand-on-surface-variant truncate">{post.author}</span>
-              </div>
-              <div className="col-span-2 sm:col-span-1 text-center">
-                <span className="text-[10px] text-brand-on-surface-variant flex items-center justify-center gap-0.5">
-                  <Eye size={10} /> {post.viewCount}
-                </span>
-              </div>
-              <div className="col-span-2 text-right">
-                <span className="text-[10px] text-brand-on-surface-variant">{post.createdAt}</span>
-              </div>
-            </div>
-          ))
+              ))
+            )}
+          </div>
+
+          {/* Pagination Component */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filtered.length}
+            itemsPerPage={itemsPerPage}
+          />
+        </div>
+
+        {/* Right Side: Inline Post Detail & Comments Panel (Detail View) */}
+        {selectedPost && (
+          <div className="w-96 lg:w-[460px] flex-shrink-0 sticky top-20">
+            <CommunityPostDetailModal
+              inline
+              post={selectedPost}
+              onClose={() => {
+                setSelectedPost(null);
+                onClearSelectedPost?.();
+              }}
+              isLoggedIn={isLoggedIn}
+              userRole={userRole}
+              userName={userName}
+              onLoginClick={onLoginClick}
+              onCommentAdded={(newComment) => {
+                // Update local post commentCount
+                setSelectedPost((prev) => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : null));
+              }}
+            />
+          </div>
         )}
       </div>
-
-      {/* Pagination Component */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        totalItems={filtered.length}
-        itemsPerPage={itemsPerPage}
-      />
-
-      {/* Post Detail & Comments Modal */}
-      {selectedPost && (
-        <CommunityPostDetailModal
-          post={selectedPost}
-          onClose={() => {
-            setSelectedPost(null);
-            onClearSelectedPost?.();
-          }}
-          isLoggedIn={isLoggedIn}
-          userRole={userRole}
-          userName={userName}
-          onLoginClick={onLoginClick}
-          onCommentAdded={(newComment) => {
-            // Update local post commentCount
-            setSelectedPost((prev) => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : null));
-          }}
-        />
-      )}
 
       {/* Write Post Modal */}
       {showWriteModal && (
