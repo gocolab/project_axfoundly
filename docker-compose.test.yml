@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  frontend-e2e-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: project-launch-bizs-test-runner
+    # 브라우저 렌더러 Crash 방지를 위해 호스트 공유 메모리 공유 (또는 shm_size: '1gb')
+    ipc: host
+    environment:
+      - CI=true
+      - NODE_ENV=test
+      - PORT=3005
+      - PLAYWRIGHT_AUTH_METHOD=mock
+    volumes:
+      # 테스트 결과물(스크린샷, 비디오, 트레이스, HTML 리포트) 호스트 디렉터리 동기화
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    ports:
+      - "3005:3005" # 앱 서버 포트
+      - "9323:9323" # Playwright HTML Report 뷰어 포트
+    command: npm run test:anomaly

@@ -421,7 +421,7 @@ router.post("/idea-requests/:id/accept-proposal", (req, res) => {
                   },
                   ...members,
                 ],
-            investmentStage: "Seed",
+            investmentStage: "Seed" as const,
             visibility: "public" as const,
           };
         }
