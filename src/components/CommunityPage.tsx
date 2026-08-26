@@ -219,17 +219,29 @@ export default function CommunityPage({
       )}
 
       {/* Master-Detail Split View Container */}
-      <div className="flex gap-5 items-start">
+      <div className="relative flex flex-col lg:flex-row gap-5 items-start">
         {/* Left Side: Posts List Table + Pagination (Master View) */}
-        <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPost ? "flex-1" : "w-full"}`}>
+        <div
+          className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            selectedPost ? "w-full lg:w-[48%] xl:w-[50%]" : "w-full"
+          }`}
+        >
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
             {/* Header row */}
-            <div className={`grid ${selectedPost ? "grid-cols-4 gap-2" : "grid-cols-12 gap-2"} px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-              <span className="col-span-1">분류</span>
-              <span className={selectedPost ? "col-span-3" : "col-span-6 sm:col-span-6"}>제목</span>
-              {!selectedPost && <span className="col-span-2 hidden sm:block">작성자</span>}
-              {!selectedPost && <span className="col-span-2 sm:col-span-1 text-center">조회</span>}
-              {!selectedPost && <span className="col-span-2 text-right">날짜</span>}
+            <div className="flex items-center px-4 sm:px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
+              <span className="w-12 sm:w-14 shrink-0">분류</span>
+              <span className="flex-1 min-w-0">제목</span>
+              <div
+                className={`flex items-center gap-3 sm:gap-4 shrink-0 transition-all duration-300 ease-in-out ${
+                  selectedPost
+                    ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                    : "w-44 sm:w-64 opacity-100"
+                }`}
+              >
+                <span className="w-20 sm:w-24 hidden sm:block">작성자</span>
+                <span className="w-10 sm:w-12 text-center">조회</span>
+                <span className="w-14 sm:w-16 text-right">날짜</span>
+              </div>
             </div>
 
             {filtered.length === 0 ? (
@@ -242,75 +254,87 @@ export default function CommunityPage({
                   key={post.id}
                   data-testid="community-post-row"
                   onClick={() => handleRowClick(post)}
-                  className={`grid ${selectedPost ? "grid-cols-4 gap-2" : "grid-cols-12 gap-2"} px-5 py-3.5 items-center transition-all cursor-pointer ${
+                  className={`flex items-center px-4 sm:px-5 py-3.5 gap-3 transition-colors duration-200 cursor-pointer ${
                     idx < paginatedPosts.length - 1 ? "border-b border-brand-border/20" : ""
                   } ${
                     selectedPost?.id === post.id
-                      ? "bg-brand-primary-container/25 border-l-4 border-brand-primary text-white shadow-sm"
-                      : "border-l-4 border-transparent hover:bg-brand-surface-low text-brand-on-surface-variant"
+                      ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
+                      : "border-l-4 border-transparent hover:bg-brand-surface-low/80 text-brand-on-surface-variant"
                   }`}
                 >
-                  <div className="col-span-1">
+                  {/* Category Badge */}
+                  <div className="w-12 sm:w-14 shrink-0">
                     <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block ${
                         post.boardType === "공지사항"
-                          ? "bg-brand-accent-rose/10 text-brand-accent-rose"
+                          ? "bg-brand-accent-rose/10 text-brand-accent-rose border border-brand-accent-rose/20"
                           : post.boardType === "팀빌딩"
-                          ? "bg-brand-tertiary/10 text-brand-tertiary"
-                          : "bg-brand-primary-container/10 text-brand-primary"
+                          ? "bg-brand-tertiary/10 text-brand-tertiary border border-brand-tertiary/20"
+                          : "bg-brand-primary-container/10 text-brand-primary border border-brand-primary-container/20"
                       }`}
                     >
                       {post.boardType === "공지사항" ? "공지" : post.boardType === "팀빌딩" ? "팀" : "Q&A"}
                     </span>
                   </div>
-                  <div className={`${selectedPost ? "col-span-3" : "col-span-6 sm:col-span-6"} flex items-center gap-1.5 min-w-0`}>
-                    {post.isPinned && <Pin size={11} className="text-brand-accent-rose flex-shrink-0" />}
-                    <span className={`text-xs truncate transition-colors ${
-                      selectedPost?.id === post.id
-                        ? "text-white font-semibold"
-                        : "text-white/90 font-medium hover:text-brand-primary"
-                    }`}>
+
+                  {/* Title & Comment count */}
+                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                    {post.isPinned && <Pin size={11} className="text-brand-accent-rose shrink-0" />}
+                    <span
+                      className={`text-xs truncate transition-colors ${
+                        selectedPost?.id === post.id
+                          ? "text-white font-semibold"
+                          : "text-white/90 font-medium hover:text-brand-primary"
+                      }`}
+                    >
                       {post.title}
                     </span>
                     {post.commentCount > 0 && (
-                      <span className="text-[9px] text-brand-primary flex-shrink-0 font-mono">
+                      <span className="text-[9px] text-brand-primary shrink-0 font-mono font-bold">
                         [{post.commentCount}]
                       </span>
                     )}
                   </div>
-                  {!selectedPost && (
-                    <div className="col-span-2 hidden sm:flex items-center gap-1.5">
-                      <div className="w-4 h-4 rounded-full bg-brand-surface-high flex items-center justify-center text-[8px] font-bold text-brand-primary">
+
+                  {/* Metadata Columns (Collapses smoothly on click without DOM unmount) */}
+                  <div
+                    className={`flex items-center gap-3 sm:gap-4 shrink-0 transition-all duration-300 ease-in-out ${
+                      selectedPost
+                        ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                        : "w-44 sm:w-64 opacity-100"
+                    }`}
+                  >
+                    <div className="w-20 sm:w-24 hidden sm:flex items-center gap-1.5 overflow-hidden">
+                      <div className="w-4 h-4 rounded-full bg-brand-surface-high flex items-center justify-center text-[8px] font-bold text-brand-primary shrink-0">
                         {post.author.charAt(0)}
                       </div>
                       <span className="text-[10px] text-brand-on-surface-variant truncate">{post.author}</span>
                     </div>
-                  )}
-                  {!selectedPost && (
-                    <div className="col-span-2 sm:col-span-1 text-center">
+                    <div className="w-10 sm:w-12 text-center">
                       <span className="text-[10px] text-brand-on-surface-variant flex items-center justify-center gap-0.5">
                         <Eye size={10} /> {post.viewCount}
                       </span>
                     </div>
-                  )}
-                  {!selectedPost && (
-                    <div className="col-span-2 text-right">
+                    <div className="w-14 sm:w-16 text-right">
                       <span className="text-[10px] text-brand-on-surface-variant">{post.createdAt}</span>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))
             )}
           </div>
-
-          {/* Pagination is now next to Search bar */}
         </div>
 
         {/* Right Side: Inline Post Detail & Comments Panel (Detail View) */}
         {selectedPost && (
-          <div className={`w-96 lg:w-[460px] flex-shrink-0 sticky top-20 ${isClosing ? "animate-slideOutToRight" : "animate-slideInFromRight"}`}>
+          <div
+            className={`w-full lg:w-[52%] xl:w-[50%] flex-shrink-0 sticky top-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isClosing ? "opacity-0 translate-x-8 scale-[0.98]" : "animate-slideInFromRight"
+            }`}
+          >
             <CommunityPostDetailModal
               inline
+              key={selectedPost.id}
               post={selectedPost}
               onClose={handleCloseDetail}
               isLoggedIn={isLoggedIn}

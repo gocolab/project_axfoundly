@@ -14,6 +14,7 @@ import type { BoardPost, Comment, UserRole } from "../types";
 import { api } from "../lib/api";
 
 interface CommunityPostDetailModalProps {
+  key?: React.Key;
   post: BoardPost | null;
   onClose: () => void;
   isLoggedIn: boolean;
@@ -44,6 +45,17 @@ export default function CommunityPostDetailModal({
   // Team proposal inside post
   const [showTeamProposalInput, setShowTeamProposalInput] = React.useState(false);
   const [proposalMsg, setProposalMsg] = React.useState("");
+
+  // ESC key listener to close detail
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   React.useEffect(() => {
     if (!post) return;

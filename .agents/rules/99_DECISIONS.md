@@ -5,10 +5,9 @@
 
 ## 변경 이력
 
-> 최신 항목을 표의 맨 위에 추가한다.
-
 | 날짜 | 문서 | 항목 | 이전 결정 | 새 결정 | 변경 이유 |
 |---|---|---|---|---|---|
+| 2026-08-26 | components/CommunityPage.tsx, components/CommunityPostDetailModal.tsx, index.css | 커뮤니티 2단 스플릿 뷰 깜박임 완전 제거 및 부드러운 애니메이션 완성 | CSS Grid 컬럼 급변(`grid-cols-12` ↔ `grid-cols-4`) 및 DOM 언마운트로 인한 깜박임/점프 발생 | Flex 기반 가변 레이아웃 채택 (메타 컬럼 `w-44/w-64` ↔ `w-0 opacity-0` 트랜지션), 우측 상세 카드 슬라이드/스케일 부드러운 전개, ESC 단축키 지원 | 리스트 행 클릭 시 렌더링 깜박임과 레이아웃 점프를 100% 제거하고 우측 상세 카드가 왼쪽으로 매끄럽게 펼쳐지는 프리미엄 UX 완성 |
 | 2026-08-26 | coding/04_DATABASE.md, specs/14_LLM_SPEC.md, specs/10_API_SPEC.md, server/* | 강의 카테고리 및 IR 산업 분야: 공통 코드 배제 및 100% 백엔드 AI 자율 분류·태깅 채택 | 모든 카테고리/산업분야를 공통 코드 테이블로 관리 | 기하급수적으로 확장되는 강의 분야/IR 산업분야는 공통 코드에서 제외하고, 사용자가 입력한 본문 기반으로 백엔드 AI(LLM)가 `category`, `tags`, `aiSummary`를 100% 자동 추출·저장. (수동 태그 편집 제외) | 신기술/신산업 무한 확장 지원, 공통 코드 테이블 비대화 및 관리자 운영 공수 제로화, 사용자 입력 폼 다이어트(작성 허들 최소화), 실시간 데이터 집계(Aggregation) 기반 동적 필터 제공 |
 | 2026-08-26 | coding/04_DATABASE.md, specs/10_API_SPEC.md, server/*, src/* | 공통 코드(Common Code) 관리 체계 도입 및 1차 적용 (투자단계, 고용형태) | 하드코딩된 문자열 유니온 및 화면/서버별 분산 관리 | `code_groups`, `common_codes` 데이터베이스 모델 및 `/api/common/codes` API 구축, 1차로 투자단계(`INVESTMENT_STAGE`)와 고용형태(`EMPLOYMENT_TYPE`) 동적 연동 | 새 상태/분류값 추가 시 배포 없는 무중단 운영 지원, 프론트-서버-DB 간 데이터 정합성 보장, UI 배지 색상 및 정렬순서 메타데이터 통합 |
 | 2026-08-26 | types.ts, db.ts, auth.ts, IRPage.tsx, AuthModal.tsx | assignedRoles 완전 폐지 & 권한 단순화 | `assignedRoles`(`course_instructor`, `ir_owner`, `investor_active`) 별도 자격 관리 및 투자자 권한 제약 | `assignedRoles` 완전 폐지 및 `roles`(`member`, `admin`)로 단일화. 로그인한 모든 회원에게 투자 제안 및 피칭룸 전면 개방, 데모 로그인도 일반회원/관리자 2종으로 정리 | 올인원 창업 생태계에서 불필요한 자격 인증 장벽을 없애고, 데이터 기반(Data-Driven)으로 간소화하여 시스템 복잡도 및 상태 불일치 해소 |
