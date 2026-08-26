@@ -68,11 +68,6 @@
 - **필요 내부 상태**: `teamName`, `title`, `field`, `investmentStage`, `hiringRoles` 등
 - **액션 콜백**: `onSave(project: IRProject)`
 
-### VirtualIRModal.tsx
-투자자가 관심 있는 스타트업에 화상 미팅을 제안합니다.
-- **주입 변수**: `project: IRProject` (대상 프로젝트), `investorName: string`
-- **액션 콜백**: `onSuccess()` (일정 등록 완료 후 UI 갱신)
-
 ### PaymentReceiptModal.tsx
 수강생 대시보드에서 특정 결제 건의 상세 영수증 조회 및 환불 처리를 담당합니다.
 - **주입 변수**: `payment: PaymentRecord | null`

@@ -7,6 +7,7 @@
 
 | 날짜 | 문서 | 항목 | 이전 결정 | 새 결정 | 변경 이유 |
 |---|---|---|---|---|---|
+| 2026-08-26 | VirtualIRModal.tsx, server/routes/ir.ts, IRPage.tsx | 가상 IR 피칭룸 & 간편 전자 계약 기능 완전 삭제 및 투자 제안 기능으로 일원화 | 가상 IR 피칭룸 & 간편 전자 계약(NDA) 모달 및 백엔드 2개 API(/virtual-ir, /nda) 운영 | `InvestmentProposalModal`에 투자 라운드, 규모, 온/오프라인 미팅 일정 제안이 포함되어 있어 기능이 중복되고, Mock 수준의 화상/계약 기능으로 인한 UX 혼선 및 법적 효력 한계를 해소하기 위해 완전 삭제하고 `menus.md` 기준의 `투자 제안하기` 단일 플로우로 일원화 |
 | 2026-08-26 | components/AdminDashboard.tsx, components/AccountSettingsView.tsx, components/PaymentReceiptModal.tsx | 전사 리스트형 화면(관리자 전체 탭, 마이페이지 결제/알림) 무깜박힘 2단 스플릿 뷰 전면 확대 적용 | 관리자는 불안정한 CSS Grid 컬럼 스위칭, 마이페이지는 개별 모달 팝업 및 단순 카드 표시 | Flex 기반 가변 레이아웃 (`w-0 opacity-0` 트랜지션) 및 우측 상세 패널 슬라이드 인(`animate-slideInFromRight`) 패턴으로 전면 표준화, ESC 키 닫기 통일 | 플랫폼 전체의 리스트-상세 탐색 멘탈 모델을 통일하고, 레이아웃 점프/깜박임을 100% 제거하여 관리자 및 사용자 연속 탐색(Fast Inspection) 생산성 극대화 |
 | 2026-08-26 | components/CommunityPage.tsx, components/CommunityPostDetailModal.tsx, index.css | 커뮤니티 2단 스플릿 뷰 깜박임 완전 제거 및 부드러운 애니메이션 완성 | CSS Grid 컬럼 급변(`grid-cols-12` ↔ `grid-cols-4`) 및 DOM 언마운트로 인한 깜박임/점프 발생 | Flex 기반 가변 레이아웃 채택 (메타 컬럼 `w-44/w-64` ↔ `w-0 opacity-0` 트랜지션), 우측 상세 카드 슬라이드/스케일 부드러운 전개, ESC 단축키 지원 | 리스트 행 클릭 시 렌더링 깜박임과 레이아웃 점프를 100% 제거하고 우측 상세 카드가 왼쪽으로 매끄럽게 펼쳐지는 프리미엄 UX 완성 |
 | 2026-08-26 | coding/04_DATABASE.md, specs/14_LLM_SPEC.md, specs/10_API_SPEC.md, server/* | 강의 카테고리 및 IR 산업 분야: 공통 코드 배제 및 100% 백엔드 AI 자율 분류·태깅 채택 | 모든 카테고리/산업분야를 공통 코드 테이블로 관리 | 기하급수적으로 확장되는 강의 분야/IR 산업분야는 공통 코드에서 제외하고, 사용자가 입력한 본문 기반으로 백엔드 AI(LLM)가 `category`, `tags`, `aiSummary`를 100% 자동 추출·저장. (수동 태그 편집 제외) | 신기술/신산업 무한 확장 지원, 공통 코드 테이블 비대화 및 관리자 운영 공수 제로화, 사용자 입력 폼 다이어트(작성 허들 최소화), 실시간 데이터 집계(Aggregation) 기반 동적 필터 제공 |
@@ -29,4 +30,5 @@
 
 | 방안 | 폐기 이유 | 날짜 |
 |---|---|---|
+| 단순 Mock 형태의 가상 IR 피칭룸 및 자체 체크박스형 NDA 전자계약 | WebRTC 미디어 서버/전문 전자계약 솔루션(모두싸인 등) 연동 없는 단순 Mock은 실효성이 없고 투자 제안 기능과 중복되어 UX 혼선을 유발함 | 2026-08-26 |
 | Vercel 종속 배포 | biz_flows.md — 클라우드 종속 없이 On-Premise/타 클라우드 이전 가능 구조 요구 | 2026-08-11 |

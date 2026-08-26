@@ -66,7 +66,7 @@ export default function MainPage({
             {/* 줄 3: 서브카피 + 핵심 CTA */}
             <div className="space-y-4">
               <p className="text-sm sm:text-base text-brand-on-surface-variant leading-relaxed max-w-xl">
-                실시간 징검다리 교육, 자동 팀 매칭, 가상 IR 피칭룸까지 — 창업의 전 과정을 지원합니다.
+                실시간 징검다리 교육, 자동 팀 매칭, 투자 유치 연계까지 — 창업의 전 과정을 지원합니다.
               </p>
               <div className="flex flex-wrap gap-3 pt-1">
                 <button

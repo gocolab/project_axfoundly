@@ -338,25 +338,3 @@ export interface AITutorMessage {
     title: string;
   };
 }
-
-// ── Virtual IR & NDA Agreement ──
-export interface VirtualIRMeeting {
-  id: string;
-  projectId: string;
-  projectName: string;
-  investorName: string;
-  scheduledAt: string;
-  meetingLink: string;
-  status: "대기중" | "확정" | "완료" | "취소";
-  feedbackNotes?: string;
-}
-
-export interface NDAAgreement {
-  id: string;
-  projectId: string;
-  projectName: string;
-  investorName: string;
-  agreedAt: string;
-  status: "서명완료" | "검토중";
-  termsSummary: string;
-}

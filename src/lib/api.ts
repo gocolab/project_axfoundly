@@ -373,20 +373,6 @@ export const api = {
     });
   },
 
-  scheduleVirtualIR: async (projectId: string, data: { investorName?: string; scheduledAt?: string; feedbackNotes?: string }) => {
-    return fetchJson<{ success: boolean; meeting: any }>(`/api/ir/projects/${projectId}/virtual-ir`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  },
-
-  signNDA: async (projectId: string, data: { investorName?: string; termsSummary?: string }) => {
-    return fetchJson<{ success: boolean; nda: any }>(`/api/ir/projects/${projectId}/nda`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  },
-
   // ── Common Codes ──
   getCommonCodes: async (groups?: string[]): Promise<{ codes: CommonCode[] }> => {
     const query = groups && groups.length > 0 ? `?groups=${encodeURIComponent(groups.join(","))}` : "";

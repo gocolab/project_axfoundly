@@ -27,7 +27,6 @@ import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal } from "
 import Pagination from "./common/Pagination";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
-import VirtualIRModal from "./VirtualIRModal";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import { api } from "../lib/api";
 
@@ -119,7 +118,6 @@ export default function IRPage({
   const [videoUrlInput, setVideoUrlInput] = React.useState("");
   const [selectedHiringRole, setSelectedHiringRole] = React.useState<HiringRoleDetail | null>(null);
   const [showApplyModal, setShowApplyModal] = React.useState(false);
-  const [showVirtualIRModal, setShowVirtualIRModal] = React.useState(false);
   const [applicantNote, setApplicantNote] = React.useState("");
   const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
 
@@ -552,32 +550,15 @@ export default function IRPage({
                         투자 제안하기
                       </button>
                     )}
-
-                    <button
-                      onClick={() => setShowVirtualIRModal(true)}
-                      className="w-full bg-brand-surface-high hover:bg-brand-primary-container/40 text-brand-primary border border-brand-primary/40 font-bold py-2.5 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-2"
-                    >
-                      <Video size={15} />
-                      가상 IR 피칭룸 & NDA 계약
-                    </button>
                   </>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={onLoginClick}
-                      className="w-full bg-brand-surface-high text-brand-primary hover:text-white hover:bg-brand-surface-highest py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors border border-brand-border"
-                    >
-                      <Send size={14} />
-                      로그인 후 투자 제안하기
-                    </button>
-                    <button
-                      onClick={onLoginClick}
-                      className="w-full bg-brand-surface-low text-brand-on-surface-variant hover:text-white py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors border border-brand-border/30"
-                    >
-                      <Video size={14} />
-                      가상 IR 피칭룸 (로그인 필요)
-                    </button>
-                  </div>
+                  <button
+                    onClick={onLoginClick}
+                    className="w-full bg-brand-surface-high text-brand-primary hover:text-white hover:bg-brand-surface-highest py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors border border-brand-border"
+                  >
+                    <Send size={14} />
+                    로그인 후 투자 제안하기
+                  </button>
                 )}
 
               <button
@@ -696,17 +677,6 @@ export default function IRPage({
           applicantEmail="student@mail.com"
           onSuccess={() => {
             setShowApplyModal(false);
-          }}
-        />
-
-        {/* ── Modal 4: Virtual IR Pitching & NDA Modal ── */}
-        <VirtualIRModal
-          isOpen={showVirtualIRModal}
-          onClose={() => setShowVirtualIRModal(false)}
-          project={selectedProject}
-          investorName="이벤처 (심사역)"
-          onSuccess={() => {
-            setShowVirtualIRModal(false);
           }}
         />
 

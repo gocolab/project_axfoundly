@@ -12,32 +12,32 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   test('스타트업/IR 페이지 타이틀 및 스타트업 목록이 표시된다', async ({ page }) => {
     await expect(page.locator('h1', { hasText: /스타트업/ })).toBeVisible();
     await expect(page.getByRole('button', { name: '전체' })).toBeVisible();
-    await expect(page.getByPlaceholder('스타트업명, 아이템 검색...')).toBeVisible();
+    await expect(page.getByPlaceholder(/스타트업명/)).toBeVisible();
 
     // 스타트업 카드 최소 1개 이상 노출 확인
-    const cards = page.locator('.grid.grid-cols-1 .bg-brand-card');
+    const cards = page.locator('.card-hover');
     await expect(cards.first()).toBeVisible();
   });
 
   test('분야 필터 클릭 시 해당하는 스타트업만 렌더링된다', async ({ page }) => {
     await page.getByRole('button', { name: 'AI/ML' }).click();
-    const cards = page.locator('.grid.grid-cols-1 .bg-brand-card');
+    const cards = page.locator('.card-hover');
     await expect(cards.first()).toBeVisible();
-    await expect(cards.first().locator('text=AI/ML')).toBeVisible();
+    await expect(cards.first().locator('text=AI/ML').first()).toBeVisible();
   });
 
   test('스타트업 실시간 검색이 동작한다', async ({ page }) => {
-    const searchInput = page.getByPlaceholder('스타트업명, 아이템 검색...');
+    const searchInput = page.getByPlaceholder(/스타트업명/);
     await expect(searchInput).toBeVisible();
     await searchInput.fill('DocuMind');
 
-    const cards = page.locator('.grid.grid-cols-1 .bg-brand-card');
+    const cards = page.locator('.card-hover');
     await expect(cards.first()).toBeVisible();
     await expect(cards.first().locator('h3')).toHaveText(/DocuMind/);
   });
 
   test('스타트업 카드 클릭 시 상세 정보(문제, 솔루션, 비즈니스 모델, 팀원)가 표시된다', async ({ page }) => {
-    const firstCard = page.locator('.grid.grid-cols-1 .bg-brand-card').first();
+    const firstCard = page.locator('.card-hover').first();
     await expect(firstCard).toBeVisible();
     await firstCard.click();
 
@@ -49,7 +49,7 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   });
 
   test('실명 vs 비실명(스텔스) 모드 스위치 토글 시 화면 내 텍스트와 배지가 전환된다', async ({ page }) => {
-    const firstCard = page.locator('.grid.grid-cols-1 .bg-brand-card').first();
+    const firstCard = page.locator('.card-hover').first();
     await expect(firstCard).toBeVisible();
     await firstCard.click();
 
@@ -63,7 +63,7 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   });
 
   test('채용 중인 스타트업의 [지원하기] 클릭 시 지원 폼에 지원동기 입력 후 제출이 완료된다', async ({ page }) => {
-    const firstCard = page.locator('.grid.grid-cols-1 .bg-brand-card').first();
+    const firstCard = page.locator('.card-hover').first();
     await expect(firstCard).toBeVisible();
     await firstCard.click();
 
@@ -92,14 +92,14 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   });
 
   test('투자자 역할 로그인 시 [투자 제안하기] 클릭으로 제안 폼 작성 및 발송이 완료된다', async ({ page }) => {
-    // 1. 투자자 로그인
+    // 1. 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '투자자' }).first().click();
-    await expect(page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ })).toBeVisible();
+    await page.locator('.glass-panel-heavy button', { hasText: '일반 회원' }).first().click();
+    await expect(page.locator('header button', { hasText: /(마하우|김수강생|일반 회원)/ })).toBeVisible();
 
     // 2. 스타트업/IR 상세 이동
     await page.locator('header nav').getByRole('button', { name: '스타트업/IR' }).click();
-    const firstCard = page.locator('.grid.grid-cols-1 .bg-brand-card').first();
+    const firstCard = page.locator('.card-hover').first();
     await expect(firstCard).toBeVisible();
     await firstCard.click();
 
@@ -128,13 +128,13 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   });
 
   test('관심 스타트업 북마크 토글이 정상 동작한다', async ({ page }) => {
-    // 1. 수강생 로그인
+    // 1. 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
+    await page.locator('.glass-panel-heavy button', { hasText: '일반 회원' }).first().click();
 
     // 2. IR 상세 이동
     await page.locator('header nav').getByRole('button', { name: '스타트업/IR' }).click();
-    const firstCard = page.locator('.grid.grid-cols-1 .bg-brand-card').first();
+    const firstCard = page.locator('.card-hover').first();
     await firstCard.click();
 
     // 3. 북마크 버튼 클릭

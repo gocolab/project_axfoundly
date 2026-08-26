@@ -19,8 +19,6 @@
 | API-IR-03 | POST | `/api/ir/projects` | 프로젝트 등록/수정 | IR | 회원 | ✅ 완료 |
 | API-IR-04 | POST | `/api/ir/projects/:id/bookmark` | 관심 스타트업 북마크 토글 | IR | 투자자 | ✅ 완료 |
 | API-IR-05 | POST | `/api/ir/projects/:id/apply` | 구인 공고 원클릭 자체 지원 | IR | 수강생 | ✅ 완료 |
-| API-IR-06 | POST | `/api/ir/projects/:id/virtual-ir` | 가상 IR 화상 피칭룸 예약 | IR | 투자자 | ✅ 완료 |
-| API-IR-07 | POST | `/api/ir/projects/:id/nda` | 간편 전자 계약 (NDA 체결) | IR | 투자자 | ✅ 완료 |
 | API-AI-01 | POST | `/api/ai/course-draft` | AI 강의 초벌 커리큘럼 생성 | AI | 강사 | ✅ 완료 |
 | API-AI-02 | POST | `/api/ai/diagnosis` | 빌더 AI 아키텍트 페르소나 진단 | AI | 전체 | ✅ 완료 |
 | API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |
@@ -67,14 +65,4 @@
 - **설명**: 사용자의 창업/강의/IR 질의에 대해 Gemini 2.5 Flash 기반으로 실시간 액션 아이템 및 맞춤 제안 키워드를 반환합니다.
 - **요청 Body**: `{ "question": "...", "context": "현재 페이지" }`
 - **응답 (200)**: `{ "answer": "...", "suggestions": ["..."] }`
-
-### API-IR-06. 가상 IR 화상 피칭룸 예약 (`POST /api/ir/projects/:id/virtual-ir`)
-- **설명**: 투자자와 창업팀 간의 실시간 화상 미팅 링크(`Jitsi`) 생성 및 아젠다를 등록합니다.
-- **요청 Body**: `{ "investorName": "...", "scheduledAt": "2025-09-15 14:00", "feedbackNotes": "..." }`
-- **응답 (201)**: `{ "success": true, "meeting": { "id": "vir-...", "meetingLink": "..." } }`
-
-### API-IR-07. 간편 전자 계약 NDA 체결 (`POST /api/ir/projects/:id/nda`)
-- **설명**: 2년 기밀유지 및 지식재산권 보호 표준 NDA 전자 서명을 체결합니다.
-- **요청 Body**: `{ "investorName": "...", "termsSummary": "..." }`
-- **응답 (201)**: `{ "success": true, "nda": { "id": "nda-...", "agreedAt": "2025-08-20" } }`
 

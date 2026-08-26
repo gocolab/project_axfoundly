@@ -38,7 +38,6 @@ graph TD
     
     %% 팀빌딩 및 투자 유치
     IR --> ProjectModal[ProjectCreateEditModal (프로젝트 등록/수정)]
-    IR --> VirtualIR[VirtualIRModal (가상 IR 밋업 일정 조율)]
     IR --> InvestModal[InvestmentProposalModal (투자 제안 발송)]
     
     %% 커뮤니티
@@ -62,5 +61,5 @@ graph TD
 ```
 
 ## 3. 핵심 비즈니스 흐름 연관성
-- **교육 -> 팀빌딩 -> 투자**: 사용자는 `CoursePage`에서 창업 교육을 받고, `IRPage`에서 팀빌딩을 진행하며, 투자자는 `InvestorDashboard`를 통해 우수 팀을 발굴하여 `VirtualIR`을 요청하는 선순환 구조를 가집니다.
+- **교육 -> 팀빌딩 -> 투자**: 사용자는 `CoursePage`에서 창업 교육을 받고, `IRPage`에서 팀빌딩을 진행하며, 투자자는 `InvestorDashboard`를 통해 우수 팀을 발굴하여 투자/미팅을 제안하는 선순환 구조를 가집니다.
 - **통합된 마이페이지**: 기존 파편화되어 있던 프로필, 수강생, 강사, 투자자 대시보드를 `MyPage`로 일원화하여, 사용자가 다중 역할(수강생이면서 동시에 투자자/강사)을 수행하더라도 매끄러운 UX를 경험하도록 설계되었습니다.
