@@ -33,7 +33,6 @@ import { api } from "../lib/api";
 interface IRPageProps {
   projects: IRProject[];
   userRoles: UserRole[];
-  userAssignedRoles?: string[];
   isLoggedIn: boolean;
   userName?: string;
   onLoginClick: () => void;
@@ -47,7 +46,6 @@ interface IRPageProps {
 export default function IRPage({
   projects,
   userRoles,
-  userAssignedRoles = [],
   isLoggedIn,
   userName,
   onLoginClick,
@@ -470,7 +468,7 @@ export default function IRPage({
               </div>
 
               <div className="p-5 flex flex-col gap-3">
-                {userAssignedRoles.includes("investor_active") && isLoggedIn ? (
+                {isLoggedIn ? (
                   <>
                     {proposalSent ? (
                       <div className="text-center py-3 bg-[#0b1329] rounded-xl border border-emerald-500/30">
@@ -499,20 +497,18 @@ export default function IRPage({
                 ) : (
                   <div className="flex flex-col gap-2">
                     <button
-                      disabled={!isLoggedIn || !userAssignedRoles.includes("investor_active")}
-                      className="w-full bg-brand-surface-high text-brand-on-surface-variant py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
-                      title="투자자 계정으로 로그인해야 합니다"
+                      onClick={onLoginClick}
+                      className="w-full bg-brand-surface-high text-brand-primary hover:text-white hover:bg-brand-surface-highest py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors border border-brand-border"
                     >
                       <Send size={14} />
-                      투자 제안하기
-                      <span className="text-[9px]">(투자자 권한 전용)</span>
+                      로그인 후 투자 제안하기
                     </button>
                     <button
-                      disabled={!isLoggedIn || !userAssignedRoles.includes("investor_active")}
-                      className="w-full bg-brand-surface-low text-brand-on-surface-variant/60 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-40 border border-brand-border/30"
+                      onClick={onLoginClick}
+                      className="w-full bg-brand-surface-low text-brand-on-surface-variant hover:text-white py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors border border-brand-border/30"
                     >
                       <Video size={14} />
-                      가상 IR 피칭룸 (투자자 전용)
+                      가상 IR 피칭룸 (로그인 필요)
                     </button>
                   </div>
                 )}

@@ -657,12 +657,12 @@ const SEED_MEMBERS: AdminMember[] = [
   { id: "m-mahau", name: "마하우", email: "mahau.master@gmail.com", roles: ["member"], joinDate: "2025-02-01", lastLogin: "2025-08-20", status: "활성", courseCount: 1 },
   { id: "m0", name: "최관리", email: "admin@platform.com", roles: ["admin"], joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
   { id: "m1", name: "김수강생", email: "student@mail.com", roles: ["member"], joinDate: "2025-01-15", lastLogin: "2025-08-12", status: "활성", courseCount: 2 },
-  { id: "m2", name: "김소현", email: "sohyun.kim@mail.com", roles: ["member"], assignedRoles: ["course_instructor"], joinDate: "2024-03-01", lastLogin: "2025-08-12", status: "활성", courseCount: 3 },
+  { id: "m2", name: "김소현", email: "sohyun.kim@mail.com", roles: ["member"], joinDate: "2024-03-01", lastLogin: "2025-08-12", status: "활성", courseCount: 3 },
   { id: "m3", name: "이지훈", email: "jh.lee@documind.ai", roles: ["member"], joinDate: "2025-04-10", lastLogin: "2025-08-11", status: "활성", courseCount: 1 },
-  { id: "m4", name: "정우석", email: "ws.jung@mail.com", roles: ["member"], assignedRoles: ["course_instructor"], joinDate: "2024-06-01", lastLogin: "2025-08-10", status: "활성", courseCount: 2 },
-  { id: "m5", name: "한승우", email: "sw.han@nexusvc.com", roles: ["member"], assignedRoles: ["investor_active"], joinDate: "2024-11-10", lastLogin: "2025-08-12", status: "활성", courseCount: 0 },
+  { id: "m4", name: "정우석", email: "ws.jung@mail.com", roles: ["member"], joinDate: "2024-06-01", lastLogin: "2025-08-10", status: "활성", courseCount: 2 },
+  { id: "m5", name: "한승우", email: "sw.han@nexusvc.com", roles: ["member"], joinDate: "2024-11-10", lastLogin: "2025-08-12", status: "활성", courseCount: 0 },
   { id: "m6", name: "오세진", email: "sj.oh@mail.com", roles: ["member"], joinDate: "2025-05-20", lastLogin: "2025-07-15", status: "정지", courseCount: 1 },
-  { id: "m7", name: "강민수", email: "ms.kang@mail.com", roles: ["member"], assignedRoles: ["course_instructor"], joinDate: "2024-09-01", lastLogin: "2025-08-10", status: "활성", courseCount: 1 },
+  { id: "m7", name: "강민수", email: "ms.kang@mail.com", roles: ["member"], joinDate: "2024-09-01", lastLogin: "2025-08-10", status: "활성", courseCount: 1 },
 ];
 
 const SEED_BOARDS: AdminBoard[] = [

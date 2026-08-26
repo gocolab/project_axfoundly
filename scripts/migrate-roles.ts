@@ -28,13 +28,8 @@ async function main() {
         updateDoc.roles = member.email === "admin@platform.com" || member.email === "otter.oh@gmail.com" ? ["admin"] : ["member"];
       }
 
-      // Sync assignedRoles for known seed accounts if missing
-      if (!member.assignedRoles || member.assignedRoles.length === 0) {
-        if (member.email === "sohyun.kim@mail.com" || member.email === "ws.jung@mail.com" || member.email === "ms.kang@mail.com") {
-          updateDoc.assignedRoles = ["course_instructor"];
-        } else if (member.email === "sw.han@nexusvc.com") {
-          updateDoc.assignedRoles = ["investor_active"];
-        }
+      if (member.assignedRoles !== undefined) {
+        unsetDoc.assignedRoles = "";
       }
 
       if (Object.keys(updateDoc).length > 0 || Object.keys(unsetDoc).length > 0) {
@@ -46,7 +41,7 @@ async function main() {
       }
     }
     
-    console.log(`Migrated ${updatedCount} members to use 'roles' array and proper assignedRoles.`);
+    console.log(`Migrated ${updatedCount} members to use 'roles' array without assignedRoles.`);
 
     // comments 컬렉션 마이그레이션 (authorRole -> authorRoles)
     const commentsCollection = db.collection("comments");

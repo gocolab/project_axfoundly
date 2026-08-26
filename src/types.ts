@@ -13,8 +13,6 @@ export interface User {
   avatar: string;
   joinDate: string;
   bio?: string;
-  /** 업무 부여: 해당 페이지에 기록 여부로 자동 추가 */
-  assignedRoles?: ("course_instructor" | "ir_owner" | "investor_active")[];
 }
 
 // ── Course Schedule & Curriculum ──
@@ -294,7 +292,6 @@ export interface AdminMember {
   name: string;
   email: string;
   roles: UserRole[];
-  assignedRoles?: ("course_instructor" | "ir_owner" | "investor_active")[];
   joinDate: string;
   lastLogin: string;
   status: "활성" | "정지" | "탈퇴";

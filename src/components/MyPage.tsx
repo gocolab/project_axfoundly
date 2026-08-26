@@ -49,7 +49,6 @@ interface MyPageProps {
   isLoggedIn: boolean;
   userName: string;
   userRoles: UserRole[];
-  userAssignedRoles: string[];
   courses: Course[];
   teamRequests: TeamBuildingRequest[];
   payments: PaymentRecord[];

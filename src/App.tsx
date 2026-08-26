@@ -39,30 +39,20 @@ export default function App() {
       return ["member"];
     }
   });
-  const [userAssignedRoles, setUserAssignedRoles] = React.useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem("user_assigned_roles");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   const [userName, setUserName] = React.useState<string>(() => localStorage.getItem("user_name") || "게스트");
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const toast = useToast();
 
-  const saveSession = React.useCallback((token: string, user: { name: string; roles: UserRole[]; assignedRoles?: string[] }) => {
+  const saveSession = React.useCallback((token: string, user: { name: string; roles: UserRole[] }) => {
     localStorage.setItem("auth_token", token);
     localStorage.setItem("user_name", user.name);
     localStorage.setItem("user_roles", JSON.stringify(user.roles));
-    localStorage.setItem("user_assigned_roles", JSON.stringify(user.assignedRoles || []));
   }, []);
 
   const clearSession = React.useCallback(() => {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_roles");
-    localStorage.removeItem("user_assigned_roles");
   }, []);
 
   // Navigation & Selection
@@ -163,7 +153,6 @@ export default function App() {
           setIsLoggedIn(true);
           setUserName(res.user.name);
           setUserRoles(res.user.roles);
-          setUserAssignedRoles(res.user.assignedRoles || []);
           toast.success("로그인 성공", `${res.user.name}님 환영합니다!`);
         }
       }).catch(err => {
@@ -172,7 +161,6 @@ export default function App() {
         setIsLoggedIn(false);
         setUserName("게스트");
         setUserRoles(["member"]);
-        setUserAssignedRoles([]);
       });
     } else {
       // 새로고침 시 저장된 토큰으로 세션 검증
@@ -184,7 +172,6 @@ export default function App() {
             setIsLoggedIn(true);
             setUserName(res.user.name);
             setUserRoles(res.user.roles);
-            setUserAssignedRoles(res.user.assignedRoles || []);
           }
         }).catch(err => {
           console.warn("Saved token session invalid:", err);
@@ -192,7 +179,6 @@ export default function App() {
           setIsLoggedIn(false);
           setUserName("게스트");
           setUserRoles(["member"]);
-          setUserAssignedRoles([]);
         });
       }
     }
@@ -206,7 +192,6 @@ export default function App() {
       setIsLoggedIn(true);
       setUserName(res.user.name);
       setUserRoles(res.user.roles);
-      setUserAssignedRoles(res.user.assignedRoles || []);
       refreshData();
     } catch (error) {
       console.error("Login API call failed:", error);
@@ -217,7 +202,6 @@ export default function App() {
     clearSession();
     setIsLoggedIn(false);
     setUserRoles(["member"]);
-    setUserAssignedRoles([]);
     setUserName("게스트");
     setCurrentPage("home");
   };
@@ -299,11 +283,6 @@ export default function App() {
     try {
       const res = await api.saveCourse(newCourse);
       setCourses((prev) => [res.course, ...prev]);
-      if (!userAssignedRoles.includes("course_instructor")) {
-        const nextRoles = [...userAssignedRoles, "course_instructor"];
-        setUserAssignedRoles(nextRoles);
-        localStorage.setItem("user_assigned_roles", JSON.stringify(nextRoles));
-      }
       refreshData();
       toast.success("강의 개설 성공", "강의가 성공적으로 개설/등록되었습니다.");
     } catch (error) {
@@ -368,11 +347,6 @@ export default function App() {
         }
         return [res.project, ...prev];
       });
-      if (!userAssignedRoles.includes("ir_owner")) {
-        const nextRoles = [...userAssignedRoles, "ir_owner"];
-        setUserAssignedRoles(nextRoles);
-        localStorage.setItem("user_assigned_roles", JSON.stringify(nextRoles));
-      }
       refreshData();
       toast.success("저장 완료", "스타트업 프로젝트가 성공적으로 저장되었습니다.");
     } catch (error) {
@@ -432,7 +406,6 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         userName={userName}
         userRoles={userRoles}
-        userAssignedRoles={userAssignedRoles}
         courses={courses}
         teamRequests={teamRequests}
         payments={payments}
@@ -490,7 +463,6 @@ export default function App() {
           <IRPage
             projects={irProjects}
             userRoles={userRoles}
-            userAssignedRoles={userAssignedRoles}
             isLoggedIn={isLoggedIn}
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}

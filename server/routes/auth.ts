@@ -9,7 +9,6 @@ let currentUser = {
   name: "김수강생",
   email: "student@mail.com",
   roles: ["member"] as UserRole[],
-  assignedRoles: [] as string[],
   avatar: "",
   joinDate: "2025-01-15",
 };
@@ -169,21 +168,11 @@ router.post("/login", (req, res) => {
 
   const member = db.get("members").find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
   
-  let assignedRoles = member?.assignedRoles || [];
-  if (assignedRoles.length === 0) {
-    if (userEmail === "sohyun.kim@mail.com" || userEmail === "ws.jung@mail.com" || userEmail === "ms.kang@mail.com") {
-      assignedRoles = ["course_instructor"];
-    } else if (userEmail === "sw.han@nexusvc.com") {
-      assignedRoles = ["investor_active"];
-    }
-  }
-  
   currentUser = {
     id: member ? `user-${member.id}` : `user-${userRoles.join("-")}`,
     name: userName,
     email: userEmail,
     roles: userRoles,
-    assignedRoles,
     avatar: "",
     joinDate: "2025-01-15",
   };
@@ -191,7 +180,7 @@ router.post("/login", (req, res) => {
   db.update("members", (members) =>
     members.map((m) => {
       const matchesEmail = m.email && m.email.toLowerCase() === userEmail.toLowerCase();
-      return matchesEmail ? { ...m, assignedRoles: m.assignedRoles || assignedRoles, lastLogin: today } : m;
+      return matchesEmail ? { ...m, lastLogin: today } : m;
     })
   );
 
@@ -232,7 +221,6 @@ router.get("/me", (req, res) => {
           name: member.name,
           email: member.email,
           roles: Array.isArray(member.roles) ? member.roles : ["member"],
-          assignedRoles: member.assignedRoles || [],
           avatar: "",
           joinDate: member.joinDate,
         }
@@ -243,21 +231,12 @@ router.get("/me", (req, res) => {
       const memberId = tokenPart.replace("id-", "");
       const member = db.get("members").find((m) => m.id === memberId);
       if (member) {
-        let assignedRoles = member.assignedRoles || [];
-        if (assignedRoles.length === 0) {
-          if (member.email === "sohyun.kim@mail.com" || member.email === "ws.jung@mail.com" || member.email === "ms.kang@mail.com") {
-            assignedRoles = ["course_instructor"];
-          } else if (member.email === "sw.han@nexusvc.com") {
-            assignedRoles = ["investor_active"];
-          }
-        }
         return res.json({
           user: {
             id: `user-${member.id}`,
             name: member.name,
             email: member.email,
             roles: Array.isArray(member.roles) ? member.roles : ["member"],
-            assignedRoles,
             avatar: "",
             joinDate: member.joinDate,
           }
@@ -286,7 +265,6 @@ router.get("/me", (req, res) => {
         name: member?.name || nameMap[roles[0]] || "회원",
         email: member?.email || targetEmail,
         roles: member && Array.isArray(member.roles) ? member.roles : roles,
-        assignedRoles: member?.assignedRoles || [],
         avatar: "",
         joinDate: member?.joinDate || "2025-01-15",
       },

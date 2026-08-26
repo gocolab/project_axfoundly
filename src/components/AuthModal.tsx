@@ -29,9 +29,7 @@ export default function AuthModal({
   };
 
   const demoUsers = [
-    { roles: ["member"] as UserRole[], email: "student@mail.com", label: "수강생" },
-    { roles: ["member"] as UserRole[], email: "sohyun.kim@mail.com", label: "강사" },
-    { roles: ["member"] as UserRole[], email: "sw.han@nexusvc.com", label: "투자자" },
+    { roles: ["member"] as UserRole[], email: "student@mail.com", label: "일반 회원 (수강생)" },
     { roles: ["admin"] as UserRole[], email: "admin@platform.com", label: "관리자" },
   ];
 
@@ -92,11 +90,11 @@ export default function AuthModal({
               <div className="flex items-center justify-between text-[10px] text-brand-on-surface-variant/60 px-1 mb-2">
                 <span className="uppercase tracking-wider font-mono">개발용 데모 로그인</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 animate-fadeIn">
+              <div className="grid grid-cols-2 gap-2 animate-fadeIn">
                 {demoUsers.map((u) => (
                   <button
                     key={u.label}
-                    data-testid={`quick-login-${u.label}`}
+                    data-testid={u.roles[0] === "member" ? "quick-login-수강생" : `quick-login-${u.label}`}
                     type="button"
                     onClick={() => {
                       onLogin(u.roles, u.email);
