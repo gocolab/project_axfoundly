@@ -45,15 +45,15 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await expect(page.locator('aside nav button', { hasText: '결제 및 계정 설정' })).toBeVisible();
   });
 
-  test('강사(Instructor) 빠른 로그인 시 마이페이지에서 강의 개설 및 관리를 즉시 이용할 수 있다', async ({ page }) => {
+  test('일반 회원 로그인 시 마이페이지에서 [강의 개설 & 운영] 메뉴를 제한 없이 이용할 수 있다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
 
-    // 강사 빠른 로그인 클릭
-    const instructorBtn = page.getByTestId('quick-login-강사');
-    await instructorBtn.click();
+    // 일반 회원 빠른 로그인 클릭
+    const memberBtn = page.getByTestId('quick-login-수강생');
+    await memberBtn.click();
 
     // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
-    const profileBtn = page.locator('header button', { hasText: '김소현' });
+    const profileBtn = page.locator('header button', { hasText: '김수강생' });
     await expect(profileBtn).toBeVisible();
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
@@ -66,15 +66,15 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await expect(page.getByRole('button', { name: '정산 관리' })).toBeVisible();
   });
 
-  test('투자자(Investor) 빠른 로그인 시 마이페이지에서 관심 스타트업 및 AI 추천을 즉시 이용할 수 있다', async ({ page }) => {
+  test('일반 회원 로그인 시 마이페이지에서 [관심 스타트업 & 투자] 메뉴를 제한 없이 이용할 수 있다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
 
-    // 투자자 빠른 로그인 클릭
-    const investorBtn = page.getByTestId('quick-login-투자자');
-    await investorBtn.click();
+    // 일반 회원 빠른 로그인 클릭
+    const memberBtn = page.getByTestId('quick-login-수강생');
+    await memberBtn.click();
 
     // 사용자 프로필 메뉴 클릭 후 마이페이지 이동
-    const profileBtn = page.locator('header button', { hasText: '한승우' });
+    const profileBtn = page.locator('header button', { hasText: '김수강생' });
     await expect(profileBtn).toBeVisible();
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
