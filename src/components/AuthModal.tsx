@@ -14,7 +14,11 @@ export default function AuthModal({
   onLogin,
 }: AuthModalProps) {
   const [loading, setLoading] = React.useState(false);
-  const [showDemoLogin, setShowDemoLogin] = React.useState(true);
+
+  // 환경변수(VITE_SHOW_DEMO_LOGIN) 또는 로컬 개발(DEV) 환경에서만 데모 로그인 활성화
+  const isDemoLoginEnabled =
+    import.meta.env.VITE_SHOW_DEMO_LOGIN === "true" ||
+    (import.meta.env.DEV && import.meta.env.VITE_SHOW_DEMO_LOGIN !== "false");
 
   if (!isOpen) return null;
 
@@ -82,32 +86,30 @@ export default function AuthModal({
             <span>Google 계정으로 로그인</span>
           </button>
 
-          {/* 개발용 빠른 로그인 */}
-          <div className="mt-4 border-t border-brand-border/30 pt-3">
-            <button
-              type="button"
-              onClick={() => {}}
-              className="w-full flex items-center justify-between text-[10px] text-brand-on-surface-variant/60 hover:text-brand-on-surface-variant transition-colors cursor-pointer px-1 mb-2"
-            >
-              <span className="uppercase tracking-wider font-mono">개발용 데모 로그인</span>
-            </button>
-            <div className="grid grid-cols-4 gap-1.5 animate-fadeIn">
-              {demoUsers.map((u) => (
-                <button
-                  key={u.label}
-                  data-testid={`quick-login-${u.label}`}
-                  type="button"
-                  onClick={() => {
-                    onLogin(u.roles, u.email);
-                    onClose();
-                  }}
-                  className="text-[10px] py-1.5 rounded-lg border border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:text-white hover:border-brand-primary-container/50 transition-colors cursor-pointer font-medium text-center"
-                >
-                  {u.label}
-                </button>
-              ))}
+          {/* 개발/시연용 빠른 데모 로그인 (환경변수 또는 DEV 환경에서만 노출) */}
+          {isDemoLoginEnabled && (
+            <div className="mt-4 border-t border-brand-border/30 pt-3">
+              <div className="flex items-center justify-between text-[10px] text-brand-on-surface-variant/60 px-1 mb-2">
+                <span className="uppercase tracking-wider font-mono">개발용 데모 로그인</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 animate-fadeIn">
+                {demoUsers.map((u) => (
+                  <button
+                    key={u.label}
+                    data-testid={`quick-login-${u.label}`}
+                    type="button"
+                    onClick={() => {
+                      onLogin(u.roles, u.email);
+                      onClose();
+                    }}
+                    className="text-[10px] py-1.5 rounded-lg border border-brand-border bg-brand-surface-low text-brand-on-surface-variant hover:text-white hover:border-brand-primary-container/50 transition-colors cursor-pointer font-medium text-center"
+                  >
+                    {u.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

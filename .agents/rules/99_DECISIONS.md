@@ -9,6 +9,7 @@
 
 | 날짜 | 문서 | 항목 | 이전 결정 | 새 결정 | 변경 이유 |
 |---|---|---|---|---|---|
+| 2026-08-26 | components/AuthModal.tsx, .env.example | 개발용 데모 로그인 노출 정책 | 모든 환경에서 상시 노출 | 환경변수(`VITE_SHOW_DEMO_LOGIN`) 및 DEV 환경 기반 조건부 노출 (운영 기본 숨김) | 실제 운영(Production) 환경에서 일반 사용자에게 테스트용 데모 계정이 노출되는 보안 및 UX 문제 방지 |
 | 2026-08-26 | components/GNB.tsx, components/AuthModal.tsx | 로그인/회원가입 버튼 UI | GNB 상단에 '로그인'과 '회원가입' 2개 버튼 분리 표시 | GNB 상단에 '로그인' 단일 버튼으로 일원화 및 모달 내 간편가입 통합 안내 | OAuth 기반 특성(기존 회원 로그인/신규 회원 자동가입 Upsert)에 맞춰 UX 단순화 및 헤더 레이아웃 최적화 |
 | 2026-08-25 | .agents/*, coding/08_COLLABORATION.md | Git Push 사용자 승인 정책 | 품질 게이트 통과 시 `git commit & push` 일괄 자동 실행 | `git commit`은 품질 게이트 통과 후 자동 수행, `git push`는 항상 사용자 승인 확인 후 실행 | 커밋은 안전하게 보존하면서 원격 저장소 배포 및 푸시 시점을 사용자가 직접 검토하고 통제할 수 있도록 개선 |
 | 2026-08-25 | specs/11_SCREEN_SPEC.md | 상세 보기 UI 패턴 전환 | 화면 전체를 덮는 오버레이(Overlay) 드로어 방식 | 마스터-디테일 스플릿 뷰 (Master-Detail Split View) + 조건부 컬럼 자동 숨김/압축 | 상세 정보 확인 중에도 좌측 목록 탐색과 컨텍스트를 유지하고, 공간에 맞게 중요 컬럼만 남기는 현대적 대시보드 UX 제공 |
