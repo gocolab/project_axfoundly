@@ -173,8 +173,27 @@ erDiagram
     uuid id PK
     uuid user_id FK
     text profile_text
-    vector embedding "pgvector 1536차원"
-    timestamp updated_at
+  code_groups ||--o{ common_codes : "코드 항목"
+
+  code_groups {
+    string group_code PK
+    string group_name
+    text description
+    boolean is_system
+    boolean is_active
+    timestamp created_at
+  }
+  common_codes {
+    string id PK
+    string group_code FK
+    string code UK
+    string code_name
+    string display_name
+    int sort_order
+    json extra_value
+    boolean is_active
+    boolean is_system
+    timestamp created_at
   }
 ```
 
@@ -184,6 +203,8 @@ erDiagram
 
 | 테이블명 | 모듈 | 설명 | 상태 |
 |---|---|---|---|
+| `code_groups` | common | 공통 코드 그룹 헤더 | ✅ |
+| `common_codes` | common | 상세 공통 코드 항목 | ✅ |
 | `users` | auth | 사용자 기본 정보 | 📝 |
 | `user_roles` | auth | 역할 (다중 역할 허용) | 📝 |
 | `courses` | course | 강의 정보 | 📝 |
@@ -206,6 +227,6 @@ erDiagram
 
 | 필드명 | 타입 | 필수 | 기본값 | 인덱스 | 설명 |
 |---|---|---|---|---|---|
-| id | UUID | YES | gen_random_uuid() | PK | |
-| created_at | TIMESTAMPTZ | YES | now() | | 생성일시 |
-| updated_at | TIMESTAMPTZ | YES | now() | | 수정일시 |
+| id | UUID / String | YES | gen_random_uuid() | PK | |
+| created_at | TIMESTAMPTZ / String | YES | now() | | 생성일시 |
+| updated_at | TIMESTAMPTZ / String | YES | now() | | 수정일시 |

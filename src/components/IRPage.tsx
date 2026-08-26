@@ -30,6 +30,36 @@ import VirtualIRModal from "./VirtualIRModal";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import { api } from "../lib/api";
 
+export const getEmploymentTypeBadgeClass = (type?: string) => {
+  switch (type) {
+    case "코파운더":
+      return "bg-brand-tertiary/20 text-brand-tertiary border-brand-tertiary/40";
+    case "풀타임":
+      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    case "파트타임":
+      return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    case "인턴":
+      return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+    default:
+      return "bg-brand-primary/20 text-brand-primary border-brand-primary/30";
+  }
+};
+
+export const getInvestmentStageBadgeClass = (stage?: string) => {
+  switch (stage) {
+    case "Pre-Seed":
+      return "bg-amber-500/20 text-amber-300 border-amber-500/40";
+    case "Seed":
+      return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+    case "Pre-A":
+      return "bg-blue-500/20 text-blue-300 border-blue-500/40";
+    case "Series A":
+      return "bg-purple-500/20 text-purple-300 border-purple-500/40";
+    default:
+      return "bg-[#030712]/70 text-white border-white/10";
+  }
+};
+
 interface IRPageProps {
   projects: IRProject[];
   userRoles: UserRole[];
@@ -181,7 +211,7 @@ export default function IRPage({
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
                     {selectedProject.field}
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-md border ${getInvestmentStageBadgeClass(selectedProject.investmentStage)}`}>
                     {selectedProject.investmentStage}
                   </span>
                   {selectedProject.demoVideoUrl && (
@@ -341,7 +371,7 @@ export default function IRPage({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-bold text-white">{roleItem.role}</span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-primary/20 text-brand-primary border border-brand-primary/30">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getEmploymentTypeBadgeClass(roleItem.type)}`}>
                             {roleItem.type}
                           </span>
                           {roleItem.equity && (
@@ -742,7 +772,7 @@ export default function IRPage({
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
                     {project.field}
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-md border ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
                     {project.investmentStage}
                   </span>
                   {project.demoVideoUrl && (
@@ -761,7 +791,7 @@ export default function IRPage({
               <div className="p-5">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span className="font-mono">{project.field}</span>
-                  <span className="px-2 py-0.5 rounded bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30 font-bold text-[10px]">
+                  <span className={`px-2 py-0.5 rounded border font-bold text-[10px] ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
                     {project.investmentStage}
                   </span>
                 </div>
@@ -794,7 +824,7 @@ export default function IRPage({
                     </div>
                   )}
                 </div>
-                <span className="text-xs px-2.5 py-1 rounded bg-brand-primary-container/15 text-brand-primary border border-brand-primary/25 font-semibold">
+                <span className={`text-xs px-2.5 py-1 rounded border font-semibold ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
                   {project.investmentStage}
                 </span>
               </div>

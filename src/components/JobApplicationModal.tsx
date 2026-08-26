@@ -2,6 +2,7 @@ import React from "react";
 import { X, Send, Briefcase, FileText, CheckCircle, ExternalLink, Sparkles } from "lucide-react";
 import type { HiringRoleDetail, IRProject } from "../types";
 import { api } from "../lib/api";
+import { getEmploymentTypeBadgeClass } from "./IRPage";
 
 interface JobApplicationModalProps {
   isOpen: boolean;
@@ -107,7 +108,9 @@ export default function JobApplicationModal({
             <div className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/40 text-xs space-y-1.5">
               <div className="flex justify-between items-center">
                 <span className="text-brand-on-surface-variant font-medium">고용 형태:</span>
-                <span className="text-white font-bold">{hiringRole?.type || "풀타임"}</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${getEmploymentTypeBadgeClass(hiringRole?.type)}`}>
+                  {hiringRole?.type || "풀타임"}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-brand-on-surface-variant font-medium">보상 및 지분:</span>

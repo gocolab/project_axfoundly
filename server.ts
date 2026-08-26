@@ -17,6 +17,7 @@ import notificationsRouter from "./server/routes/notifications.js";
 import instructorRouter from "./server/routes/instructor.js";
 import adminRouter from "./server/routes/admin.js";
 import aiRouter from "./server/routes/ai.js";
+import commonRouter from "./server/routes/common.js";
 
 const getDirname = () => {
   try {
@@ -69,6 +70,7 @@ async function startServer() {
   app.use("/api/instructor", instructorRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/ai", aiRouter);
+  app.use("/api/common", commonRouter);
 
   // Fallback for legacy endpoints
   app.use("/api", aiRouter);

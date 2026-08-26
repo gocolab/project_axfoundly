@@ -34,8 +34,34 @@
 | API-ADM-03 | PATCH | `/api/admin/members/:id/role` | 회원 권한 변경 | Admin | 관리자 | ✅ 완료 |
 | API-ADM-04 | POST | `/api/admin/boards` | 신규 멀티 게시판 생성 | Admin | 관리자 | ✅ 완료 |
 | API-CRM-01 | POST | `/api/instructor/crm/send` | 강사 수강생 타깃 CRM 발송 | Instructor | 강사 | ✅ 완료 |
+| API-CODE-01 | GET | `/api/common/codes` | 공통 코드 목록 조회 (그룹 필터링) | Common | 불필요 | ✅ 완료 |
+| API-CODE-02 | GET | `/api/common/groups` | 공통 코드 그룹 목록 조회 | Common | 불필요 | ✅ 완료 |
+| API-CODE-03 | POST | `/api/common/codes` | 신규 공통 코드 등록 | Common | 관리자 | ✅ 완료 |
+| API-CODE-04 | PUT | `/api/common/codes/:id` | 공통 코드 수정 | Common | 관리자 | ✅ 완료 |
 
 ## 2. 주요 신규 고도화 API 상세
+
+### API-CODE-01. 공통 코드 목록 조회 (`GET /api/common/codes`)
+- **설명**: 프론트엔드 드롭다운/필터/뱃지 렌더링에 필요한 공통 코드 목록을 그룹별로 조회합니다.
+- **Query Params**: `?groups=INVESTMENT_STAGE,EMPLOYMENT_TYPE&all=false`
+- **응답 (200)**:
+  ```json
+  {
+    "codes": [
+      {
+        "id": "cc-inv-1",
+        "groupCode": "INVESTMENT_STAGE",
+        "code": "PRE_SEED",
+        "codeName": "Pre-Seed",
+        "displayName": "Pre-Seed",
+        "sortOrder": 1,
+        "extraValue": { "badgeColor": "amber" },
+        "isActive": true,
+        "isSystem": true
+      }
+    ]
+  }
+  ```
 
 ### API-AI-04. 실시간 AI 창업 튜터 Q&A (`POST /api/ai/tutor`)
 - **설명**: 사용자의 창업/강의/IR 질의에 대해 Gemini 2.5 Flash 기반으로 실시간 액션 아이템 및 맞춤 제안 키워드를 반환합니다.
@@ -51,3 +77,4 @@
 - **설명**: 2년 기밀유지 및 지식재산권 보호 표준 NDA 전자 서명을 체결합니다.
 - **요청 Body**: `{ "investorName": "...", "termsSummary": "..." }`
 - **응답 (201)**: `{ "success": true, "nda": { "id": "nda-...", "agreedAt": "2025-08-20" } }`
+

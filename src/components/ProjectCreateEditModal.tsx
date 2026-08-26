@@ -1,6 +1,6 @@
 import React from "react";
 import { X, Rocket, Video, Shield, Plus, Trash2, Send, Sparkles } from "lucide-react";
-import type { IRProject, HiringRoleDetail } from "../types";
+import type { IRProject, HiringRoleDetail, CommonCode } from "../types";
 import { api } from "../lib/api";
 
 interface ProjectCreateEditModalProps {
@@ -16,6 +16,9 @@ export default function ProjectCreateEditModal({
   initialProject,
   onSave,
 }: ProjectCreateEditModalProps) {
+  const [stageCodes, setStageCodes] = React.useState<CommonCode[]>([]);
+  const [empTypeCodes, setEmpTypeCodes] = React.useState<CommonCode[]>([]);
+
   const [teamName, setTeamName] = React.useState(initialProject?.teamName || "");
   const [anonymousTeamName, setAnonymousTeamName] = React.useState(
     initialProject?.anonymousTeamName || "⚡ 캡틴 AI (스텔스)"
@@ -36,9 +39,31 @@ export default function ProjectCreateEditModal({
   // Hiring section
   const [isHiring, setIsHiring] = React.useState(initialProject?.isHiring || false);
   const [hiringRoleInput, setHiringRoleInput] = React.useState("");
+  const [hiringTypeInput, setHiringTypeInput] = React.useState("풀타임");
   const [hiringRoles, setHiringRoles] = React.useState<string[]>(initialProject?.hiringRoles || []);
+  const [hiringDetails, setHiringDetails] = React.useState<HiringRoleDetail[]>(
+    initialProject?.hiringDetails || []
+  );
 
   const [saving, setSaving] = React.useState(false);
+
+  // 공통 코드 로드
+  React.useEffect(() => {
+    if (!isOpen) return;
+    api.getCommonCodes(["INVESTMENT_STAGE", "EMPLOYMENT_TYPE"])
+      .then((res) => {
+        if (res.codes) {
+          const stages = res.codes.filter((c) => c.groupCode === "INVESTMENT_STAGE" && c.isActive);
+          const empTypes = res.codes.filter((c) => c.groupCode === "EMPLOYMENT_TYPE" && c.isActive);
+          if (stages.length > 0) setStageCodes(stages);
+          if (empTypes.length > 0) {
+            setEmpTypeCodes(empTypes);
+            setHiringTypeInput(empTypes[0].displayName || empTypes[0].codeName);
+          }
+        }
+      })
+      .catch((err) => console.error("공통 코드 로드 실패:", err));
+  }, [isOpen]);
 
   React.useEffect(() => {
     if (initialProject) {
@@ -56,6 +81,7 @@ export default function ProjectCreateEditModal({
       setSolution(initialProject.solution);
       setIsHiring(initialProject.isHiring);
       setHiringRoles(initialProject.hiringRoles || []);
+      setHiringDetails(initialProject.hiringDetails || []);
     } else {
       // Default initial
       setTeamName("");
@@ -72,6 +98,7 @@ export default function ProjectCreateEditModal({
       setSolution("");
       setIsHiring(false);
       setHiringRoles([]);
+      setHiringDetails([]);
     }
   }, [initialProject, isOpen]);
 
@@ -79,12 +106,26 @@ export default function ProjectCreateEditModal({
 
   const handleAddHiringRole = () => {
     if (!hiringRoleInput.trim()) return;
-    setHiringRoles((prev) => [...prev, hiringRoleInput.trim()]);
+    const roleName = hiringRoleInput.trim();
+    const roleType = hiringTypeInput || "풀타임";
+
+    setHiringRoles((prev) => [...prev, `${roleName} (${roleType})`]);
+    setHiringDetails((prev) => [
+      ...prev,
+      {
+        id: `role-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        role: roleName,
+        type: roleType,
+        applyMethod: "internal",
+        skills: [],
+      },
+    ]);
     setHiringRoleInput("");
   };
 
   const handleRemoveHiringRole = (index: number) => {
     setHiringRoles((prev) => prev.filter((_, i) => i !== index));
+    setHiringDetails((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +153,7 @@ export default function ProjectCreateEditModal({
         solution: solution || "자체 AI 엔진 기반 해결책",
         isHiring,
         hiringRoles,
+        hiringDetails,
         members: initialProject?.members || [
           {
             name: "김수강생",
@@ -244,13 +286,16 @@ export default function ProjectCreateEditModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-brand-surface-low/50 p-3.5 rounded-xl border border-brand-border/30">
             <div>
               <label className="font-semibold text-white block mb-1">현재 투자 유치 단계</label>
-              <div className="flex gap-2">
-                {(["Pre-Seed", "Seed", "Series A"] as const).map((st) => (
+              <div className="flex flex-wrap gap-2">
+                {(stageCodes.length > 0
+                  ? stageCodes.map((c) => c.displayName || c.codeName)
+                  : ["Pre-Seed", "Seed", "Pre-A", "Series A"]
+                ).map((st) => (
                   <button
                     key={st}
                     type="button"
                     onClick={() => setInvestmentStage(st)}
-                    className={`px-3 py-1 rounded-lg border text-xs cursor-pointer ${
+                    className={`px-3 py-1 rounded-lg border text-xs cursor-pointer transition-colors ${
                       investmentStage === st
                         ? "bg-brand-tertiary/20 border-brand-tertiary text-brand-tertiary font-bold"
                         : "border-brand-border text-brand-on-surface-variant hover:text-white"
@@ -338,7 +383,7 @@ export default function ProjectCreateEditModal({
 
             {isHiring && (
               <div className="space-y-2 animate-fadeIn">
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={hiringRoleInput}
@@ -346,10 +391,24 @@ export default function ProjectCreateEditModal({
                     placeholder="채용 포지션명 (예: 프론트엔드 리드, LLM 엔지니어)"
                     className="flex-1 bg-brand-surface border border-brand-border rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-brand-primary"
                   />
+                  <select
+                    value={hiringTypeInput}
+                    onChange={(e) => setHiringTypeInput(e.target.value)}
+                    className="bg-brand-surface border border-brand-border rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-brand-primary text-sm"
+                  >
+                    {(empTypeCodes.length > 0
+                      ? empTypeCodes.map((c) => c.displayName || c.codeName)
+                      : ["풀타임", "파트타임", "인턴", "코파운더"]
+                    ).map((t) => (
+                      <option key={t} value={t} className="bg-brand-surface text-white">
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     onClick={handleAddHiringRole}
-                    className="px-3 py-1.5 bg-brand-surface-high hover:bg-brand-surface-highest text-white rounded-lg font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 bg-brand-surface-high hover:bg-brand-surface-highest text-white rounded-lg font-bold flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <Plus size={13} /> 추가
                   </button>
@@ -359,7 +418,7 @@ export default function ProjectCreateEditModal({
                   {hiringRoles.map((role, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 rounded-full bg-brand-tertiary/15 text-brand-tertiary border border-brand-tertiary/30 flex items-center gap-1.5"
+                      className="px-2.5 py-1 rounded-full bg-brand-tertiary/15 text-brand-tertiary border border-brand-tertiary/30 flex items-center gap-1.5 text-xs"
                     >
                       {role}
                       <button

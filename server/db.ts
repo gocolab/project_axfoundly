@@ -17,6 +17,8 @@ import type {
   CRMMessage,
   JobApplication,
   UserRole,
+  CodeGroup,
+  CommonCode,
 } from "../src/types";
 
 export interface DatabaseSchema {
@@ -35,6 +37,8 @@ export interface DatabaseSchema {
   boards: AdminBoard[];
   crmMessages: CRMMessage[];
   applications: JobApplication[];
+  codeGroups: CodeGroup[];
+  commonCodes: CommonCode[];
   kakao_sessions: Array<{
     tid: string;
     orderId: string;
@@ -685,6 +689,127 @@ const SEED_CRM_MESSAGES: CRMMessage[] = [
   },
 ];
 
+const SEED_CODE_GROUPS: CodeGroup[] = [
+  {
+    groupCode: "INVESTMENT_STAGE",
+    groupName: "투자 유치 단계",
+    description: "스타트업의 현재 펀딩 라운드 단계",
+    isSystem: true,
+    isActive: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    groupCode: "EMPLOYMENT_TYPE",
+    groupName: "고용 형태",
+    description: "창업팀 구인 공고의 고용 및 참여 형태",
+    isSystem: true,
+    isActive: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+];
+
+const SEED_COMMON_CODES: CommonCode[] = [
+  // ── INVESTMENT_STAGE ──
+  {
+    id: "cc-inv-1",
+    groupCode: "INVESTMENT_STAGE",
+    code: "PRE_SEED",
+    codeName: "Pre-Seed",
+    displayName: "Pre-Seed",
+    sortOrder: 1,
+    extraValue: { badgeColor: "amber" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    id: "cc-inv-2",
+    groupCode: "INVESTMENT_STAGE",
+    code: "SEED",
+    codeName: "Seed",
+    displayName: "Seed",
+    sortOrder: 2,
+    extraValue: { badgeColor: "emerald" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    id: "cc-inv-3",
+    groupCode: "INVESTMENT_STAGE",
+    code: "PRE_A",
+    codeName: "Pre-A",
+    displayName: "Pre-A",
+    sortOrder: 3,
+    extraValue: { badgeColor: "blue" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    id: "cc-inv-4",
+    groupCode: "INVESTMENT_STAGE",
+    code: "SERIES_A",
+    codeName: "Series A",
+    displayName: "Series A",
+    sortOrder: 4,
+    extraValue: { badgeColor: "purple" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+
+  // ── EMPLOYMENT_TYPE ──
+  {
+    id: "cc-emp-1",
+    groupCode: "EMPLOYMENT_TYPE",
+    code: "FULL_TIME",
+    codeName: "풀타임",
+    displayName: "풀타임",
+    sortOrder: 1,
+    extraValue: { tagColor: "blue" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    id: "cc-emp-2",
+    groupCode: "EMPLOYMENT_TYPE",
+    code: "PART_TIME",
+    codeName: "파트타임",
+    displayName: "파트타임",
+    sortOrder: 2,
+    extraValue: { tagColor: "teal" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    id: "cc-emp-3",
+    groupCode: "EMPLOYMENT_TYPE",
+    code: "INTERN",
+    codeName: "인턴",
+    displayName: "인턴",
+    sortOrder: 3,
+    extraValue: { tagColor: "cyan" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+  {
+    id: "cc-emp-4",
+    groupCode: "EMPLOYMENT_TYPE",
+    code: "CO_FOUNDER",
+    codeName: "코파운더",
+    displayName: "코파운더",
+    sortOrder: 4,
+    extraValue: { tagColor: "amber" },
+    isActive: true,
+    isSystem: true,
+    createdAt: "2025-01-01T00:00:00Z",
+  },
+];
+
 // ──────────────────── 초기 시드 데이터 맵 ────────────────────
 
 function buildSeedData(): DatabaseSchema {
@@ -704,6 +829,8 @@ function buildSeedData(): DatabaseSchema {
     boards: SEED_BOARDS,
     crmMessages: SEED_CRM_MESSAGES,
     applications: [],
+    codeGroups: SEED_CODE_GROUPS,
+    commonCodes: SEED_COMMON_CODES,
     kakao_sessions: [],
   };
 }

@@ -2,6 +2,29 @@
  * Domain Type Definitions for "AI로 창업하라" Platform Mockup
  */
 
+// ── Common Code (공통 코드) ──
+export interface CodeGroup {
+  groupCode: string;
+  groupName: string;
+  description?: string;
+  isSystem: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CommonCode {
+  id: string;
+  groupCode: string;
+  code: string;
+  codeName: string;
+  displayName: string;
+  sortOrder: number;
+  extraValue?: Record<string, any> | string;
+  isActive: boolean;
+  isSystem: boolean;
+  createdAt: string;
+}
+
 // ── User / Auth ──
 export type UserRole = "member" | "manager" | "admin";
 
@@ -106,7 +129,7 @@ export interface Review {
 export interface HiringRoleDetail {
   id: string;
   role: string;
-  type: "풀타임" | "파트타임" | "인턴" | "코파운더";
+  type: "풀타임" | "파트타임" | "인턴" | "코파운더" | string;
   compensation?: string; // "월 300~450만원" or "추후 협의"
   equity?: string;       // "1.0% ~ 3.0%" or "협의"
   skills: string[];      // ["React", "TypeScript", "Node.js"]
@@ -145,7 +168,7 @@ export interface IRProject {
   hiringRoles?: string[];
   hiringDetails?: HiringRoleDetail[];
   bookmarked?: boolean;
-  investmentStage: "Pre-Seed" | "Seed" | "Series A";
+  investmentStage: "Pre-Seed" | "Seed" | "Pre-A" | "Series A" | string;
 }
 
 // ── Community / Board & Comments ──

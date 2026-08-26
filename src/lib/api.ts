@@ -14,6 +14,8 @@ import type {
   AdminBoard,
   CRMMessage,
   UserRole,
+  CodeGroup,
+  CommonCode,
 } from "../types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -382,6 +384,30 @@ export const api = {
     return fetchJson<{ success: boolean; nda: any }>(`/api/ir/projects/${projectId}/nda`, {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+
+  // ── Common Codes ──
+  getCommonCodes: async (groups?: string[]): Promise<{ codes: CommonCode[] }> => {
+    const query = groups && groups.length > 0 ? `?groups=${encodeURIComponent(groups.join(","))}` : "";
+    return fetchJson<{ codes: CommonCode[] }>(`/api/common/codes${query}`);
+  },
+
+  getCodeGroups: async (): Promise<{ groups: CodeGroup[] }> => {
+    return fetchJson<{ groups: CodeGroup[] }>("/api/common/groups");
+  },
+
+  createCommonCode: async (codeData: Partial<CommonCode>): Promise<{ code: CommonCode }> => {
+    return fetchJson<{ code: CommonCode }>("/api/common/codes", {
+      method: "POST",
+      body: JSON.stringify(codeData),
+    });
+  },
+
+  updateCommonCode: async (id: string, updates: Partial<CommonCode>): Promise<{ code: CommonCode }> => {
+    return fetchJson<{ code: CommonCode }>(`/api/common/codes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
     });
   },
 };
