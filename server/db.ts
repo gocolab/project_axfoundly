@@ -677,7 +677,7 @@ const SEED_STATS: DashboardStats = {
 };
 
 const SEED_MEMBERS: AdminMember[] = [
-  { id: "m-otter", name: "오승환", email: "otter.oh@gmail.com", roles: ["admin"], joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
+  { id: "m-otter", name: "오승환", email: "otter.oh@gmail.com", roles: ["admin", "member"], joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
   { id: "m-mahau", name: "마하우", email: "mahau.master@gmail.com", roles: ["member"], joinDate: "2025-02-01", lastLogin: "2025-08-20", status: "활성", courseCount: 1 },
   { id: "m0", name: "최관리", email: "admin@platform.com", roles: ["admin"], joinDate: "2024-01-01", lastLogin: "2025-08-20", status: "활성", courseCount: 0 },
   { id: "m1", name: "김수강생", email: "student@mail.com", roles: ["member"], joinDate: "2025-01-15", lastLogin: "2025-08-12", status: "활성", courseCount: 2 },

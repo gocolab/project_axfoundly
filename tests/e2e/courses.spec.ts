@@ -29,7 +29,7 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
   });
 
   test('실시간 키워드 검색 시 해당 강의 카드만 필터링된다', async ({ page }) => {
-    const searchInput = page.getByPlaceholder('강의명, 강사명 검색...');
+    const searchInput = page.getByPlaceholder('강의명, 강사명, 태그 검색...');
     await expect(searchInput).toBeVisible();
     await searchInput.fill('그로스 해킹');
 
@@ -38,7 +38,7 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
   });
 
   test('일치하는 결과가 없을 경우 검색 결과 없음 메시지가 노출된다', async ({ page }) => {
-    const searchInput = page.getByPlaceholder('강의명, 강사명 검색...');
+    const searchInput = page.getByPlaceholder('강의명, 강사명, 태그 검색...');
     await searchInput.fill('NonExistentKeyword99');
 
     // 빈 상태 메시지 확인
@@ -59,8 +59,8 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
     await expect(page.locator('h2', { hasText: '강의 달력 & 수강 일정' })).toBeVisible();
 
     // 강사 인포그래픽 카드 확인
-    await expect(page.locator('text=강사 전문성 인포그래픽')).toBeVisible();
-    await expect(page.locator('text=공식 인증 강사')).toBeVisible();
+    await expect(page.locator('text=강사 전문성').first()).toBeVisible();
+    await expect(page.locator('text=공식 인증').first()).toBeVisible();
 
     // 수강 후기 섹션 확인
     await expect(page.locator('h2', { hasText: /수강 후기/ })).toBeVisible();

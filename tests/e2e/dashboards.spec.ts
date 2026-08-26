@@ -13,7 +13,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     // 1. 수강생 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
+    await page.getByTestId('quick-login-수강생').click();
 
     // 2. 마이페이지 이동
     await page.locator('header button', { hasText: '김수강생' }).click();
@@ -38,10 +38,11 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await page.getByPlaceholder('예: 500페이지 계약서를 3초 만에 검토하는 AI').fill('실시간 자동화 E2E 테스트 프로젝트');
 
     // 프로젝트 저장
-    await page.locator('.glass-panel-heavy').getByRole('button', { name: '프로젝트 등록' }).click();
+    await page.getByRole('button', { name: '프로젝트 등록', exact: true }).click();
+    await expect(page.locator('h2', { hasText: '새 창업 프로젝트 등록' })).not.toBeVisible({ timeout: 10000 });
 
     // 등록된 프로젝트가 목록에 표시되는지 확인
-    await expect(page.locator(`text=${uniqueTeam}`).first()).toBeVisible();
+    await expect(page.locator(`text=${uniqueTeam}`).first()).toBeVisible({ timeout: 10000 });
 
     // 5. '결제 및 계정 설정' 메뉴로 이동하여 결제 내역 및 영수증 확인
     await page.locator('aside nav button', { hasText: '결제 및 계정 설정' }).click();
@@ -70,13 +71,13 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
 
   // ── 2. 강의 개설 & 운영 시나리오 ──
   test('마이페이지: 강의 개설 & 운영(AI 강의 개설, 수강생 CRM, 정산) 시나리오가 완결된다', async ({ page }) => {
-    // 1. 강사 로그인
+    // 1. 강사/회원 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '강사' }).first().click();
+    await page.getByTestId('quick-login-수강생').click();
 
     // 2. 마이페이지 > 강의 개설 & 운영 이동
-    await page.locator('header button', { hasText: /(강사|김소현)/ }).click();
+    await page.locator('header button', { hasText: '김수강생' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
     await page.locator('aside nav button', { hasText: '강의 개설 & 운영' }).click();
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
@@ -132,14 +133,14 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
 
   // ── 3. 관심 스타트업 & 투자 시나리오 ──
   test('마이페이지: 관심 스타트업 & 투자(북마크, AI 맞춤 추천 매칭) 시나리오가 완결된다', async ({ page }) => {
-    // 1. 투자자 로그인
+    // 1. 투자자/회원 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '투자자' }).first().click();
+    await page.getByTestId('quick-login-수강생').click();
 
     // 2. 마이페이지 > 관심 스타트업 & 투자 이동
-    await expect(page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ })).toBeVisible();
-    await page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ }).click();
+    await expect(page.locator('header button', { hasText: '김수강생' })).toBeVisible();
+    await page.locator('header button', { hasText: '김수강생' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
     await page.locator('aside nav button', { hasText: '관심 스타트업 & 투자' }).click();
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();

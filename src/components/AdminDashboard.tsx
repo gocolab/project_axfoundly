@@ -140,7 +140,12 @@ export default function AdminDashboard({
                 <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
                 <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
                 <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
-                <p><span className="font-semibold text-white">권한:</span> {selectedPanelItem.data.roles.includes('admin') ? '관리자' : '수강생'}</p>
+                <p>
+                  <span className="font-semibold text-white">권한:</span>{" "}
+                  {selectedPanelItem.data.roles
+                    .map((r) => (r === "admin" ? "관리자" : r === "manager" ? "매니저" : "수강생"))
+                    .join(", ")}
+                </p>
               </div>
             </div>
           )}
@@ -481,15 +486,29 @@ export default function AdminDashboard({
                           </div>
 
                           {/* Role Select */}
-                          <div className="w-16 shrink-0">
+                          <div className="w-20 shrink-0">
                             <select
-                              value={member.roles.includes("admin") ? "admin" : "member"}
+                              value={
+                                member.roles.includes("admin") && member.roles.includes("member")
+                                  ? "admin,member"
+                                  : member.roles.includes("admin")
+                                  ? "admin"
+                                  : "member"
+                              }
                               onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => onChangeRole(member.id, [e.target.value as UserRole])}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "admin,member") {
+                                  onChangeRole(member.id, ["admin", "member"]);
+                                } else {
+                                  onChangeRole(member.id, [val as UserRole]);
+                                }
+                              }}
                               className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1.5 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
                             >
                               <option value="member">수강생</option>
                               <option value="admin">관리자</option>
+                              <option value="admin,member">관리자+수강생</option>
                             </select>
                           </div>
 

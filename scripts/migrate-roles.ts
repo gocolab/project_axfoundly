@@ -21,12 +21,11 @@ async function main() {
 
     for (const member of members) {
       const email = (member.email || "").toLowerCase();
-      const isAdmin =
-        email === "admin@platform.com" ||
-        email === "otter.oh@gmail.com";
+      const isOtter = email === "otter.oh@gmail.com";
+      const isAdmin = email === "admin@platform.com";
 
-      // 목표 roles: admin 이메일만 ["admin"], 나머지는 무조건 ["member"]
-      const targetRoles = isAdmin ? ["admin"] : ["member"];
+      // 목표 roles: otter.oh@gmail.com: ["admin", "member"], admin: ["admin"], 나머지는 ["member"]
+      const targetRoles = isOtter ? ["admin", "member"] : (isAdmin ? ["admin"] : ["member"]);
 
       const updateDoc: Record<string, any> = {};
       const unsetDoc: Record<string, any> = {};

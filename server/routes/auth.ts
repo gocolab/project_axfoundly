@@ -91,14 +91,14 @@ router.get("/google/callback", async (req, res) => {
   let existingMember = members.find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
   const isOtter = userEmail.toLowerCase() === "otter.oh@gmail.com";
 
-  let assignedRoles: UserRole[] = isOtter ? ["admin"] : (existingMember ? existingMember.roles : ["member"]);
+  let assignedRoles: UserRole[] = isOtter ? ["admin", "member"] : (existingMember ? existingMember.roles : ["member"]);
 
   if (existingMember) {
     // 기존 회원 로그인 처리
     db.update("members", (mList) =>
       mList.map((m) =>
         m.email.toLowerCase() === userEmail.toLowerCase()
-          ? { ...m, roles: (isOtter ? ["admin"] : assignedRoles) as UserRole[], lastLogin: today }
+          ? { ...m, roles: (isOtter ? ["admin", "member"] : assignedRoles) as UserRole[], lastLogin: today }
           : m
       )
     );
@@ -206,7 +206,7 @@ router.get("/me", (req, res) => {
           id: `m-google-${Date.now()}`,
           name: email.split("@")[0],
           email: email,
-          roles: isOtter ? ["admin"] : ["member"],
+          roles: isOtter ? ["admin", "member"] : ["member"],
           joinDate: today,
           lastLogin: today,
           status: "활성",

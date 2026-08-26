@@ -176,7 +176,9 @@ export default function GNB({
                     </div>
                     <div className="hidden sm:block text-left">
                       <span className="text-xs font-semibold text-white block leading-tight">{userName}</span>
-                      <span className="text-[10px] text-brand-tertiary font-mono">{roleLabel[userRoles[0]]}</span>
+                      <span className="text-[10px] text-brand-tertiary font-mono">
+                        {userRoles.map((r) => roleLabel[r] || r).join("·")}
+                      </span>
                     </div>
                     <ChevronDown size={14} className="text-brand-on-surface-variant" />
                   </button>

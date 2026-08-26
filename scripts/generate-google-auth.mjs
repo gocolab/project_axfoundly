@@ -41,6 +41,10 @@ const storageState = {
           value: roleArg,
         },
         {
+          name: 'user_roles',
+          value: JSON.stringify(roleArg === 'admin' ? ['admin', 'member'] : ['member']),
+        },
+        {
           name: 'user_assigned_roles',
           value: '[]',
         },
