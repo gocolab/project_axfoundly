@@ -34,7 +34,7 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
     await searchInput.fill('그로스 해킹');
 
     // 검색된 강의 카드 노출 확인
-    await expect(page.locator('h3', { hasText: '그로스 해킹 마스터클래스' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: '그로스 해킹 마스터클래스' }).first()).toBeVisible();
   });
 
   test('일치하는 결과가 없을 경우 검색 결과 없음 메시지가 노출된다', async ({ page }) => {

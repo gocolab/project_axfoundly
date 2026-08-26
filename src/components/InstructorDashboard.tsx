@@ -33,6 +33,8 @@ interface InstructorDashboardProps {
   onSaveCourse?: (course: Course) => void;
   onSendCRMMessage?: (msg: Omit<CRMMessage, "id" | "sentAt">) => void;
   onViewCourse?: (courseId: string) => void;
+  isModalOpenExternal?: boolean;
+  onCloseModalExternal?: () => void;
 }
 
 export default function InstructorDashboard({
@@ -41,12 +43,20 @@ export default function InstructorDashboard({
   onSaveCourse,
   onSendCRMMessage,
   onViewCourse,
+  isModalOpenExternal,
+  onCloseModalExternal,
 }: InstructorDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement">("courses");
   const [selectedCourseForCRM, setSelectedCourseForCRM] = React.useState<string>(myCourses[0]?.id || "c1");
 
   // Course Creation Modal States
   const [showCreateModal, setShowCreateModal] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isModalOpenExternal) {
+      setShowCreateModal(true);
+    }
+  }, [isModalOpenExternal]);
   const [createStep, setCreateStep] = React.useState<"ai_chat" | "detail_edit">("ai_chat");
   const [aiPrompt, setAiPrompt] = React.useState("");
   const [aiChatMessages, setAiChatMessages] = React.useState<

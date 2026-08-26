@@ -5,8 +5,7 @@ test.describe('메뉴 페이지별 직접 등록/생성 기능 E2E 검증', () =
     await page.goto('/');
     // 1. 빠른 데모 로그인 (수강생)
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.getByRole('button', { name: '개발용 데모 로그인' }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
+    await page.getByTestId('quick-login-수강생').click();
     await expect(page.locator('header button', { hasText: '김수강생' })).toBeVisible();
   });
 

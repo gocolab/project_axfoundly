@@ -8,8 +8,8 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     });
   });
 
-  // ── 1. 수강생 대시보드 시나리오 ──
-  test('수강생 대시보드: 프로젝트 등록, 수정, 결제 영수증 조회 및 환불 신청 시나리오가 완결된다', async ({ page }) => {
+  // ── 1. 통합 마이페이지: 스타트업 IR 프로젝트 등록 및 결제 영수증/환불 시나리오 ──
+  test('마이페이지: 내 스타트업 IR 등록 및 결제/영수증 관리 환불 신청 시나리오가 완결된다', async ({ page }) => {
     // 1. 수강생 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
@@ -18,12 +18,11 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     // 2. 마이페이지 이동
     await page.locator('header button', { hasText: '김수강생' }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
-    await page.locator('aside nav button', { hasText: '수강생 대시보드' }).click();
-    await expect(page.locator('h1', { hasText: '수강생 대시보드' })).toBeVisible();
+    await expect(page.locator('h1', { hasText: '마이페이지' })).toBeVisible();
 
-    // 3. 프로젝트 & 팀 빌딩 탭으로 이동
-    const projectTab = page.getByRole('button', { name: '프로젝트 & 팀 빌딩' });
-    await projectTab.click();
+    // 3. '내 스타트업' 메뉴로 이동
+    await page.locator('aside nav button', { hasText: '내 스타트업' }).click();
+    await expect(page.locator('h2', { hasText: '내 스타트업' })).toBeVisible();
 
     // 4. [신규 프로젝트 등록] 모달 열기 및 프로젝트 생성
     const newProjectBtn = page.getByRole('button', { name: '신규 프로젝트 등록' }).first();
@@ -44,9 +43,9 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     // 등록된 프로젝트가 목록에 표시되는지 확인
     await expect(page.locator(`text=${uniqueTeam}`).first()).toBeVisible();
 
-    // 5. 내 강의실(수강 관리) 탭으로 이동하여 결제 내역 및 영수증 확인
-    await page.getByRole('button', { name: '내 강의실 (수강 관리)' }).click();
-    await expect(page.locator('text=수강 및 결제 영수증 내역')).toBeVisible();
+    // 5. '결제 및 계정 설정' 메뉴로 이동하여 결제 내역 및 영수증 확인
+    await page.locator('aside nav button', { hasText: '결제 및 계정 설정' }).click();
+    await expect(page.locator('h2', { hasText: '결제 및 계정 설정' })).toBeVisible();
 
     // 영수증 조회 버튼 클릭
     const receiptBtn = page.locator('button', { hasText: '영수증 조회' }).first();
@@ -69,17 +68,17 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     }
   });
 
-  // ── 2. 강사 대시보드 시나리오 ──
-  test('강사 대시보드: AI 강의 개설, 수강생 CRM 타깃 메시지 발송, 정산 관리 시나리오가 완결된다', async ({ page }) => {
+  // ── 2. 강의 개설 & 운영 시나리오 ──
+  test('마이페이지: 강의 개설 & 운영(AI 강의 개설, 수강생 CRM, 정산) 시나리오가 완결된다', async ({ page }) => {
     // 1. 강사 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('.glass-panel-heavy button', { hasText: '강사' }).first().click();
 
-    // 2. 대시보드 이동
+    // 2. 마이페이지 > 강의 개설 & 운영 이동
     await page.locator('header button', { hasText: /(강사|김소현)/ }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
-    await page.locator('aside nav button', { hasText: '강사 대시보드' }).click();
+    await page.locator('aside nav button', { hasText: '강의 개설 & 운영' }).click();
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
 
     // 3. [AI 강의 개설] 모달 열기
@@ -131,22 +130,22 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await expect(page.getByRole('button', { name: '출금 신청' })).toBeVisible();
   });
 
-  // ── 3. 투자자 대시보드 시나리오 ──
-  test('투자자 대시보드: 관심 스타트업 목록 및 AI 추천 매칭 탭이 작동한다', async ({ page }) => {
+  // ── 3. 관심 스타트업 & 투자 시나리오 ──
+  test('마이페이지: 관심 스타트업 & 투자(북마크, AI 맞춤 추천 매칭) 시나리오가 완결된다', async ({ page }) => {
     // 1. 투자자 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('.glass-panel-heavy button', { hasText: '투자자' }).first().click();
 
-    // 2. 대시보드 이동
+    // 2. 마이페이지 > 관심 스타트업 & 투자 이동
     await expect(page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ })).toBeVisible();
     await page.locator('header button', { hasText: /(한승우|이벤처|투자자)/ }).click();
     await page.getByRole('button', { name: '마이페이지' }).click();
-    await page.locator('aside nav button', { hasText: '투자자 대시보드' }).click();
+    await page.locator('aside nav button', { hasText: '관심 스타트업 & 투자' }).click();
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
 
     // 3. 관심 스타트업 탭 확인
-    await expect(page.getByRole('button', { name: '관심 스타트업' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '관심 스타트업', exact: true })).toBeVisible();
 
     // 4. AI 추천 매칭 탭 전환 및 추천 스타트업 목록 확인
     await page.getByRole('button', { name: 'AI 추천 매칭' }).click();

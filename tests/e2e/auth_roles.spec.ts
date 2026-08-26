@@ -22,10 +22,8 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await expect(modalHeader).not.toBeVisible();
   });
 
-  test('수강생(Member) 빠른 로그인 시 마이페이지에서 수강생 대시보드가 정상 렌더링된다', async ({ page }) => {
+  test('수강생(Member) 빠른 로그인 시 마이페이지에서 통합 6대 메뉴가 정상 렌더링된다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-
-
 
     // 수강생 빠른 로그인 클릭
     const studentBtn = page.getByTestId('quick-login-수강생');
@@ -37,17 +35,18 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
-    // 마이페이지 탭에서 '수강생 대시보드' 확인
-    await page.locator('aside nav button', { hasText: '수강생 대시보드' }).click();
-    await expect(page.locator('h1', { hasText: '수강생 대시보드' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '내 강의실 (수강 관리)' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '프로젝트 & 팀 빌딩' })).toBeVisible();
+    // 마이페이지 헤더 및 6대 통합 메뉴 확인
+    await expect(page.locator('h1', { hasText: '마이페이지' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '마이 홈' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '내 강의실' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '내 스타트업' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '강의 개설 & 운영' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '관심 스타트업 & 투자' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '결제 및 계정 설정' })).toBeVisible();
   });
 
-  test('강사(Instructor) 빠른 로그인 시 강사 대시보드 탭이 표시되고 정상 렌더링된다', async ({ page }) => {
+  test('강사(Instructor) 빠른 로그인 시 마이페이지에서 강의 개설 및 관리를 즉시 이용할 수 있다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-
-
 
     // 강사 빠른 로그인 클릭
     const instructorBtn = page.getByTestId('quick-login-강사');
@@ -59,7 +58,7 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
-    await page.locator('aside nav button', { hasText: '강사 대시보드' }).click();
+    await page.locator('aside nav button', { hasText: '강의 개설 & 운영' }).click();
     // 강사 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
     await expect(page.getByRole('button', { name: '내 강의 목록' })).toBeVisible();
@@ -67,10 +66,8 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await expect(page.getByRole('button', { name: '정산 관리' })).toBeVisible();
   });
 
-  test('투자자(Investor) 빠른 로그인 시 투자자 대시보드 탭이 표시되고 정상 렌더링된다', async ({ page }) => {
+  test('투자자(Investor) 빠른 로그인 시 마이페이지에서 관심 스타트업 및 AI 추천을 즉시 이용할 수 있다', async ({ page }) => {
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-
-
 
     // 투자자 빠른 로그인 클릭
     const investorBtn = page.getByTestId('quick-login-투자자');
@@ -82,10 +79,10 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await profileBtn.click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
-    await page.locator('aside nav button', { hasText: '투자자 대시보드' }).click();
+    await page.locator('aside nav button', { hasText: '관심 스타트업 & 투자' }).click();
     // 투자자 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '투자자 대시보드' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '관심 스타트업' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '관심 스타트업', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'AI 추천 매칭' })).toBeVisible();
   });
 

@@ -19,21 +19,23 @@ test.describe('TC-Google-Real: 실제 구글 OAuth 회원(mahau.master@gmail.com
     await expect(page.getByRole('button', { name: '로그아웃' })).toBeVisible();
   });
 
-  test('2. 실제 구글 회원 권한으로 마이페이지 및 수강생 대시보드 진입이 가능하다', async ({ page }) => {
+  test('2. 실제 구글 회원 권한으로 마이페이지 및 통합 6대 메뉴 진입이 가능하다', async ({ page }) => {
     // 1) 프로필 드롭다운 열기 및 마이페이지 클릭
     await page.getByTestId('user-profile-button').click();
     await page.getByRole('button', { name: '마이페이지' }).click();
 
-    // 2) 마이페이지 헤더 및 사이드 메뉴 확인
+    // 2) 마이페이지 헤더 및 6대 통합 메뉴 확인
     await expect(page.locator('h1', { hasText: '마이페이지' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '내 프로필' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '수강생 대시보드' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '마이 홈' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '내 강의실' })).toBeVisible();
+    await expect(page.locator('aside nav button', { hasText: '내 스타트업' })).toBeVisible();
 
-    // 3) 수강생 대시보드 탭 전환 및 내부 하위 탭 검증
-    await page.getByRole('button', { name: '수강생 대시보드' }).click();
-    await expect(page.getByRole('button', { name: /내 강의실/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /프로젝트 & 팀 빌딩/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /알림/ })).toBeVisible();
+    // 3) '내 강의실' 및 '내 스타트업' 탭 전환 검증
+    await page.locator('aside nav button', { hasText: '내 강의실' }).click();
+    await expect(page.locator('h2', { hasText: '내 강의실' })).toBeVisible();
+
+    await page.locator('aside nav button', { hasText: '내 스타트업' }).click();
+    await expect(page.locator('h2', { hasText: '내 스타트업' })).toBeVisible();
   });
 
   test('3. 실제 구글 회원 계정으로 커뮤니티 게시글을 작성할 수 있다', async ({ page }) => {
