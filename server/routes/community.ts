@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "../db.js";
-import type { BoardPost, Comment, Notification, BoardType } from "../../src/types.js";
+import type { BoardPost, Comment, Notification, BoardType, UserRole } from "../../src/types.js";
 
 const router = Router();
 
@@ -130,7 +130,7 @@ router.post("/posts/:id/comments", (req, res) => {
     postId: id,
     author,
     authorAvatar: "",
-    authorRole,
+    authorRoles: [authorRole as UserRole],
     content,
     createdAt: timeStr,
   };

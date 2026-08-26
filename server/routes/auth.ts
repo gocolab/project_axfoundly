@@ -99,7 +99,7 @@ router.get("/google/callback", async (req, res) => {
     db.update("members", (mList) =>
       mList.map((m) =>
         m.email.toLowerCase() === userEmail.toLowerCase()
-          ? { ...m, roles: isOtter ? ["admin"] : assignedRoles, lastLogin: today }
+          ? { ...m, roles: (isOtter ? ["admin"] : assignedRoles) as UserRole[], lastLogin: today }
           : m
       )
     );

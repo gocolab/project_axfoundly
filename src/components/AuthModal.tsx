@@ -57,7 +57,7 @@ export default function AuthModal({
               로그인
             </h2>
             <p className="text-xs text-brand-on-surface-variant mt-1">
-              Google 계정으로 AI로 창업하라 플랫폼에 접속하세요
+              Google 계정으로 로그인 또는 간편 가입을 진행하세요
             </p>
           </div>
 

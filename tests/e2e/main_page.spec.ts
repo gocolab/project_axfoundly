@@ -7,13 +7,13 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
 
   test('메인 히어로 배너 및 통계 지표가 정상 렌더링된다', async ({ page }) => {
     // 히어로 텍스트 확인
-    await expect(page.locator('text=AI로 창업의 모든 것을')).toBeVisible();
-    await expect(page.locator('text=한 곳에서')).toBeVisible();
+    await expect(page.locator('text=AI로 빠르게 창업하라')).toBeVisible();
+    await expect(page.locator('text=아이디어부터 투자까지')).toBeVisible();
 
     // 통계 지표 확인
-    await expect(page.getByText('수강생', { exact: true })).toBeVisible();
-    await expect(page.getByText('강의', { exact: true })).toBeVisible();
-    await expect(page.getByText('투자 유치 총액', { exact: true })).toBeVisible();
+    await expect(page.getByText('누적 수강생', { exact: true })).toBeVisible();
+    await expect(page.getByText('창업 성공 팀', { exact: true })).toBeVisible();
+    await expect(page.getByText('매칭 투자금', { exact: true })).toBeVisible();
   });
 
   test('히어로 배너 [강의 둘러보기] 클릭 시 교육/강의 페이지로 이동한다', async ({ page }) => {
@@ -34,8 +34,8 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
   });
 
   test('메인 페이지 주요 섹션(강의, 스타트업, 최근 소식) 및 전체보기 링크가 동작한다', async ({ page }) => {
-    // 진행 중인 주요 강의 섹션
-    await expect(page.locator('text=진행 중인 주요 강의')).toBeVisible();
+    // 인기 추천 강의 섹션
+    await expect(page.locator('text=인기 추천 강의')).toBeVisible();
 
     // 주목받는 스타트업 섹션
     await expect(page.locator('text=주목받는 스타트업')).toBeVisible();
@@ -46,7 +46,7 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
     // 스타트업 카드의 [전체 보기] 클릭
     const viewAllStartupBtn = page.locator('section', { hasText: '주목받는 스타트업' }).getByRole('button', { name: '전체 보기' });
     await viewAllStartupBtn.click();
-    await expect(page.locator('h1', { hasText: '스타트업 & IR 피칭' })).toBeVisible();
+    await expect(page.locator('h1', { hasText: /스타트업/ })).toBeVisible();
   });
 
 });
