@@ -1,13 +1,46 @@
 import { Router } from "express";
 import { db } from "../db.js";
+import { classifyContent } from "../services/aiClassifier.js";
 import type { Course, PaymentRecord, Notification, Review } from "../../src/types.js";
 
 const router = Router();
 
+// GET /api/courses/categories (실시간 등록된 강의 기반 인기 카테고리 및 태그 집계)
+router.get("/categories", (req, res) => {
+  const courses = db.get("courses") || [];
+
+  const categoryCounts: Record<string, number> = {};
+  const tagCounts: Record<string, number> = {};
+
+  courses.forEach((c) => {
+    if (c.category) {
+      categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+    }
+    if (Array.isArray(c.tags)) {
+      c.tags.forEach((tag) => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    }
+  });
+
+  const popularCategories = Object.keys(categoryCounts).sort(
+    (a, b) => categoryCounts[b] - categoryCounts[a]
+  );
+  const popularTags = Object.keys(tagCounts).sort(
+    (a, b) => tagCounts[b] - tagCounts[a]
+  );
+
+  res.json({
+    categories: ["전체", ...popularCategories],
+    popularTags,
+  });
+});
+
 // GET /api/courses
 router.get("/", (req, res) => {
-  const { category, search, page, limit } = req.query as {
+  const { category, tag, search, page, limit } = req.query as {
     category?: string;
+    tag?: string;
     search?: string;
     page?: string;
     limit?: string;
@@ -19,13 +52,19 @@ router.get("/", (req, res) => {
     courses = courses.filter((c) => c.category === category);
   }
 
+  if (tag && tag !== "전체") {
+    courses = courses.filter((c) => c.tags?.includes(tag));
+  }
+
   if (search) {
     const q = search.toLowerCase();
     courses = courses.filter(
       (c) =>
         c.title.toLowerCase().includes(q) ||
         c.description.toLowerCase().includes(q) ||
-        c.instructor.toLowerCase().includes(q)
+        c.instructor.toLowerCase().includes(q) ||
+        c.category?.toLowerCase().includes(q) ||
+        c.tags?.some((t) => t.toLowerCase().includes(q))
     );
   }
 
@@ -53,59 +92,77 @@ router.get("/:id", (req, res) => {
   res.json({ course });
 });
 
-// POST /api/courses (Create or update course)
-router.post("/", (req, res) => {
-  const newCourseData = req.body as Partial<Course>;
-  if (!newCourseData.title) {
-    return res.status(400).json({ error: "Course title is required" });
-  }
-
-  const newCourse: Course = {
-    id: newCourseData.id || `c-${Date.now()}`,
-    title: newCourseData.title,
-    description: newCourseData.description || "",
-    category: newCourseData.category || "AI 모델링",
-    instructor: newCourseData.instructor || "김소현",
-    instructorAvatar: newCourseData.instructorAvatar || "",
-    instructorTitle: newCourseData.instructorTitle || "전문 멘토 강사",
-    price: Number(newCourseData.price) || 490000,
-    discountedPrice: newCourseData.discountedPrice ? Number(newCourseData.discountedPrice) : undefined,
-    thumbnail: newCourseData.thumbnail || "",
-    rating: 5.0,
-    reviewCount: 0,
-    studentCount: 0,
-    status: newCourseData.status || "모집중",
-    isEnrolled: false,
-    progress: 0,
-    schedule: newCourseData.schedule || {
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-      daysOfWeek: ["화", "목"],
-      timeSlot: "19:30 ~ 21:30",
-      totalSessions: 8,
-      scheduleType: "stepping_stone",
-    },
-    curriculum: newCourseData.curriculum || [],
-    reviews: [],
-  };
-
-  db.update("courses", (courses) => {
-    const idx = courses.findIndex((c) => c.id === newCourse.id);
-    if (idx >= 0) {
-      const updated = [...courses];
-      updated[idx] = { ...updated[idx], ...newCourse };
-      return updated;
+// POST /api/courses (Create or update course with AI Auto-Classification)
+router.post("/", async (req, res) => {
+  try {
+    const newCourseData = req.body as Partial<Course>;
+    if (!newCourseData.title) {
+      return res.status(400).json({ error: "Course title is required" });
     }
-    return [newCourse, ...courses];
-  });
 
-  // Increment active courses stat
-  db.update("stats", (stats) => ({
-    ...stats,
-    activeCourses: stats.activeCourses + 1,
-  }));
+    const curriculumSummary = (newCourseData.curriculum || [])
+      .map((item) => `${item.title}: ${item.description}`)
+      .join("\n");
 
-  res.status(201).json({ course: newCourse });
+    // 🤖 AI 본문 기반 자동 카테고리/태그/요약 생성 (100% 자동)
+    const aiResult = await classifyContent("course", {
+      title: newCourseData.title,
+      description: newCourseData.description,
+      curriculumSummary,
+    });
+
+    const newCourse: Course = {
+      id: newCourseData.id || `c-${Date.now()}`,
+      title: newCourseData.title,
+      description: newCourseData.description || "",
+      category: aiResult.category, // AI 자동 분류 카테고리
+      tags: aiResult.tags, // AI 자동 추출 키워드 태그
+      aiSummary: aiResult.aiSummary, // AI 요약
+      instructor: newCourseData.instructor || "김소현",
+      instructorAvatar: newCourseData.instructorAvatar || "",
+      instructorTitle: newCourseData.instructorTitle || "전문 멘토 강사",
+      price: Number(newCourseData.price) || 490000,
+      discountedPrice: newCourseData.discountedPrice ? Number(newCourseData.discountedPrice) : undefined,
+      thumbnail: newCourseData.thumbnail || "",
+      rating: 5.0,
+      reviewCount: 0,
+      studentCount: 0,
+      status: newCourseData.status || "모집중",
+      isEnrolled: false,
+      progress: 0,
+      schedule: newCourseData.schedule || {
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+        daysOfWeek: ["화", "목"],
+        timeSlot: "19:30 ~ 21:30",
+        totalSessions: 8,
+        scheduleType: "stepping_stone",
+      },
+      curriculum: newCourseData.curriculum || [],
+      reviews: [],
+    };
+
+    db.update("courses", (courses) => {
+      const idx = courses.findIndex((c) => c.id === newCourse.id);
+      if (idx >= 0) {
+        const updated = [...courses];
+        updated[idx] = { ...updated[idx], ...newCourse };
+        return updated;
+      }
+      return [newCourse, ...courses];
+    });
+
+    // Increment active courses stat
+    db.update("stats", (stats) => ({
+      ...stats,
+      activeCourses: stats.activeCourses + 1,
+    }));
+
+    res.status(201).json({ course: newCourse });
+  } catch (error: any) {
+    console.error("[Courses API] POST / error:", error);
+    res.status(500).json({ error: "강의 등록에 실패했습니다." });
+  }
 });
 
 // POST /api/courses/:id/enroll (Enroll & Pay)

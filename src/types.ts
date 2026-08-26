@@ -96,7 +96,9 @@ export interface Course {
   id: string;
   title: string;
   description: string;
-  category: "AI 모델링" | "비즈니스 기획" | "마케팅" | "개발" | "디자인";
+  category: string; // AI가 자동 분류한 카테고리 (예: "AI 모델링", "비즈니스 기획", "바이오헬스" 등)
+  tags?: string[]; // AI가 자동 추출한 키워드 태그
+  aiSummary?: string; // AI가 생성한 1줄 요약
   instructor: string;
   instructorAvatar: string;
   instructorTitle?: string;
@@ -156,7 +158,9 @@ export interface IRProject {
   title: string;
   oneLiner: string;
   description: string;
-  field: "AI/ML" | "핀테크" | "헬스케어" | "에듀테크" | "커머스" | "SaaS";
+  field: string; // AI가 자동 부여한 산업 카테고리 (예: "AI/딥테크", "바이오·헬스", "핀테크" 등 무한 확장)
+  tags?: string[]; // AI가 본문에서 자동 추출한 핵심 키워드 태그 목록
+  aiSummary?: string; // AI가 생성한 1줄 요약
   thumbnail: string;
   demoVideoUrl?: string; // 동작/시연 영상 URL (YouTube / Loom)
   isAnonymous?: boolean; // 비실명 모드 활성화 여부
@@ -356,4 +360,3 @@ export interface NDAAgreement {
   status: "서명완료" | "검토중";
   termsSummary: string;
 }
-

@@ -230,33 +230,25 @@ export default function ProjectCreateEditModal({
             </div>
           </div>
 
-          {/* Title & Field */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="font-semibold text-white block mb-1">프로젝트 타이틀 *</label>
-              <input
-                type="text"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="예: 법률 문서를 위한 초정밀 RAG 분석 엔진"
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary"
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-white block mb-1">분야</label>
-              <select
-                value={field}
-                onChange={(e) => setField(e.target.value as IRProject["field"])}
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary"
-              >
-                {["AI/ML", "핀테크", "헬스케어", "에듀테크", "커머스", "SaaS"].map((f) => (
-                  <option key={f} value={f} className="bg-brand-surface">
-                    {f}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Title */}
+          <div>
+            <label className="font-semibold text-white block mb-1">프로젝트 타이틀 *</label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="예: 법률 문서를 위한 초정밀 RAG 분석 엔진"
+              className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary"
+            />
+          </div>
+
+          {/* AI Auto-Classification Info Banner */}
+          <div className="p-3 bg-gradient-to-r from-brand-primary/10 via-brand-secondary/10 to-transparent border border-brand-primary/20 rounded-xl flex items-center gap-2.5">
+            <Sparkles size={16} className="text-brand-primary shrink-0" />
+            <p className="text-[11px] text-brand-on-surface-variant leading-relaxed">
+              <strong className="text-brand-primary font-semibold">🤖 100% AI 자율 분류 & 태깅:</strong> 본문 내용을 분석하여 적합한 산업 분야(Category)와 검색 키워드 태그가 백엔드에서 자동 생성됩니다.
+            </p>
           </div>
 
           {/* One-Liner */}

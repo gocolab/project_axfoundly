@@ -21,6 +21,7 @@ import {
   CheckCircle,
   Share2,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal } from "../types";
 import Pagination from "./common/Pagination";
@@ -101,6 +102,7 @@ export default function IRPage({
     }
   }, [initialProjectId, projects]);
   const [activeField, setActiveField] = React.useState<string>("전체");
+  const [activeTag, setActiveTag] = React.useState<string | null>(null);
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
@@ -121,17 +123,38 @@ export default function IRPage({
   const [applicantNote, setApplicantNote] = React.useState("");
   const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
 
-  const fields = ["전체", "AI/ML", "핀테크", "헬스케어", "에듀테크", "커머스", "SaaS"];
+  const dynamicFields = React.useMemo(() => {
+    const fieldSet = new Set<string>();
+    projects.forEach((p) => {
+      if (p.field) fieldSet.add(p.field);
+    });
+    return ["전체", ...Array.from(fieldSet)];
+  }, [projects]);
+
+  const popularTags = React.useMemo(() => {
+    const tagCount: Record<string, number> = {};
+    projects.forEach((p) => {
+      p.tags?.forEach((t) => {
+        tagCount[t] = (tagCount[t] || 0) + 1;
+      });
+    });
+    return Object.keys(tagCount).sort((a, b) => tagCount[b] - tagCount[a]).slice(0, 8);
+  }, [projects]);
 
   // Filter projects
   const filtered = projects.filter((p) => {
     const matchField = activeField === "전체" || p.field === activeField;
+    const matchTag = !activeTag || p.tags?.includes(activeTag);
+    const q = searchText.toLowerCase();
     const matchSearch =
-      p.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.oneLiner.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.solution.toLowerCase().includes(searchText.toLowerCase());
-    return matchField && matchSearch;
+      !searchText ||
+      p.teamName.toLowerCase().includes(q) ||
+      p.title.toLowerCase().includes(q) ||
+      p.oneLiner.toLowerCase().includes(q) ||
+      p.solution.toLowerCase().includes(q) ||
+      p.field?.toLowerCase().includes(q) ||
+      p.tags?.some((t) => t.toLowerCase().includes(q));
+    return matchField && matchTag && matchSearch;
   });
 
   // Pagination calculation
@@ -143,7 +166,7 @@ export default function IRPage({
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [activeField, searchText]);
+  }, [activeField, activeTag, searchText]);
 
   // When project changes, sync anonymous state
   React.useEffect(() => {
@@ -267,6 +290,20 @@ export default function IRPage({
                 <p className="text-sm text-brand-on-surface-variant mt-3 leading-relaxed">
                   {selectedProject.oneLiner}
                 </p>
+
+                {/* AI 자동 추출 태그 목록 */}
+                {selectedProject.tags && selectedProject.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {selectedProject.tags.map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-[#6366f1]/15 text-[#a5b4fc] border border-[#6366f1]/30 font-medium"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -704,7 +741,7 @@ export default function IRPage({
         {/* Row 1: 분야 필터 + 등록 버튼 */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-2 flex-wrap">
-            {fields.map((f) => (
+            {dynamicFields.map((f) => (
               <button
                 key={f}
                 onClick={() => setActiveField(f)}
@@ -734,7 +771,7 @@ export default function IRPage({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
             <input
               type="text"
-              placeholder="스타트업명, 아이템 검색..."
+              placeholder="스타트업명, 아이템, 태그 검색..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
@@ -752,6 +789,40 @@ export default function IRPage({
             </div>
           )}
         </div>
+
+        {/* Row 3: 인기 트렌딩 태그 클라우드 */}
+        {popularTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-brand-border/20">
+            <span className="text-[11px] font-semibold text-brand-on-surface-variant flex items-center gap-1">
+              <Sparkles size={12} className="text-brand-primary" /> 트렌딩 키워드:
+            </span>
+            {popularTags.map((tag) => {
+              const isSelected = activeTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setActiveTag(isSelected ? null : tag)}
+                  className={`text-[11px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 ${
+                    isSelected
+                      ? "bg-brand-primary/20 text-brand-primary border-brand-primary font-bold shadow-sm"
+                      : "bg-brand-surface-low border-brand-border/60 text-slate-400 hover:text-white hover:border-brand-border"
+                  }`}
+                >
+                  #{tag}
+                  {isSelected && <X size={10} className="ml-0.5" />}
+                </button>
+              );
+            })}
+            {activeTag && (
+              <button
+                onClick={() => setActiveTag(null)}
+                className="text-[10px] text-brand-on-surface-variant hover:text-white underline ml-1 cursor-pointer"
+              >
+                전체보기
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Project Grid */}
@@ -803,6 +874,20 @@ export default function IRPage({
                 <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
                   {project.oneLiner}
                 </p>
+
+                {/* AI 자동 추출 태그 뱃지 */}
+                {project.tags && project.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {project.tags.slice(0, 3).map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/30"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

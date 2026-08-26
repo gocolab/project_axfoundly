@@ -173,6 +173,8 @@ erDiagram
     uuid id PK
     uuid user_id FK
     text profile_text
+  }
+
   code_groups ||--o{ common_codes : "코드 항목"
 
   code_groups {

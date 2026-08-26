@@ -63,6 +63,7 @@ export default function CoursePage({
     }
   }, [initialCourseId, courses]);
   const [activeCategory, setActiveCategory] = React.useState<string>("전체");
+  const [activeTag, setActiveTag] = React.useState<string | null>(null);
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
@@ -74,16 +75,37 @@ export default function CoursePage({
   const [selectedCalendarDate, setSelectedCalendarDate] = React.useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = React.useState<Date>(new Date(2025, 8, 1)); // Sep 2025
 
-  const categories = ["전체", "AI 모델링", "비즈니스 기획", "마케팅", "개발", "디자인"];
+  const dynamicCategories = React.useMemo(() => {
+    const catSet = new Set<string>();
+    courses.forEach((c) => {
+      if (c.category) catSet.add(c.category);
+    });
+    return ["전체", ...Array.from(catSet)];
+  }, [courses]);
+
+  const popularTags = React.useMemo(() => {
+    const tagCount: Record<string, number> = {};
+    courses.forEach((c) => {
+      c.tags?.forEach((t) => {
+        tagCount[t] = (tagCount[t] || 0) + 1;
+      });
+    });
+    return Object.keys(tagCount).sort((a, b) => tagCount[b] - tagCount[a]).slice(0, 8);
+  }, [courses]);
 
   // Filtered courses
   const filtered = courses.filter((c) => {
     const matchCategory = activeCategory === "전체" || c.category === activeCategory;
+    const matchTag = !activeTag || c.tags?.includes(activeTag);
+    const q = searchText.toLowerCase();
     const matchSearch =
-      c.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      c.description.toLowerCase().includes(searchText.toLowerCase()) ||
-      c.instructor.toLowerCase().includes(searchText.toLowerCase());
-    return matchCategory && matchSearch;
+      !searchText ||
+      c.title.toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q) ||
+      c.instructor.toLowerCase().includes(q) ||
+      c.category?.toLowerCase().includes(q) ||
+      c.tags?.some((t) => t.toLowerCase().includes(q));
+    return matchCategory && matchTag && matchSearch;
   });
 
   // Pagination calculation
@@ -96,7 +118,7 @@ export default function CoursePage({
   // Reset page when category or search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, searchText]);
+  }, [activeCategory, activeTag, searchText]);
 
   // Calendar generation helpers
   const getDaysInMonth = (year: number, month: number) => {
@@ -190,6 +212,20 @@ export default function CoursePage({
                 <p className="text-sm text-slate-400 mt-2.5 leading-relaxed">
                   {selectedCourse.description}
                 </p>
+
+                {/* AI 자동 추출 태그 목록 */}
+                {selectedCourse.tags && selectedCourse.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {selectedCourse.tags.map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-500/30 font-medium"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Course Metadata Banner */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 p-4 bg-[#0b1329]/90 rounded-xl border border-slate-800/80">
@@ -884,7 +920,7 @@ export default function CoursePage({
         {/* Row 1: 카테고리 필터 + 생성 버튼 */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-2 flex-wrap">
-            {categories.map((cat) => (
+            {dynamicCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -914,7 +950,7 @@ export default function CoursePage({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
             <input
               type="text"
-              placeholder="강의명, 강사명 검색..."
+              placeholder="강의명, 강사명, 태그 검색..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full"
@@ -933,6 +969,40 @@ export default function CoursePage({
             </div>
           )}
         </div>
+
+        {/* Row 3: 인기 실무 스킬 태그 클라우드 */}
+        {popularTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-brand-border/20">
+            <span className="text-[11px] font-semibold text-brand-on-surface-variant flex items-center gap-1">
+              <Sparkles size={12} className="text-purple-400" /> 실무 스킬 태그:
+            </span>
+            {popularTags.map((tag) => {
+              const isSelected = activeTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setActiveTag(isSelected ? null : tag)}
+                  className={`text-[11px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 ${
+                    isSelected
+                      ? "bg-purple-500/20 text-purple-300 border-purple-500 font-bold shadow-sm"
+                      : "bg-brand-surface-low border-brand-border/60 text-slate-400 hover:text-white hover:border-brand-border"
+                  }`}
+                >
+                  #{tag}
+                  {isSelected && <X size={10} className="ml-0.5" />}
+                </button>
+              );
+            })}
+            {activeTag && (
+              <button
+                onClick={() => setActiveTag(null)}
+                className="text-[10px] text-brand-on-surface-variant hover:text-white underline ml-1 cursor-pointer"
+              >
+                전체보기
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Course Grid */}
@@ -985,6 +1055,20 @@ export default function CoursePage({
                   <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
                     {course.description}
                   </p>
+
+                  {/* AI 자동 추출 태그 뱃지 */}
+                  {course.tags && course.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {course.tags.slice(0, 3).map((tag, tIdx) => (
+                        <span
+                          key={tIdx}
+                          className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/30"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Schedule Details Badge */}
                   <div className="mt-3.5 p-3 bg-[#0b1329]/90 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">

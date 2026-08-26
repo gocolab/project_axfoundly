@@ -9,6 +9,7 @@
 
 | 날짜 | 문서 | 항목 | 이전 결정 | 새 결정 | 변경 이유 |
 |---|---|---|---|---|---|
+| 2026-08-26 | coding/04_DATABASE.md, specs/14_LLM_SPEC.md, specs/10_API_SPEC.md, server/* | 강의 카테고리 및 IR 산업 분야: 공통 코드 배제 및 100% 백엔드 AI 자율 분류·태깅 채택 | 모든 카테고리/산업분야를 공통 코드 테이블로 관리 | 기하급수적으로 확장되는 강의 분야/IR 산업분야는 공통 코드에서 제외하고, 사용자가 입력한 본문 기반으로 백엔드 AI(LLM)가 `category`, `tags`, `aiSummary`를 100% 자동 추출·저장. (수동 태그 편집 제외) | 신기술/신산업 무한 확장 지원, 공통 코드 테이블 비대화 및 관리자 운영 공수 제로화, 사용자 입력 폼 다이어트(작성 허들 최소화), 실시간 데이터 집계(Aggregation) 기반 동적 필터 제공 |
 | 2026-08-26 | coding/04_DATABASE.md, specs/10_API_SPEC.md, server/*, src/* | 공통 코드(Common Code) 관리 체계 도입 및 1차 적용 (투자단계, 고용형태) | 하드코딩된 문자열 유니온 및 화면/서버별 분산 관리 | `code_groups`, `common_codes` 데이터베이스 모델 및 `/api/common/codes` API 구축, 1차로 투자단계(`INVESTMENT_STAGE`)와 고용형태(`EMPLOYMENT_TYPE`) 동적 연동 | 새 상태/분류값 추가 시 배포 없는 무중단 운영 지원, 프론트-서버-DB 간 데이터 정합성 보장, UI 배지 색상 및 정렬순서 메타데이터 통합 |
 | 2026-08-26 | types.ts, db.ts, auth.ts, IRPage.tsx, AuthModal.tsx | assignedRoles 완전 폐지 & 권한 단순화 | `assignedRoles`(`course_instructor`, `ir_owner`, `investor_active`) 별도 자격 관리 및 투자자 권한 제약 | `assignedRoles` 완전 폐지 및 `roles`(`member`, `admin`)로 단일화. 로그인한 모든 회원에게 투자 제안 및 피칭룸 전면 개방, 데모 로그인도 일반회원/관리자 2종으로 정리 | 올인원 창업 생태계에서 불필요한 자격 인증 장벽을 없애고, 데이터 기반(Data-Driven)으로 간소화하여 시스템 복잡도 및 상태 불일치 해소 |
 | 2026-08-26 | components/MyPage.tsx, docs/bizs/menus.md | 마이페이지 메뉴 구조 개편 | 수강생/강사/투자자 역할(Role)별 2중 탭 분리 대시보드 | 역할 분리 없는 기능/활동 중심 통합 6대 메뉴 (`마이 홈`, `내 강의실`, `내 스타트업`, `강의 개설 & 운영`, `관심 스타트업 & 투자`, `결제 및 계정 설정`) | "한 명의 사용자가 학습자이자 창업가, 강사, 투자자"인 올인원 창업 생태계에 맞춰 권한 전환 장벽 및 2중 탭의 인지 부하를 해소하고 1클릭 워크스페이스 제공 |

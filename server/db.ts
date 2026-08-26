@@ -66,6 +66,8 @@ const SEED_COURSES: Course[] = [
     title: "AI 프로덕트 매니저 부트캠프",
     description: "GPT·Claude·Gemini 등 LLM 활용 제품 기획부터 런칭까지. 실무 프로젝트 중심 6주 12회차 집중 과정.",
     category: "AI 모델링",
+    tags: ["AI프로덕트", "프롬프트", "RAG", "멀티모달", "AI에이전트"],
+    aiSummary: "LLM/RAG 파이프라인부터 자율 에이전트까지 실전 AI 상용 프로덕트 런칭 실습",
     instructor: "김소현",
     instructorTitle: "전) 글로벌 테크 유니콘 AI PM 리드",
     instructorAvatar: "",
@@ -142,6 +144,8 @@ const SEED_COURSES: Course[] = [
     title: "스타트업 비즈니스 모델 설계",
     description: "린 캔버스부터 유닛 이코노믹스까지. 투자자를 설득하는 비즈니스 모델 완성 4주 8회차 과정.",
     category: "비즈니스 기획",
+    tags: ["린캔버스", "BM설계", "TAM-SAM-SOM", "유닛이코노믹스"],
+    aiSummary: "린 캔버스부터 유닛 이코노믹스까지 투자자를 설득하는 비즈니스 모델 완성 실무",
     instructor: "정우석",
     instructorTitle: "전) 시드 VC 심사역 & 엑셀러레이터 대표",
     instructorAvatar: "",
@@ -175,7 +179,9 @@ const SEED_COURSES: Course[] = [
     id: "c3",
     title: "그로스 해킹 마스터클래스",
     description: "데이터 기반 성장 전략. 퍼널 분석, A/B 테스트, 바이럴 루프 설계 실전 6주.",
-    category: "마케팅",
+    category: "마케팅·그로스",
+    tags: ["그로스해킹", "AARRR", "A/B테스트", "GA4"],
+    aiSummary: "데이터 기반 AARRR 퍼널 분석 및 바이럴 루프 설계 실전 마스터클래스",
     instructor: "한지민",
     instructorAvatar: "",
     price: 390000,
@@ -205,7 +211,9 @@ const SEED_COURSES: Course[] = [
     id: "c4",
     title: "풀스택 AI 웹앱 개발",
     description: "Next.js 15, FastAPI, LangChain을 활용한 상용 수준의 AI 웹 서비스 풀스택 구축.",
-    category: "개발",
+    category: "개발·IT",
+    tags: ["Next.js", "FastAPI", "LangChain", "풀스택AI"],
+    aiSummary: "Next.js 15와 FastAPI, LangChain을 활용한 상용 수준의 AI 웹 서비스 풀스택 구축",
     instructor: "강민수",
     instructorAvatar: "",
     price: 790000,
@@ -234,7 +242,9 @@ const SEED_COURSES: Course[] = [
     id: "c5",
     title: "AI 네이티브 UI/UX 디자인",
     description: "생성형 AI 인터페이스(CUI, Agent UI) 디자인 패턴과 Figma 실전 프로토타이핑.",
-    category: "디자인",
+    category: "디자인/UX",
+    tags: ["CUI", "AgentUI", "Figma", "AI인터페이스"],
+    aiSummary: "생성형 AI 인터페이스(CUI, Agent UI) 디자인 패턴과 Figma 실전 프로토타이핑",
     instructor: "윤서연",
     instructorAvatar: "",
     price: 450000,
@@ -297,7 +307,9 @@ const SEED_IR_PROJECTS: IRProject[] = [
     title: "법률·금융 문서를 위한 초정밀 RAG 분석 엔진",
     oneLiner: "복잡한 500페이지 계약서·규제 문서를 3초 만에 검토하고 리스크를 탐지하는 AI",
     description: "복잡한 법률·금융 규제 문서를 고도화된 계층형 RAG와 멀티모달 OCR로 3초 만에 분석하여 계약 리스크와 위반 조항을 즉각 리포팅합니다.",
-    field: "AI/ML",
+    field: "AI/딥테크",
+    tags: ["법률AI", "RAG", "B2B SaaS", "문서분석"],
+    aiSummary: "멀티모달 RAG 기반 복잡한 기업 계약서 및 법률 문서 10초 분석 솔루션",
     thumbnail: "",
     demoVideoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     isAnonymous: false,
@@ -344,7 +356,9 @@ const SEED_IR_PROJECTS: IRProject[] = [
     title: "감정 반응형 한국어 초저지연 음성 AI 에이전트",
     oneLiner: "고객 감정을 실시간 감지하여 톤을 조절하는 B2B CS/아웃바운드 음성 AI 솔루션",
     description: "200ms 미만의 초저지연 실시간 음성 대화 파이프라인과 감정 인식 알고리즘을 결합한 지능형 컨택센터 솔루션입니다.",
-    field: "AI/ML",
+    field: "AI/딥테크",
+    tags: ["음성AI", "LLM에이전트", "초저지연", "컨택센터"],
+    aiSummary: "200ms 초저지연 감정 반응형 B2B CS/아웃바운드 음성 AI 에이전트",
     thumbnail: "",
     isAnonymous: true,
     businessModel: "통화 시간당 종량 과금(분당 120원) + 월 기본 구독료",
@@ -377,7 +391,9 @@ const SEED_IR_PROJECTS: IRProject[] = [
     title: "1차 병원용 피부 병변 3초 스크리닝 보조 솔루션",
     oneLiner: "스마트폰 카메라로 촬영한 피부 질환을 98% 정확도로 1차 판독하는 의사용 AI 보조 툴",
     description: "스마트폰 및 전용 렌즈로 촬영한 이미지를 딥러닝 비전 알고리즘으로 분석하여 의사의 1차 진료를 보조합니다.",
-    field: "헬스케어",
+    field: "바이오·헬스케어",
+    tags: ["의료AI", "비전AI", "스크리닝", "디지털헬스"],
+    aiSummary: "스마트폰 카메라 기반 피부 질환 3초 1차 스크리닝 의사용 보조 솔루션",
     thumbnail: "",
     isAnonymous: false,
     businessModel: "병원당 월 구독료(50만원) + 분석 건당 마이크로 과금",
@@ -398,6 +414,8 @@ const SEED_IR_PROJECTS: IRProject[] = [
     oneLiner: "학생의 취약 개념을 실시간 추적하여 1초 만에 맞춤 변형 문제를 생성하는 에듀테크",
     description: "초중고 학생의 오답 데이터를 학습하여 취약한 수학 개념을 정밀 타깃팅하는 문제 생성 엔진입니다.",
     field: "에듀테크",
+    tags: ["생성형AI", "맞춤형학습", "수학튜터", "지식그래프"],
+    aiSummary: "취약 개념 실시간 추적 및 맞춤형 변형 문제 생성 에듀테크 엔진",
     thumbnail: "",
     isAnonymous: false,
     businessModel: "B2C 학부모 구독(월 39,000원) / B2B 학원 솔루션(학생당 월 15,000원)",
@@ -417,7 +435,9 @@ const SEED_IR_PROJECTS: IRProject[] = [
     title: "중소 이커머스를 위한 AI 수요예측 & 자동 발주",
     oneLiner: "트렌드·날씨·이벤트를 종합 분석해 재고 폐기율을 40% 줄여주는 공급망 AI",
     description: "중소 셀러들의 주문 데이터와 외부 트렌드 신호를 결합하여 안전재고를 계산하고 발주를 자동화합니다.",
-    field: "커머스",
+    field: "커머스/플랫폼",
+    tags: ["수요예측", "공급망관리", "이커머스", "시계열AI"],
+    aiSummary: "트렌드·날씨 결합 다변량 시계열 AI 기반 중소 이커머스 자동 발주 솔루션",
     thumbnail: "",
     isAnonymous: false,
     businessModel: "스마트스토어/쿠팡 연동 월 구독료(월 99,000원) + 재고 절감 성과보수",
@@ -908,6 +928,50 @@ class Database {
             return rest;
           });
         }
+      }
+
+      // ── AI 메타데이터 자동 마이그레이션 (기존 레코드에 tags/aiSummary 자동 부여) ──
+      try {
+        const { classifyContent } = await import("./services/aiClassifier.js");
+        
+        let coursesMigrated = false;
+        for (const c of (this.cache.courses || [])) {
+          if (!c.tags || c.tags.length === 0 || !c.aiSummary) {
+            const res = await classifyContent("course", {
+              title: c.title,
+              description: c.description,
+            });
+            c.tags = c.tags && c.tags.length > 0 ? c.tags : res.tags;
+            c.aiSummary = c.aiSummary || res.aiSummary;
+            coursesMigrated = true;
+          }
+        }
+        if (coursesMigrated) {
+          await this.syncToMongo("courses");
+          console.log("[DB Migration] Courses successfully enriched with AI tags and summary");
+        }
+
+        let irMigrated = false;
+        for (const p of (this.cache.irProjects || [])) {
+          if (!p.tags || p.tags.length === 0 || !p.aiSummary) {
+            const res = await classifyContent("ir", {
+              title: p.title,
+              description: p.description,
+              oneLiner: p.oneLiner,
+              problem: p.problem,
+              solution: p.solution,
+            });
+            p.tags = p.tags && p.tags.length > 0 ? p.tags : res.tags;
+            p.aiSummary = p.aiSummary || res.aiSummary;
+            irMigrated = true;
+          }
+        }
+        if (irMigrated) {
+          await this.syncToMongo("irProjects");
+          console.log("[DB Migration] IR projects successfully enriched with AI tags and summary");
+        }
+      } catch (migError) {
+        console.warn("[DB Migration] AI metadata migration skipped or encountered non-critical error:", migError);
       }
 
       this.initialized = true;

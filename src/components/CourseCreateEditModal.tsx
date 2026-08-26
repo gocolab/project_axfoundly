@@ -355,31 +355,23 @@ export default function CourseCreateEditModal({
         {createStep === "detail_edit" && (
           <div className="flex flex-col gap-5 animate-fadeIn">
             {/* Basic info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">강의 제목</label>
-                <input
-                  type="text"
-                  value={courseTitle}
-                  onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="강의 제목을 입력하세요"
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">카테고리</label>
-                <select
-                  value={courseCategory}
-                  onChange={(e) => setCourseCategory(e.target.value as any)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors"
-                >
-                  <option value="AI 모델링">AI 모델링</option>
-                  <option value="비즈니스 기획">비즈니스 기획</option>
-                  <option value="마케팅">마케팅</option>
-                  <option value="개발">개발</option>
-                  <option value="디자인">디자인</option>
-                </select>
-              </div>
+            <div>
+              <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">강의 제목 *</label>
+              <input
+                type="text"
+                value={courseTitle}
+                onChange={(e) => setCourseTitle(e.target.value)}
+                placeholder="강의 제목을 입력하세요"
+                className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors"
+              />
+            </div>
+
+            {/* AI Auto-Classification Info Banner */}
+            <div className="p-3 bg-gradient-to-r from-purple-500/10 via-brand-primary/10 to-transparent border border-purple-500/20 rounded-xl flex items-center gap-2.5">
+              <Sparkles size={16} className="text-purple-400 shrink-0" />
+              <p className="text-[11px] text-brand-on-surface-variant leading-relaxed">
+                <strong className="text-purple-300 font-semibold">🤖 100% AI 자율 분류 & 태깅:</strong> 강의 제목과 커리큘럼 내용을 분석하여 적합한 교육 분야와 핵심 스킬 태그가 백엔드에서 100% 자동 생성됩니다.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
