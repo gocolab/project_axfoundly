@@ -204,6 +204,7 @@ export interface IRProject {
   aiSummary?: string; // AI가 생성한 1줄 요약
   thumbnail: string;
   demoVideoUrl?: string; // 동작/시연 영상 URL (YouTube / Loom)
+  prototypeUrl?: string; // Figma / 프로토타입 / 데모 사이트 URL
   isAnonymous?: boolean; // 비실명 모드 활성화 여부
   members: TeamMember[];
   businessModel: string;
@@ -214,6 +215,11 @@ export interface IRProject {
   hiringDetails?: HiringRoleDetail[];
   bookmarked?: boolean;
   investmentStage: "Pre-Seed" | "Seed" | "Pre-A" | "Series A" | string;
+  // 아이디어 제작 요청 연계 필드
+  originIdeaRequestId?: string;
+  originIdeaTitle?: string;
+  originProposalId?: string;
+  visibility?: "public" | "requester_only";
 }
 
 // ── Startup & IR Reverse Proposal (아이디어 제작 의뢰 & 빌더 역제안) ──
@@ -229,7 +235,11 @@ export interface IdeaProposal {
   estimatedWeeks: number;
   portfolioUrl?: string;
   contactEmail?: string;
-  status: "대기중" | "수락됨" | "거절됨";
+  demoVideoUrl?: string; // 목업/MVP 시연 영상 링크 (YouTube, Loom 등)
+  prototypeUrl?: string; // 프로토타입/데모 사이트 링크 (Figma, 배포 URL 등)
+  visibility: "public" | "requester_only"; // 스타트업 IR 목록 일반 공개 vs 발제자 전용 비공개
+  status: "대기중" | "선발(협의중)" | "최종채택" | "미선발" | "수락됨" | "거절됨";
+  linkedProjectId?: string; // 자동 생성/연결된 스타트업 IR 프로젝트 ID
   createdAt: string;
 }
 
@@ -243,6 +253,8 @@ export interface IdeaRequest {
   requiredRoles: string[];
   rewardType: "지분공유(코파운더)" | "개발보상" | "수익셰어" | "협의" | string;
   rewardDetail?: string;
+  submissionDeadline?: string; // 제안서 접수 마감일 (예: 2025-09-15)
+  selectionDate?: string; // 빌더 팀 선발 발표일 (예: 2025-09-20)
   requestedBy: {
     userId: string;
     userName: string;
@@ -250,8 +262,10 @@ export interface IdeaRequest {
   };
   upvotes: string[];
   upvoteCount: number;
-  status: "모집중" | "빌더제안중" | "매칭완료" | "마감";
-  matchedProjectId?: string;
+  status: "모집중" | "선발진행중" | "협의중" | "매칭완료" | "마감" | "빌더제안중";
+  selectedProposalIds?: string[]; // 복수 선발(협의 대상)된 제안서 ID 목록
+  matchedProjectId?: string; // 최종 매칭된 대표 IR 프로젝트 ID
+  matchedProjectIds?: string[]; // 연계된 IR 프로젝트 ID 목록
   proposals?: IdeaProposal[];
   createdAt: string;
   updatedAt?: string;

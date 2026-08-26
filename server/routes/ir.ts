@@ -106,7 +106,19 @@ router.get("/idea-requests", (req, res) => {
 // POST /api/ir/idea-requests (Create new request)
 router.post("/idea-requests", async (req, res) => {
   try {
-    const { title, problem, solutionConcept, category, tags, requiredRoles, rewardType, rewardDetail, requestedBy } = req.body;
+    const {
+      title,
+      problem,
+      solutionConcept,
+      category,
+      tags,
+      requiredRoles,
+      rewardType,
+      rewardDetail,
+      submissionDeadline,
+      selectionDate,
+      requestedBy,
+    } = req.body;
     if (!title || !problem || !solutionConcept) {
       return res.status(400).json({ error: "제목, 문제점, 솔루션 컨셉은 필수 항목입니다." });
     }
@@ -130,6 +142,8 @@ router.post("/idea-requests", async (req, res) => {
       requiredRoles: Array.isArray(requiredRoles) && requiredRoles.length ? requiredRoles : ["개발자", "디자이너"],
       rewardType: rewardType || "지분공유(코파운더)",
       rewardDetail: rewardDetail || "협의",
+      submissionDeadline: submissionDeadline || undefined,
+      selectionDate: selectionDate || undefined,
       requestedBy: requestedBy || {
         userId: "u-current",
         userName: "김수강생",
@@ -138,6 +152,8 @@ router.post("/idea-requests", async (req, res) => {
       upvotes: [requestedBy?.userId || "u-current"],
       upvoteCount: 1,
       status: "모집중",
+      selectedProposalIds: [],
+      matchedProjectIds: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -147,7 +163,7 @@ router.post("/idea-requests", async (req, res) => {
       id: `notif-${Date.now()}`,
       type: "team",
       title: "아이디어 제작 의뢰 등록 완료",
-      message: `'${title}' 아이디어 제작 의뢰가 성공적으로 등록되었습니다.`,
+      message: `'${title}' 아이디어 제작 의뢰가 성공적으로 등록되었습니다. (마감: ${submissionDeadline || "상시"})`,
       time: "방금 전",
       isRead: false,
     };
@@ -207,7 +223,7 @@ router.post("/idea-requests/:id/upvote", (req, res) => {
   res.json({ success: true, isUpvoted, request: updatedRequest });
 });
 
-// POST /api/ir/idea-requests/:id/proposals (Builder submits proposal)
+// POST /api/ir/idea-requests/:id/proposals (Builder submits proposal & auto-links to IRProject)
 router.post("/idea-requests/:id/proposals", (req, res) => {
   const { id } = req.params;
   const {
@@ -220,6 +236,9 @@ router.post("/idea-requests/:id/proposals", (req, res) => {
     estimatedWeeks = 4,
     portfolioUrl = "",
     contactEmail = "",
+    demoVideoUrl = "",
+    prototypeUrl = "",
+    visibility = "public",
   } = req.body;
 
   const request = (db.get("ideaRequests") || []).find((r) => r.id === id);
@@ -227,8 +246,47 @@ router.post("/idea-requests/:id/proposals", (req, res) => {
     return res.status(404).json({ error: "아이디어 요청을 찾을 수 없습니다." });
   }
 
+  const proposalId = `ip-${Date.now()}`;
+  const linkedProjectId = `ir-prop-${Date.now()}`;
+
+  // 1. Create linked IRProject in irProjects
+  const linkedProject: IRProject = {
+    id: linkedProjectId,
+    teamName: `${proposerName} 팀`,
+    title: `[${request.title.slice(0, 20)}...] ${proposerName} MVP`,
+    oneLiner: planSummary || request.solutionConcept.slice(0, 60),
+    description: `[아이디어 발제 과제 연동]\n${request.problem}\n\n[솔루션 및 빌더 개발 계획]\n${planSummary}`,
+    field: request.category,
+    tags: request.tags,
+    aiSummary: `아이디어 의뢰 연계 프로젝트 (${request.title}) - ${proposerName} 빌더팀`,
+    thumbnail: "",
+    demoVideoUrl: demoVideoUrl || undefined,
+    prototypeUrl: prototypeUrl || undefined,
+    originIdeaRequestId: request.id,
+    originIdeaTitle: request.title,
+    originProposalId: proposalId,
+    visibility: visibility as "public" | "requester_only",
+    members: [
+      {
+        name: proposerName,
+        role: "기술 총괄(CTO) / 빌더 리드",
+        avatar: proposerAvatar,
+        bio: teamSummary,
+      },
+    ],
+    businessModel: "B2B SaaS / 플랫폼 수수료",
+    problem: request.problem,
+    solution: request.solutionConcept,
+    isHiring: true,
+    hiringRoles: request.requiredRoles || ["풀스택 개발자"],
+    investmentStage: "Pre-Seed",
+  };
+
+  db.update("irProjects", (projects) => [linkedProject, ...(projects || [])]);
+
+  // 2. Create new IdeaProposal
   const newProposal: IdeaProposal = {
-    id: `ip-${Date.now()}`,
+    id: proposalId,
     requestId: id,
     proposerId,
     proposerName,
@@ -239,30 +297,86 @@ router.post("/idea-requests/:id/proposals", (req, res) => {
     estimatedWeeks: Number(estimatedWeeks) || 4,
     portfolioUrl,
     contactEmail,
+    demoVideoUrl: demoVideoUrl || undefined,
+    prototypeUrl: prototypeUrl || undefined,
+    visibility: visibility as "public" | "requester_only",
     status: "대기중",
+    linkedProjectId,
     createdAt: new Date().toISOString(),
   };
 
   db.update("ideaProposals", (list) => [newProposal, ...(list || [])]);
 
+  // 3. Update IdeaRequest status & matched project IDs
   db.update("ideaRequests", (list) =>
-    (list || []).map((r) => (r.id === id && r.status === "모집중" ? { ...r, status: "빌더제안중" } : r))
+    (list || []).map((r) => {
+      if (r.id === id) {
+        const currentMatched = r.matchedProjectIds || [];
+        const nextStatus = r.status === "모집중" ? "선발진행중" : r.status;
+        return {
+          ...r,
+          status: nextStatus,
+          matchedProjectIds: [...currentMatched, linkedProjectId],
+        };
+      }
+      return r;
+    })
   );
 
   const notif: Notification = {
     id: `notif-${Date.now()}`,
     type: "team",
-    title: "새로운 빌더 제작 제안서 도착",
-    message: `'${request.title}' 의뢰에 ${proposerName} 팀의 제작 제안서가 등록되었습니다.`,
+    title: "새로운 빌더 제작 제안서 도착 (IR 연동 완료)",
+    message: `'${request.title}' 의뢰에 ${proposerName} 팀의 제작 제안서가 등록되어 스타트업 IR에 연동되었습니다.`,
     time: "방금 전",
     isRead: false,
   };
   db.update("notifications", (notifs) => [notif, ...notifs]);
 
-  res.status(201).json({ success: true, proposal: newProposal });
+  res.status(201).json({ success: true, proposal: newProposal, project: linkedProject });
 });
 
-// POST /api/ir/idea-requests/:id/accept-proposal (Accept builder proposal & promote to IRProject)
+// POST /api/ir/idea-requests/:id/select-proposals (Multi-selection of proposals for negotiation)
+router.post("/idea-requests/:id/select-proposals", (req, res) => {
+  const { id } = req.params;
+  const { selectedProposalIds = [] } = req.body as { selectedProposalIds: string[] };
+
+  const request = (db.get("ideaRequests") || []).find((r) => r.id === id);
+  if (!request) {
+    return res.status(404).json({ error: "아이디어 요청을 찾을 수 없습니다." });
+  }
+
+  // Update proposals status
+  db.update("ideaProposals", (list) =>
+    (list || []).map((p) => {
+      if (p.requestId === id) {
+        if (selectedProposalIds.includes(p.id)) {
+          return { ...p, status: "선발(협의중)" };
+        } else if (p.status === "선발(협의중)") {
+          return { ...p, status: "대기중" };
+        }
+      }
+      return p;
+    })
+  );
+
+  // Update request status
+  const nextStatus = selectedProposalIds.length > 0 ? "협의중" : "선발진행중";
+  let updatedReq: IdeaRequest | null = null;
+  db.update("ideaRequests", (list) =>
+    (list || []).map((r) => {
+      if (r.id === id) {
+        updatedReq = { ...r, status: nextStatus, selectedProposalIds };
+        return updatedReq;
+      }
+      return r;
+    })
+  );
+
+  res.json({ success: true, request: updatedReq, selectedProposalIds });
+});
+
+// POST /api/ir/idea-requests/:id/accept-proposal (Finalize matching with specific proposal)
 router.post("/idea-requests/:id/accept-proposal", (req, res) => {
   const { id } = req.params;
   const { proposalId } = req.body;
@@ -278,55 +392,97 @@ router.post("/idea-requests/:id/accept-proposal", (req, res) => {
   db.update("ideaProposals", (list) =>
     (list || []).map((p) => {
       if (p.requestId === id) {
-        return p.id === proposalId ? { ...p, status: "수락됨" } : { ...p, status: "거절됨" };
+        return p.id === proposalId ? { ...p, status: "최종채택" } : { ...p, status: "미선발" };
       }
       return p;
     })
   );
 
-  // 2. Promote to IRProject in irProjects
-  const newProjectId = `ir-rev-${Date.now()}`;
-  const newProject: IRProject = {
-    id: newProjectId,
-    teamName: `${request.title.slice(0, 10)} 팀`,
-    title: request.title,
-    oneLiner: request.solutionConcept.slice(0, 60),
-    description: `${request.problem}\n\n[솔루션]\n${request.solutionConcept}\n\n[빌더 제안 플랜]\n${proposal.planSummary}`,
-    field: request.category,
-    tags: request.tags,
-    aiSummary: `아이디어 역제안 매칭 완료: ${request.requestedBy.userName} 발제자 x ${proposal.proposerName} 빌더팀`,
-    thumbnail: "",
-    members: [
-      { name: request.requestedBy.userName, role: "아이디어 발제 / 기획 리드", avatar: request.requestedBy.avatar },
-      { name: proposal.proposerName, role: "기술 총괄(CTO) / 빌더 리드", avatar: proposal.proposerAvatar }
-    ],
-    businessModel: "B2B / B2C 구독 및 수수료 모델",
-    problem: request.problem,
-    solution: request.solutionConcept,
-    isHiring: true,
-    hiringRoles: request.requiredRoles || ["풀스택 개발자"],
-    investmentStage: "Pre-Seed",
-  };
+  // 2. Find or create linked IRProject
+  const targetProjectId = proposal.linkedProjectId || `ir-rev-${Date.now()}`;
+  let targetProject = (db.get("irProjects") || []).find((p) => p.id === targetProjectId);
 
-  db.update("irProjects", (projects) => [newProject, ...projects]);
+  if (targetProject) {
+    // Add requester as founder to existing linked project
+    db.update("irProjects", (projects) =>
+      (projects || []).map((p) => {
+        if (p.id === targetProjectId) {
+          const members = p.members || [];
+          const hasRequester = members.some((m) => m.name === request.requestedBy.userName);
+          return {
+            ...p,
+            members: hasRequester
+              ? members
+              : [
+                  {
+                    name: request.requestedBy.userName,
+                    role: "아이디어 발제 / 기획 리드",
+                    avatar: request.requestedBy.avatar,
+                  },
+                  ...members,
+                ],
+            investmentStage: "Seed",
+            visibility: "public",
+          };
+        }
+        return p;
+      })
+    );
+    targetProject = (db.get("irProjects") || []).find((p) => p.id === targetProjectId);
+  } else {
+    // Create new project
+    const newProject: IRProject = {
+      id: targetProjectId,
+      teamName: `${request.title.slice(0, 10)} 팀`,
+      title: request.title,
+      oneLiner: request.solutionConcept.slice(0, 60),
+      description: `${request.problem}\n\n[솔루션]\n${request.solutionConcept}\n\n[빌더 제안 플랜]\n${proposal.planSummary}`,
+      field: request.category,
+      tags: request.tags,
+      aiSummary: `아이디어 역제안 매칭 완료: ${request.requestedBy.userName} 발제자 x ${proposal.proposerName} 빌더팀`,
+      thumbnail: "",
+      demoVideoUrl: proposal.demoVideoUrl,
+      prototypeUrl: proposal.prototypeUrl,
+      originIdeaRequestId: request.id,
+      originIdeaTitle: request.title,
+      originProposalId: proposal.id,
+      visibility: "public",
+      members: [
+        { name: request.requestedBy.userName, role: "아이디어 발제 / 기획 리드", avatar: request.requestedBy.avatar },
+        { name: proposal.proposerName, role: "기술 총괄(CTO) / 빌더 리드", avatar: proposal.proposerAvatar },
+      ],
+      businessModel: "B2B / B2C 구독 및 수수료 모델",
+      problem: request.problem,
+      solution: request.solutionConcept,
+      isHiring: true,
+      hiringRoles: request.requiredRoles || ["풀스택 개발자"],
+      investmentStage: "Seed",
+    };
+    db.update("irProjects", (projects) => [newProject, ...projects]);
+    targetProject = newProject;
+  }
 
   // 3. Mark request as 매칭완료
   db.update("ideaRequests", (list) =>
-    (list || []).map((r) => (r.id === id ? { ...r, status: "매칭완료", matchedProjectId: newProjectId } : r))
+    (list || []).map((r) => (r.id === id ? { ...r, status: "매칭완료", matchedProjectId: targetProjectId } : r))
   );
 
   // 4. Notification
   const notif: Notification = {
     id: `notif-${Date.now()}`,
     type: "investor",
-    title: "🚀 스타트업 프로젝트 승격 및 팀 빌딩 매칭 완료!",
-    message: `'${request.title}' 프로젝트가 정식 IR 스타트업으로 등록되었습니다.`,
+    title: "🚀 스타트업 프로젝트 최종 제작 매칭 완료!",
+    message: `'${request.title}' 의뢰에 ${proposal.proposerName} 팀이 최종 매칭되어 정식 IR 스타트업으로 승격되었습니다.`,
     time: "방금 전",
     isRead: false,
   };
   db.update("notifications", (notifs) => [notif, ...notifs]);
 
-  res.json({ success: true, project: newProject, request: { ...request, status: "매칭완료", matchedProjectId: newProjectId } });
+  res.json({
+    success: true,
+    project: targetProject,
+    request: { ...request, status: "매칭완료", matchedProjectId: targetProjectId },
+  });
 });
 
 // DELETE /api/ir/idea-requests/:id

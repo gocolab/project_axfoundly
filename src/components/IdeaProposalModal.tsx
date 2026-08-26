@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Send, Wrench, Calendar, Code2, Link2, Mail, Users, AlertCircle } from "lucide-react";
+import { X, Send, Wrench, Calendar, Code2, Link2, Mail, Users, AlertCircle, Video, Globe, Eye, Lock } from "lucide-react";
 import type { IdeaRequest, IdeaProposal } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
@@ -27,6 +27,9 @@ export default function IdeaProposalModal({
   const [estimatedWeeks, setEstimatedWeeks] = React.useState(4);
   const [planSummary, setPlanSummary] = React.useState("");
   const [portfolioUrl, setPortfolioUrl] = React.useState("https://github.com/example/portfolio");
+  const [demoVideoUrl, setDemoVideoUrl] = React.useState("");
+  const [prototypeUrl, setPrototypeUrl] = React.useState("");
+  const [visibility, setVisibility] = React.useState<"public" | "requester_only">("public");
   const [contactEmail, setContactEmail] = React.useState("builder.team@gmail.com");
   const [submitting, setSubmitting] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
@@ -65,6 +68,9 @@ export default function IdeaProposalModal({
       planSummary: planSummary.trim(),
       estimatedWeeks: Number(estimatedWeeks) || 4,
       portfolioUrl: portfolioUrl.trim(),
+      demoVideoUrl: demoVideoUrl.trim() || undefined,
+      prototypeUrl: prototypeUrl.trim() || undefined,
+      visibility,
       contactEmail: contactEmail.trim(),
     };
 
@@ -75,7 +81,10 @@ export default function IdeaProposalModal({
       } else {
         throw new Error("Invalid response format");
       }
-      toast.success("제작 제안서 전송 완료", `'${request.title}' 의뢰에 제작 제안서가 성공적으로 전달되었습니다!`);
+      toast.success(
+        "제작 제안서 전송 및 IR 연동 완료",
+        `'${request.title}' 의뢰에 제안서가 등록되었으며 스타트업 IR 목록(${visibility === "public" ? "전체 공개" : "발제자 전용"})에 자동 연계되었습니다.`
+      );
       onClose();
     } catch (error) {
       console.warn("Idea proposal submit fallback to local:", error);
@@ -90,12 +99,17 @@ export default function IdeaProposalModal({
         planSummary: planSummary.trim(),
         estimatedWeeks: Number(estimatedWeeks) || 4,
         portfolioUrl: portfolioUrl.trim(),
-        contactEmail: contactEmail.trim(),
+        demoVideoUrl: demoVideoUrl.trim() || undefined,
+        prototypeUrl: prototypeUrl.trim() || undefined,
+        visibility,
         status: "대기중",
         createdAt: new Date().toISOString(),
       };
       onProposalSubmitted(fallbackProposal);
-      toast.success("제작 제안서 전송 완료", `'${request.title}' 의뢰에 제작 제안서가 등록되었습니다.`);
+      toast.success(
+        "제작 제안서 전송 완료",
+        `'${request.title}' 의뢰에 제작 제안서가 등록되었습니다.`
+      );
       onClose();
     } finally {
       setSubmitting(false);
@@ -113,10 +127,10 @@ export default function IdeaProposalModal({
             </div>
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                🛠️ 빌더 팀 제작 역제안서 작성 <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium">빌더 역제안</span>
+                🛠️ 빌더 팀 제작 역제안서 작성 <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium">IR 연동</span>
               </h2>
               <p className="text-xs text-white/60">
-                발제된 아이디어를 현실로 구현할 빌더 팀의 기술 스택과 MVP 개발 계획을 제안하세요.
+                아이디어를 구현할 기술 스택, 시연 링크와 개발 계획을 제안하고 스타트업 IR에 연동하세요.
               </p>
             </div>
           </div>
@@ -134,7 +148,9 @@ export default function IdeaProposalModal({
             <span className="text-xs px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-medium">
               분야: {request.category}
             </span>
-            <span className="text-xs text-white/60">발제자: {request.requestedBy.userName}</span>
+            <span className="text-xs text-white/60">
+              마감: <span className="text-cyan-300 font-semibold">{request.submissionDeadline || "상시"}</span> | 선발일: <span className="text-amber-300 font-semibold">{request.selectionDate || "미정"}</span>
+            </span>
           </div>
           <h4 className="text-sm font-bold text-white">{request.title}</h4>
           <p className="text-xs text-white/70 line-clamp-2">{request.problem}</p>
@@ -187,7 +203,99 @@ export default function IdeaProposalModal({
             </div>
           </div>
 
-          {/* Links */}
+          {/* Demo Media & Prototype Links */}
+          <div className="p-3.5 rounded-xl bg-brand-surface-low border border-brand-border/60 space-y-3">
+            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-brand-primary" /> 목업 / MVP 산출물 링크 등록 (선택)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1 flex items-center gap-1">
+                  <Video className="w-3 h-3 text-red-400" /> 시연 영상 링크 (YouTube / Loom)
+                </label>
+                <input
+                  type="url"
+                  value={demoVideoUrl}
+                  onChange={(e) => setDemoVideoUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-brand-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1 flex items-center gap-1">
+                  <Globe className="w-3 h-3 text-brand-tertiary" /> 프로토타입 / 사이트 링크 (Figma / Web)
+                </label>
+                <input
+                  type="url"
+                  value={prototypeUrl}
+                  onChange={(e) => setPrototypeUrl(e.target.value)}
+                  placeholder="https://www.figma.com/@demo 또는 배포 URL"
+                  className="w-full px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-brand-tertiary"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Visibility Selection */}
+          <div className="p-3.5 rounded-xl bg-brand-surface-low border border-brand-border/60 space-y-2">
+            <label className="block text-xs font-bold text-white flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-brand-secondary" /> '스타트업 & IR' 목록 등록 및 노출 범위 <span className="text-red-400">*</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label
+                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                  visibility === "public"
+                    ? "bg-brand-primary-container/20 border-brand-primary-container text-white"
+                    : "bg-brand-surface border-brand-border text-brand-on-surface-variant hover:bg-brand-surface-high"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="public"
+                  checked={visibility === "public"}
+                  onChange={() => setVisibility("public")}
+                  className="mt-0.5 text-brand-primary focus:ring-0"
+                />
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1 text-white">
+                    <Globe className="w-3 h-3 text-emerald-400" /> 일반 공개
+                  </div>
+                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5 leading-relaxed">
+                    스타트업 & IR 목록에 등록되어 투자자 및 모든 회원에게 노출됩니다.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                  visibility === "requester_only"
+                    ? "bg-brand-secondary/20 border-brand-secondary text-white"
+                    : "bg-brand-surface border-brand-border text-brand-on-surface-variant hover:bg-brand-surface-high"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="requester_only"
+                  checked={visibility === "requester_only"}
+                  onChange={() => setVisibility("requester_only")}
+                  className="mt-0.5 text-brand-secondary focus:ring-0"
+                />
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1 text-white">
+                    <Lock className="w-3 h-3 text-amber-400" /> 발제자 전용 비공개
+                  </div>
+                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5 leading-relaxed">
+                    아이디어 발제자와 본인 팀에게만 비공개 워크스페이스로 열람됩니다.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Links & Email */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-white/80 mb-1.5 flex items-center gap-1">
@@ -223,7 +331,7 @@ export default function IdeaProposalModal({
             </label>
             <textarea
               required
-              rows={4}
+              rows={3}
               value={planSummary}
               onChange={(e) => setPlanSummary(e.target.value)}
               placeholder="구체적인 개발 마일스톤, 팀의 강점, 제안 조건을 작성해주세요."
@@ -254,7 +362,7 @@ export default function IdeaProposalModal({
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              {submitting ? "제안서 전송 중..." : "제작 제안서 전송하기"}
+              {submitting ? "제안서 전송 중..." : "제작 제안서 및 IR 등록하기"}
             </button>
           </div>
         </form>

@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Sparkles, Send, Lightbulb, Target, Users, DollarSign, Tag, Briefcase, AlertCircle } from "lucide-react";
+import { X, Sparkles, Send, Lightbulb, Target, Users, DollarSign, Tag, Briefcase, AlertCircle, Calendar } from "lucide-react";
 import type { IdeaRequest } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
@@ -11,6 +11,12 @@ interface IdeaRequestModalProps {
   userName?: string;
   userId?: string;
 }
+
+const getFutureDate = (days: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+};
 
 export default function IdeaRequestModal({
   isOpen,
@@ -26,6 +32,8 @@ export default function IdeaRequestModal({
   const [category, setCategory] = React.useState("AI/SaaS");
   const [rewardType, setRewardType] = React.useState("지분공유(코파운더)");
   const [rewardDetail, setRewardDetail] = React.useState("지분 15~25% 협의 + 코파운더 영입");
+  const [submissionDeadline, setSubmissionDeadline] = React.useState(getFutureDate(14));
+  const [selectionDate, setSelectionDate] = React.useState(getFutureDate(21));
   const [selectedRoles, setSelectedRoles] = React.useState<string[]>(["풀스택 개발자", "AI 엔지니어"]);
   const [tagInput, setTagInput] = React.useState("");
   const [tags, setTags] = React.useState<string[]>([]);
@@ -112,6 +120,8 @@ export default function IdeaRequestModal({
       requiredRoles: selectedRoles.length ? selectedRoles : ["풀스택 개발자"],
       rewardType,
       rewardDetail,
+      submissionDeadline: submissionDeadline || undefined,
+      selectionDate: selectionDate || undefined,
       requestedBy: {
         userId,
         userName,
@@ -128,7 +138,7 @@ export default function IdeaRequestModal({
       }
       toast.success(
         "🎉 아이디어 제작 의뢰서가 등록되었습니다!",
-        "빌더 팀의 제작 제안 및 잠재 고객의 공감 투표를 확인해보세요."
+        `마감일(${submissionDeadline})까지 빌더 팀의 제안을 취합 후 선발일(${selectionDate})에 협의를 진행합니다.`
       );
       onClose();
       setTitle("");
@@ -147,6 +157,8 @@ export default function IdeaRequestModal({
         requiredRoles: selectedRoles.length ? selectedRoles : ["풀스택 개발자"],
         rewardType,
         rewardDetail,
+        submissionDeadline,
+        selectionDate,
         requestedBy: {
           userId,
           userName,
@@ -155,13 +167,14 @@ export default function IdeaRequestModal({
         upvotes: [userId],
         upvoteCount: 1,
         status: "모집중",
+        selectedProposalIds: [],
         createdAt: new Date().toISOString(),
         proposals: [],
       };
       onRequestCreated(fallbackReq);
       toast.success(
         "🎉 아이디어 제작 의뢰서가 등록되었습니다!",
-        "빌더 팀의 제작 제안과 잠재 고객의 공감 모집이 시작되었습니다."
+        `마감일(${submissionDeadline})까지 빌더 팀의 제안을 취합 후 선발일(${selectionDate})에 협의를 진행합니다.`
       );
       onClose();
       setTitle("");
@@ -261,6 +274,37 @@ export default function IdeaRequestModal({
                 <option value="수익셰어" className="bg-gray-900 text-white">런칭 후 매출/수익 셰어</option>
                 <option value="협의" className="bg-gray-900 text-white">추후 협의</option>
               </select>
+            </div>
+          </div>
+
+          {/* Schedule Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-xl bg-brand-surface-low border border-brand-border/60">
+            <div>
+              <label className="block text-xs font-semibold text-brand-on-surface mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-brand-primary" /> 제안서 접수 마감일 <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                value={submissionDeadline}
+                onChange={(e) => setSubmissionDeadline(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-brand-surface border border-brand-border text-white text-xs focus:outline-none focus:border-brand-primary"
+              />
+              <p className="text-[10px] text-brand-on-surface-variant mt-1">빌더 팀들이 제작 제안서를 제출할 수 있는 마감일입니다.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-on-surface mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-brand-tertiary" /> 빌더 팀 선발 발표일 <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                value={selectionDate}
+                onChange={(e) => setSelectionDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-brand-surface border border-brand-border text-white text-xs focus:outline-none focus:border-brand-tertiary"
+              />
+              <p className="text-[10px] text-brand-on-surface-variant mt-1">제출팀 중 협의 대상 팀을 선발하여 발표하는 날짜입니다.</p>
             </div>
           </div>
 

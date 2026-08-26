@@ -27,6 +27,10 @@ import {
   DollarSign,
   Layers,
   Code2,
+  Calendar,
+  Globe,
+  Check,
+  CheckCircle2,
 } from "lucide-react";
 import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal, IdeaRequest, IdeaProposal } from "../types";
 import Pagination from "./common/Pagination";
@@ -37,6 +41,19 @@ import IdeaRequestModal from "./IdeaRequestModal";
 import IdeaProposalModal from "./IdeaProposalModal";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
+
+export const getDDayText = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  const now = new Date();
+  target.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+  const diffTime = target.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return "접수 마감";
+  if (diffDays === 0) return "D-Day (오늘)";
+  return `D-${diffDays}`;
+};
 
 export const getEmploymentTypeBadgeClass = (type?: string) => {
   switch (type) {
@@ -212,6 +229,55 @@ export default function IRPage({
       toast.error("제안 수락 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
   };
+
+  const handleToggleSelectProposal = async (reqId: string, propId: string) => {
+    const currentSelected = selectedIdeaRequest?.selectedProposalIds || [];
+    const isAlreadySelected = currentSelected.includes(propId);
+    const updated = isAlreadySelected
+      ? currentSelected.filter((id) => id !== propId)
+      : [...currentSelected, propId];
+
+    try {
+      const res = await api.selectIdeaProposals(reqId, updated);
+      if (res?.request) {
+        setIdeaRequests((prev) =>
+          prev.map((r) =>
+            r.id === reqId
+              ? { ...r, selectedProposalIds: updated, status: res.request.status }
+              : r
+          )
+        );
+        if (selectedIdeaRequest?.id === reqId) {
+          setSelectedIdeaRequest((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  selectedProposalIds: updated,
+                  status: res.request.status,
+                  proposals: prev.proposals?.map((p) =>
+                    p.id === propId
+                      ? { ...p, status: isAlreadySelected ? "대기중" : "선발(협의중)" }
+                      : p
+                  ),
+                }
+              : null
+          );
+        }
+        if (isAlreadySelected) {
+          toast.info("선발 취소", "해당 제안 팀이 협의 대상에서 제외되었습니다.");
+        } else {
+          toast.success(
+            "협의 대상 선발 완료",
+            "해당 제안 팀이 협의 대상(선발)으로 지정되었습니다. 복수 팀과 조건을 조율할 수 있습니다."
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Select proposal failed", err);
+      toast.error("선발 처리 실패", "일시적인 오류가 발생했습니다.");
+    }
+  };
+
   const [applicantNote, setApplicantNote] = React.useState("");
 
   const dynamicFields = React.useMemo(() => {
@@ -393,6 +459,44 @@ export default function IRPage({
                         #{tag}
                       </span>
                     ))}
+                  </div>
+                )}
+
+                {/* 💡 아이디어 제작 의뢰 연계 배너 */}
+                {selectedProject.originIdeaRequestId && (
+                  <div className="mt-4 p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <div>
+                        <span className="text-cyan-300 font-bold">아이디어 제작 의뢰 연계 프로젝트:</span>{" "}
+                        <span className="text-white/80">{selectedProject.originIdeaTitle || "발제 과제"}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedProject(null);
+                        setActiveTab("ideas");
+                        const matchReq = ideaRequests.find((r) => r.id === selectedProject.originIdeaRequestId);
+                        if (matchReq) setSelectedIdeaRequest(matchReq);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors font-medium whitespace-nowrap cursor-pointer"
+                    >
+                      💡 원본 의뢰 및 제안서 보기 →
+                    </button>
+                  </div>
+                )}
+
+                {/* 프로토타입 / 데모 사이트 바로가기 버튼 */}
+                {selectedProject.prototypeUrl && (
+                  <div className="mt-3">
+                    <a
+                      href={selectedProject.prototypeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-xl bg-brand-surface-low text-brand-tertiary border border-brand-tertiary/40 hover:bg-brand-tertiary/20 transition-colors cursor-pointer"
+                    >
+                      <Globe size={14} /> 프로토타입 / 배포 사이트 방문 <ExternalLink size={12} />
+                    </a>
                   </div>
                 )}
               </div>
@@ -964,13 +1068,23 @@ export default function IRPage({
                 <div>
                   <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#0f766e] to-[#042f2e] flex items-center justify-center">
                     <span className="text-3xl opacity-40 drop-shadow-md select-none">🚀</span>
-                    <div className="absolute top-3 left-3 flex gap-2">
+                    <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap max-w-[85%]">
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
                         {project.field}
                       </span>
                       {project.isHiring && (
                         <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
                           채용중
+                        </span>
+                      )}
+                      {project.originIdeaRequestId && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 backdrop-blur-md flex items-center gap-1">
+                          <Sparkles size={10} /> 의뢰 연계
+                        </span>
+                      )}
+                      {project.visibility === "requester_only" && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/30 text-amber-200 border border-amber-500/40 backdrop-blur-md flex items-center gap-1">
+                          <Lock size={10} /> 비공개
                         </span>
                       )}
                     </div>
@@ -1107,7 +1221,7 @@ export default function IRPage({
 
                 <span className="text-white/20">|</span>
 
-                {["전체", "모집중", "빌더제안중", "매칭완료"].map((st) => (
+                {["전체", "모집중", "선발진행중", "협의중", "매칭완료"].map((st) => (
                   <button
                     key={st}
                     onClick={() => setIdeaStatusFilter(st)}
@@ -1194,6 +1308,8 @@ export default function IRPage({
                   {paginatedIdeaRequests.map((req) => {
                     const isSelected = selectedIdeaRequest?.id === req.id;
                     const isUpvoted = req.upvotes?.includes(userName || "u-student-1");
+                    const dDay = getDDayText(req.submissionDeadline);
+                    const selectedCount = req.selectedProposalIds?.length || 0;
 
                     return (
                       <div
@@ -1208,17 +1324,39 @@ export default function IRPage({
                         <div>
                           {/* Header badges */}
                           <div className="flex items-center justify-between gap-2 mb-3">
-                            <span
-                              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                                req.status === "모집중"
-                                  ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-                                  : req.status === "빌더제안중"
-                                  ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                                  : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                              }`}
-                            >
-                              {req.status === "모집중" ? "💡 빌더 모집중" : req.status === "빌더제안중" ? "🛠️ 제작 제안 검토중" : "✓ 매칭 완료"}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                  req.status === "모집중"
+                                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                                    : req.status === "선발진행중" || req.status === "빌더제안중"
+                                    ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                    : req.status === "협의중"
+                                    ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                }`}
+                              >
+                                {req.status === "모집중"
+                                  ? "💡 모집중"
+                                  : req.status === "협의중"
+                                  ? `🤝 ${selectedCount}팀 협의중`
+                                  : req.status === "선발진행중" || req.status === "빌더제안중"
+                                  ? "⏳ 선발진행중"
+                                  : "✓ 매칭완료"}
+                              </span>
+
+                              {dDay && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                  dDay.includes("D-Day") || dDay.includes("D-1") || dDay.includes("D-2")
+                                    ? "bg-red-500/20 text-red-300 border-red-500/40 animate-pulse"
+                                    : dDay === "접수 마감"
+                                    ? "bg-white/10 text-white/50 border-white/10"
+                                    : "bg-cyan-500/10 text-cyan-300 border-cyan-500/30"
+                                }`}>
+                                  {dDay}
+                                </span>
+                              )}
+                            </div>
                             <span className="text-[10px] text-white/50">{req.category}</span>
                           </div>
 
@@ -1238,8 +1376,16 @@ export default function IRPage({
                             </p>
                           </div>
 
+                          {/* Schedule Notice */}
+                          {(req.submissionDeadline || req.selectionDate) && (
+                            <div className="mt-2.5 p-2 rounded-lg bg-white/5 border border-white/5 flex items-center justify-between text-[10px] text-white/60">
+                              <span>📅 마감: <b className="text-cyan-300">{req.submissionDeadline || "상시"}</b></span>
+                              <span>🎯 선발: <b className="text-amber-300">{req.selectionDate || "미정"}</b></span>
+                            </div>
+                          )}
+
                           {/* Reward & Roles */}
-                          <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+                          <div className="mt-3 flex flex-wrap items-center gap-1.5">
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
                               💎 {req.rewardType}
                             </span>
@@ -1270,7 +1416,10 @@ export default function IRPage({
                           </button>
 
                           <div className="text-[11px] text-cyan-300 font-medium">
-                            빌더 제안 {req.proposals?.length || 0}건
+                            제안 {req.proposals?.length || 0}팀
+                            {selectedCount > 0 && (
+                              <span className="ml-1 text-amber-300 font-bold">({selectedCount}팀 협의)</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1290,7 +1439,9 @@ export default function IRPage({
                       className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                         selectedIdeaRequest.status === "모집중"
                           ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-                          : selectedIdeaRequest.status === "빌더제안중"
+                          : selectedIdeaRequest.status === "협의중"
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                          : selectedIdeaRequest.status === "선발진행중" || selectedIdeaRequest.status === "빌더제안중"
                           ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
                           : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
                       }`}
@@ -1314,6 +1465,32 @@ export default function IRPage({
                     <span>발제자: <b className="text-white">{selectedIdeaRequest.requestedBy.userName}</b></span>
                     <span>•</span>
                     <span>협업 조건: <b className="text-amber-400">{selectedIdeaRequest.rewardType} ({selectedIdeaRequest.rewardDetail || "협의"})</b></span>
+                  </div>
+                </div>
+
+                {/* Schedule Timeline Banner */}
+                <div className="p-3.5 rounded-xl bg-brand-surface-low border border-brand-border/60 space-y-1.5 text-xs">
+                  <div className="font-bold text-white flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-brand-primary" /> 공모 & 선발 협의 일정
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                    <div className="p-2 rounded-lg bg-brand-surface border border-brand-border">
+                      <div className="text-brand-on-surface-variant">제안 접수 마감일</div>
+                      <div className="font-bold text-cyan-300 mt-0.5">
+                        {selectedIdeaRequest.submissionDeadline || "상시 접수"}
+                        {selectedIdeaRequest.submissionDeadline && (
+                          <span className="ml-1 text-[10px] text-brand-primary font-normal">
+                            ({getDDayText(selectedIdeaRequest.submissionDeadline)})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-brand-surface border border-brand-border">
+                      <div className="text-brand-on-surface-variant">선발 발표 / 협의일</div>
+                      <div className="font-bold text-amber-300 mt-0.5">
+                        {selectedIdeaRequest.selectionDate || "접수 후 수시"}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1370,9 +1547,14 @@ export default function IRPage({
                 {/* Builder Proposals Section */}
                 <div className="pt-2 border-t border-white/10">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      🛠️ 빌더 팀 제작 제안서 ({selectedIdeaRequest.proposals?.length || 0}건)
-                    </h4>
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        🛠️ 제출된 빌더 팀 제안서 ({selectedIdeaRequest.proposals?.length || 0}건)
+                      </h4>
+                      <p className="text-[10px] text-brand-on-surface-variant mt-0.5">
+                        복수 팀을 협의 대상으로 선발한 후 최종 제작 확정을 진행할 수 있습니다.
+                      </p>
+                    </div>
                     <button
                       onClick={() => {
                         if (!isLoggedIn) {
@@ -1382,9 +1564,9 @@ export default function IRPage({
                         setProposalTargetIdea(selectedIdeaRequest);
                         setShowIdeaProposalModal(true);
                       }}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors font-medium cursor-pointer"
+                      className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors font-medium whitespace-nowrap cursor-pointer"
                     >
-                      + 저희가 제작하겠습니다
+                      + 역제안서 등록
                     </button>
                   </div>
 
@@ -1395,72 +1577,158 @@ export default function IRPage({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {selectedIdeaRequest.proposals.map((prop) => (
-                        <div
-                          key={prop.id}
-                          className={`p-4 rounded-xl border transition-all ${
-                            prop.status === "수락됨"
-                              ? "bg-emerald-950/30 border-emerald-500/50"
-                              : "bg-white/5 border-white/10"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-cyan-500/30 text-cyan-300 flex items-center justify-center text-xs font-bold">
-                                {prop.proposerName.charAt(0)}
+                      {selectedIdeaRequest.proposals.map((prop) => {
+                        const isSelectedForNegotiation =
+                          selectedIdeaRequest.selectedProposalIds?.includes(prop.id) ||
+                          prop.status === "선발(협의중)";
+                        const isAccepted = prop.status === "최종채택" || prop.status === "수락됨";
+
+                        return (
+                          <div
+                            key={prop.id}
+                            className={`p-4 rounded-xl border transition-all ${
+                              isAccepted
+                                ? "bg-emerald-950/30 border-emerald-500/50"
+                                : isSelectedForNegotiation
+                                ? "bg-amber-950/20 border-amber-500/50 ring-1 ring-amber-500/20"
+                                : "bg-white/5 border-white/10"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-cyan-500/30 text-cyan-300 flex items-center justify-center text-xs font-bold">
+                                  {prop.proposerName.charAt(0)}
+                                </div>
+                                <span className="text-xs font-bold text-white">{prop.proposerName} 팀</span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                                  prop.visibility === "requester_only"
+                                    ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                                    : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                }`}>
+                                  {prop.visibility === "requester_only" ? "🔒 비공개" : "🌐 공개 IR"}
+                                </span>
                               </div>
-                              <span className="text-xs font-bold text-white">{prop.proposerName} 팀</span>
+
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
+                                  isAccepted
+                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                    : isSelectedForNegotiation
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                    : "bg-white/10 text-white/60"
+                                }`}
+                              >
+                                {isAccepted ? "★ 최종 채택" : isSelectedForNegotiation ? "🤝 협의 대상 선발됨" : prop.status}
+                              </span>
                             </div>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                                prop.status === "수락됨"
-                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                  : "bg-white/10 text-white/60"
-                              }`}
-                            >
-                              {prop.status}
-                            </span>
-                          </div>
 
-                          <div className="text-xs text-white/90 font-medium mb-2">{prop.teamSummary}</div>
+                            <div className="text-xs text-white/90 font-medium mb-2">{prop.teamSummary}</div>
 
-                          <div className="flex items-center gap-3 text-[11px] text-white/60 mb-2">
-                            <span>예상 기간: <b className="text-cyan-400">{prop.estimatedWeeks}주 완성</b></span>
-                            {prop.contactEmail && (
-                              <>
-                                <span>•</span>
-                                <span>이메일: <b className="text-white/80">{prop.contactEmail}</b></span>
-                              </>
+                            <div className="flex items-center gap-3 text-[11px] text-white/60 mb-2">
+                              <span>예상 기간: <b className="text-cyan-400">{prop.estimatedWeeks}주 완성</b></span>
+                              {prop.contactEmail && (
+                                <>
+                                  <span>•</span>
+                                  <span>이메일: <b className="text-white/80">{prop.contactEmail}</b></span>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Tech Stack */}
+                            {prop.techStack && prop.techStack.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-2.5">
+                                {prop.techStack.map((tech, tIdx) => (
+                                  <span
+                                    key={tIdx}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
+                                  >
+                                    {tech}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Media & Prototype Links */}
+                            {(prop.demoVideoUrl || prop.prototypeUrl || prop.portfolioUrl || prop.linkedProjectId) && (
+                              <div className="flex items-center gap-2 flex-wrap mb-3 p-2 rounded-lg bg-black/20 border border-white/5">
+                                {prop.demoVideoUrl && (
+                                  <a
+                                    href={prop.demoVideoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-red-300 hover:text-red-200 flex items-center gap-1 font-semibold"
+                                  >
+                                    <Video size={12} /> 시연 영상 <ExternalLink size={10} />
+                                  </a>
+                                )}
+                                {prop.prototypeUrl && (
+                                  <a
+                                    href={prop.prototypeUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-cyan-300 hover:text-cyan-200 flex items-center gap-1 font-semibold"
+                                  >
+                                    <Globe size={12} /> 프로토타입/사이트 <ExternalLink size={10} />
+                                  </a>
+                                )}
+                                {prop.portfolioUrl && (
+                                  <a
+                                    href={prop.portfolioUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-slate-300 hover:text-white flex items-center gap-1"
+                                  >
+                                    <Link size={12} /> 포트폴리오 <ExternalLink size={10} />
+                                  </a>
+                                )}
+                                {prop.linkedProjectId && (
+                                  <button
+                                    onClick={() => {
+                                      setActiveTab("browse");
+                                      const targetProj = projects.find((p) => p.id === prop.linkedProjectId);
+                                      if (targetProj) setSelectedProject(targetProj);
+                                    }}
+                                    className="ml-auto text-[11px] text-brand-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                                  >
+                                    🚀 연동된 IR 프로젝트 보기 →
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            <p className="text-xs text-white/80 bg-black/30 p-2.5 rounded-lg border border-white/5 leading-relaxed whitespace-pre-line mb-3">
+                              {prop.planSummary}
+                            </p>
+
+                            {/* Action Buttons for Requester */}
+                            {!isAccepted && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleToggleSelectProposal(selectedIdeaRequest.id, prop.id)}
+                                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                                    isSelectedForNegotiation
+                                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30"
+                                      : "bg-white/10 text-white hover:bg-white/20 border border-white/15"
+                                  }`}
+                                >
+                                  {isSelectedForNegotiation ? (
+                                    <>✓ 협의 선발 취소</>
+                                  ) : (
+                                    <>+ 협의 대상 선발</>
+                                  )}
+                                </button>
+
+                                <button
+                                  onClick={() => handleAcceptIdeaProposal(selectedIdeaRequest.id, prop.id)}
+                                  className="flex-1 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                  ★ 최종 제작 확정 (IR 승격)
+                                </button>
+                              </div>
                             )}
                           </div>
-
-                          {prop.techStack && prop.techStack.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2.5">
-                              {prop.techStack.map((tech, tIdx) => (
-                                <span
-                                  key={tIdx}
-                                  className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
-                                >
-                                  {tech}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          <p className="text-xs text-white/80 bg-black/30 p-2.5 rounded-lg border border-white/5 leading-relaxed whitespace-pre-line mb-3">
-                            {prop.planSummary}
-                          </p>
-
-                          {prop.status === "대기중" && (
-                            <button
-                              onClick={() => handleAcceptIdeaProposal(selectedIdeaRequest.id, prop.id)}
-                              className="w-full py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
-                            >
-                              ✓ 이 팀과 제작 확정하기 (정식 스타트업 IR 승격)
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

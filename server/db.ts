@@ -356,6 +356,11 @@ const SEED_IR_PROJECTS: IRProject[] = [
     ],
     bookmarked: true,
     investmentStage: "Seed",
+    originIdeaRequestId: "ir-req-1",
+    originIdeaTitle: "초기 창업자를 위한 AI 계약서 위험조항 자동 검토 & 수정 제안 SaaS",
+    originProposalId: "ip-1",
+    visibility: "public",
+    prototypeUrl: "https://www.figma.com/@legal-ai-mvp",
   },
   {
     id: "p2",
@@ -937,6 +942,8 @@ const SEED_IDEA_REQUESTS: IdeaRequest[] = [
     requiredRoles: ["풀스택 개발자", "AI 엔지니어", "UI/UX 디자이너"],
     rewardType: "지분공유(코파운더)",
     rewardDetail: "지분 15~25% 협의 + 공동대표(Co-founder) 지위",
+    submissionDeadline: "2025-09-20",
+    selectionDate: "2025-09-25",
     requestedBy: {
       userId: "u-founder-legal",
       userName: "박창업 (변리사/예비창업자)",
@@ -944,7 +951,8 @@ const SEED_IDEA_REQUESTS: IdeaRequest[] = [
     },
     upvotes: ["u-founder-legal", "u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7", "u-member-8", "u-member-9", "u-member-10", "u-member-11", "u-member-12", "u-member-13", "u-member-14", "u-member-15", "u-member-16", "u-member-17", "u-member-18", "u-member-19", "u-member-20", "u-member-21", "u-member-22", "u-member-23", "u-member-24", "u-member-25", "u-member-26", "u-member-27", "u-member-28", "u-member-29", "u-member-30", "u-member-31", "u-member-32"],
     upvoteCount: 32,
-    status: "빌더제안중",
+    status: "선발진행중",
+    selectedProposalIds: [],
     createdAt: "2025-08-25T16:00:00Z",
   },
   {
@@ -957,6 +965,8 @@ const SEED_IDEA_REQUESTS: IdeaRequest[] = [
     requiredRoles: ["프론트엔드", "백엔드 개발자"],
     rewardType: "개발보상",
     rewardDetail: "MVP 개발비 400만원 + 런칭 후 월 구독료 30% 셰어",
+    submissionDeadline: "2025-09-30",
+    selectionDate: "2025-10-05",
     requestedBy: {
       userId: "u-cafe-owner",
       userName: "최점주 (베이커리 대표)",
@@ -965,6 +975,7 @@ const SEED_IDEA_REQUESTS: IdeaRequest[] = [
     upvotes: ["u-cafe-owner", "u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7", "u-member-8", "u-member-9", "u-member-10", "u-member-11", "u-member-12", "u-member-13", "u-member-14", "u-member-15"],
     upvoteCount: 15,
     status: "모집중",
+    selectedProposalIds: [],
     createdAt: "2025-09-01T11:20:00Z",
   },
 ];
@@ -982,7 +993,11 @@ const SEED_IDEA_PROPOSALS: IdeaProposal[] = [
     estimatedWeeks: 4,
     portfolioUrl: "https://github.com/example/legal-ai-demo",
     contactEmail: "builder.oh@gmail.com",
-    status: "대기중",
+    demoVideoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    prototypeUrl: "https://www.figma.com/@legal-ai-mvp",
+    visibility: "public",
+    status: "선발(협의중)",
+    linkedProjectId: "p1",
     createdAt: "2025-08-27T10:00:00Z",
   },
 ];

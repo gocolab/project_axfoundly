@@ -27,8 +27,9 @@
 | API-REV-IR-01 | GET | `/api/ir/idea-requests` | 아이디어 제작 의뢰 목록 조회 | IR | 불필요 | ✅ 완료 |
 | API-REV-IR-02 | POST | `/api/ir/idea-requests` | 신규 아이디어 제작 의뢰 등록 | IR | 회원 | ✅ 완료 |
 | API-REV-IR-03 | POST | `/api/ir/idea-requests/:id/upvote` | 잠재 고객 공감 투표 토글 | IR | 회원 | ✅ 완료 |
-| API-REV-IR-04 | POST | `/api/ir/idea-requests/:id/proposals` | 빌더 팀 MVP 제작 제안서 제출 | IR | 빌더/개발자 | ✅ 완료 |
-| API-REV-IR-05 | POST | `/api/ir/idea-requests/:id/accept-proposal` | 빌더 제안 수락 및 정식 IR 프로젝트 승격 | IR | 회원 | ✅ 완료 |
+| API-REV-IR-04 | POST | `/api/ir/idea-requests/:id/proposals` | 빌더 팀 MVP 제작 제안서 제출 (산출물 링크/공개범위 포함, IR 자동 연동) | IR | 빌더/개발자 | ✅ 완료 |
+| API-REV-IR-05 | POST | `/api/ir/idea-requests/:id/accept-proposal` | 빌더 제안 최종 채택 및 정식 IR 프로젝트 승격 | IR | 회원 | ✅ 완료 |
+| API-REV-IR-06 | POST | `/api/ir/idea-requests/:id/select-proposals` | 아이디어 제안서 복수 선발 및 협의 대상 지정 | IR | 회원 | ✅ 완료 |
 | API-AI-01 | POST | `/api/ai/course-draft` | AI 강의 초벌 커리큘럼 생성 | AI | 강사 | ✅ 완료 |
 | API-AI-02 | POST | `/api/ai/diagnosis` | 빌더 AI 아키텍트 페르소나 진단 | AI | 전체 | ✅ 완료 |
 | API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |

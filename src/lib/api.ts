@@ -275,10 +275,20 @@ export const api = {
   },
 
   submitIdeaProposal: async (requestId: string, data: Partial<IdeaProposal>) => {
-    return fetchJson<{ success: boolean; proposal: IdeaProposal }>(`/api/ir/idea-requests/${requestId}/proposals`, {
+    return fetchJson<{ success: boolean; proposal: IdeaProposal; project?: IRProject }>(`/api/ir/idea-requests/${requestId}/proposals`, {
       method: "POST",
       body: JSON.stringify(data),
     });
+  },
+
+  selectIdeaProposals: async (requestId: string, selectedProposalIds: string[]) => {
+    return fetchJson<{ success: boolean; request: IdeaRequest; selectedProposalIds: string[] }>(
+      `/api/ir/idea-requests/${requestId}/select-proposals`,
+      {
+        method: "POST",
+        body: JSON.stringify({ selectedProposalIds }),
+      }
+    );
   },
 
   acceptIdeaProposal: async (requestId: string, proposalId: string) => {
