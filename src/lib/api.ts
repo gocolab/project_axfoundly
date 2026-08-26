@@ -16,6 +16,10 @@ import type {
   UserRole,
   CodeGroup,
   CommonCode,
+  CourseRequest,
+  CourseProposal,
+  IdeaRequest,
+  IdeaProposal,
 } from "../types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -131,6 +135,59 @@ export const api = {
     });
   },
 
+  // ── Course Requests (개강 요청 & 역제안) ──
+  getCourseRequests: async (params?: { category?: string; tag?: string; search?: string; sort?: "popular" | "recent"; status?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.category) query.set("category", params.category);
+    if (params?.tag) query.set("tag", params.tag);
+    if (params?.search) query.set("search", params.search);
+    if (params?.sort) query.set("sort", params.sort);
+    if (params?.status) query.set("status", params.status);
+    if (params?.page) query.set("page", params.page.toString());
+    if (params?.limit) query.set("limit", params.limit.toString());
+    return fetchJson<{ requests: CourseRequest[]; total: number; page: number; limit: number; totalPages: number }>(
+      `/api/courses/requests?${query.toString()}`
+    );
+  },
+
+  getCourseRequest: async (id: string) => {
+    return fetchJson<{ request: CourseRequest }>(`/api/courses/requests/${id}`);
+  },
+
+  createCourseRequest: async (data: Partial<CourseRequest>) => {
+    return fetchJson<{ success: boolean; request: CourseRequest }>("/api/courses/requests", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  upvoteCourseRequest: async (id: string, userId?: string) => {
+    return fetchJson<{ success: boolean; isUpvoted: boolean; request: CourseRequest }>(`/api/courses/requests/${id}/upvote`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  submitCourseProposal: async (requestId: string, data: Partial<CourseProposal>) => {
+    return fetchJson<{ success: boolean; proposal: CourseProposal }>(`/api/courses/requests/${requestId}/proposals`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  acceptCourseProposal: async (requestId: string, proposalId: string) => {
+    return fetchJson<{ success: boolean; course: Course; request: CourseRequest }>(`/api/courses/requests/${requestId}/accept-proposal`, {
+      method: "POST",
+      body: JSON.stringify({ proposalId }),
+    });
+  },
+
+  deleteCourseRequest: async (id: string) => {
+    return fetchJson<{ success: boolean }>(`/api/courses/requests/${id}`, {
+      method: "DELETE",
+    });
+  },
+
   // ── Payments ──
   getPayments: async () => {
     return fetchJson<{ payments: PaymentRecord[] }>("/api/payments");
@@ -181,6 +238,59 @@ export const api = {
     return fetchJson<{ success: boolean; application: any }>(`/api/ir/projects/${projectId}/apply`, {
       method: "POST",
       body: JSON.stringify(application),
+    });
+  },
+
+  // ── Idea Requests (아이디어 제작 의뢰 & 빌더 역제안) ──
+  getIdeaRequests: async (params?: { category?: string; tag?: string; search?: string; sort?: "popular" | "recent"; status?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.category) query.set("category", params.category);
+    if (params?.tag) query.set("tag", params.tag);
+    if (params?.search) query.set("search", params.search);
+    if (params?.sort) query.set("sort", params.sort);
+    if (params?.status) query.set("status", params.status);
+    if (params?.page) query.set("page", params.page.toString());
+    if (params?.limit) query.set("limit", params.limit.toString());
+    return fetchJson<{ requests: IdeaRequest[]; total: number; page: number; limit: number; totalPages: number }>(
+      `/api/ir/idea-requests?${query.toString()}`
+    );
+  },
+
+  getIdeaRequest: async (id: string) => {
+    return fetchJson<{ request: IdeaRequest }>(`/api/ir/idea-requests/${id}`);
+  },
+
+  createIdeaRequest: async (data: Partial<IdeaRequest>) => {
+    return fetchJson<{ success: boolean; request: IdeaRequest }>("/api/ir/idea-requests", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  upvoteIdeaRequest: async (id: string, userId?: string) => {
+    return fetchJson<{ success: boolean; isUpvoted: boolean; request: IdeaRequest }>(`/api/ir/idea-requests/${id}/upvote`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  submitIdeaProposal: async (requestId: string, data: Partial<IdeaProposal>) => {
+    return fetchJson<{ success: boolean; proposal: IdeaProposal }>(`/api/ir/idea-requests/${requestId}/proposals`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  acceptIdeaProposal: async (requestId: string, proposalId: string) => {
+    return fetchJson<{ success: boolean; project: IRProject; request: IdeaRequest }>(`/api/ir/idea-requests/${requestId}/accept-proposal`, {
+      method: "POST",
+      body: JSON.stringify({ proposalId }),
+    });
+  },
+
+  deleteIdeaRequest: async (id: string) => {
+    return fetchJson<{ success: boolean }>(`/api/ir/idea-requests/${id}`, {
+      method: "DELETE",
     });
   },
 

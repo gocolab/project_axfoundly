@@ -22,12 +22,19 @@ import {
   Share2,
   Lock,
   Sparkles,
+  ThumbsUp,
+  Wrench,
+  DollarSign,
+  Layers,
+  Code2,
 } from "lucide-react";
-import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal } from "../types";
+import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal, IdeaRequest, IdeaProposal } from "../types";
 import Pagination from "./common/Pagination";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
+import IdeaRequestModal from "./IdeaRequestModal";
+import IdeaProposalModal from "./IdeaProposalModal";
 import { api } from "../lib/api";
 
 export const getEmploymentTypeBadgeClass = (type?: string) => {
@@ -85,6 +92,8 @@ export default function IRPage({
   initialProjectId,
   onClearSelectedProject,
 }: IRPageProps) {
+  const [activeTab, setActiveTab] = React.useState<"browse" | "ideas">("browse");
+
   const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(() => {
     if (initialProjectId) {
       return projects.find((p) => p.id === initialProjectId) || null;
@@ -100,6 +109,7 @@ export default function IRPage({
       }
     }
   }, [initialProjectId, projects]);
+
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
   const [searchText, setSearchText] = React.useState("");
@@ -118,8 +128,78 @@ export default function IRPage({
   const [videoUrlInput, setVideoUrlInput] = React.useState("");
   const [selectedHiringRole, setSelectedHiringRole] = React.useState<HiringRoleDetail | null>(null);
   const [showApplyModal, setShowApplyModal] = React.useState(false);
-  const [applicantNote, setApplicantNote] = React.useState("");
   const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
+
+  // ── Reverse Proposal (아이디어 제작 요청소) State ──
+  const [ideaRequests, setIdeaRequests] = React.useState<IdeaRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = React.useState(false);
+  const [selectedIdeaRequest, setSelectedIdeaRequest] = React.useState<IdeaRequest | null>(null);
+  const [showIdeaRequestModal, setShowIdeaRequestModal] = React.useState(false);
+  const [showIdeaProposalModal, setShowIdeaProposalModal] = React.useState(false);
+  const [proposalTargetIdea, setProposalTargetIdea] = React.useState<IdeaRequest | null>(null);
+  const [ideaSort, setIdeaSort] = React.useState<"popular" | "recent">("popular");
+  const [ideaStatusFilter, setIdeaStatusFilter] = React.useState<string>("전체");
+  const [ideaPage, setIdeaPage] = React.useState(1);
+  const ideasPerPage = 6;
+
+  const fetchIdeaRequests = React.useCallback(async () => {
+    try {
+      setRequestsLoading(true);
+      const res = await api.getIdeaRequests({
+        category: activeField === "전체" ? undefined : activeField,
+        search: searchText || undefined,
+        sort: ideaSort,
+        status: ideaStatusFilter === "전체" ? undefined : ideaStatusFilter,
+      });
+      setIdeaRequests(res.requests || []);
+    } catch (e) {
+      console.error("Failed to fetch idea requests", e);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, [activeField, searchText, ideaSort, ideaStatusFilter]);
+
+  React.useEffect(() => {
+    if (activeTab === "ideas") {
+      fetchIdeaRequests();
+    }
+  }, [activeTab, fetchIdeaRequests]);
+
+  const handleUpvoteIdea = async (e: React.MouseEvent, reqId: string) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      onLoginClick();
+      return;
+    }
+    try {
+      const res = await api.upvoteIdeaRequest(reqId, userName || "u-student-1");
+      setIdeaRequests((prev) =>
+        prev.map((r) => (r.id === reqId ? res.request : r))
+      );
+      if (selectedIdeaRequest?.id === reqId) {
+        setSelectedIdeaRequest(res.request);
+      }
+    } catch (err) {
+      console.error("Upvote failed", err);
+    }
+  };
+
+  const handleAcceptIdeaProposal = async (reqId: string, propId: string) => {
+    if (!confirm("이 빌더 팀의 제안을 수락하여 정식 스타트업 IR 프로젝트로 승격하시겠습니까?")) return;
+    try {
+      const res = await api.acceptIdeaProposal(reqId, propId);
+      alert("🎉 축하합니다! 빌더 팀 매칭이 완료되어 정식 스타트업 IR 프로젝트로 등록되었습니다.");
+      if (onSaveProject) {
+        onSaveProject(res.project);
+      }
+      fetchIdeaRequests();
+      setSelectedIdeaRequest(null);
+    } catch (err) {
+      console.error("Accept idea proposal failed", err);
+      alert("제안 수락에 실패했습니다.");
+    }
+  };
+  const [applicantNote, setApplicantNote] = React.useState("");
 
   const dynamicFields = React.useMemo(() => {
     const fieldSet = new Set<string>();
@@ -695,205 +775,691 @@ export default function IRPage({
   }
 
 
-  // ── IR List View ──
+  // ── IR List & Idea Request View ──
+  const filteredIdeaRequests = ideaRequests.filter((r) => {
+    const matchField = activeField === "전체" || r.category === activeField;
+    const matchTag = !activeTag || r.tags?.includes(activeTag);
+    const matchStatus = ideaStatusFilter === "전체" || r.status === ideaStatusFilter;
+    const q = searchText.toLowerCase();
+    const matchSearch =
+      !searchText ||
+      r.title.toLowerCase().includes(q) ||
+      r.problem.toLowerCase().includes(q) ||
+      r.solutionConcept.toLowerCase().includes(q) ||
+      r.requestedBy?.userName.toLowerCase().includes(q) ||
+      r.category?.toLowerCase().includes(q) ||
+      r.tags?.some((t) => t.toLowerCase().includes(q));
+    return matchField && matchTag && matchStatus && matchSearch;
+  });
+
+  const totalIdeaPages = Math.ceil(filteredIdeaRequests.length / ideasPerPage);
+  const paginatedIdeaRequests = filteredIdeaRequests.slice(
+    (ideaPage - 1) * ideasPerPage,
+    ideaPage * ideasPerPage
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-white">스타트업 & IR 피칭</h1>
+      <div className="mb-4">
+        <h1 className="font-display text-2xl font-bold text-white">스타트업 & IR</h1>
         <p className="text-sm text-brand-on-surface-variant mt-1">
-          수강생이 런칭한 혁신 프로젝트와 구인/투자 기회를 탐색하세요
+          혁신 스타트업 발굴 및 투자부터 아이디어 제작 의뢰와 빌더 팀 매칭까지 지원합니다.
         </p>
       </div>
 
+      {/* ── Sub-Navigation Tabs (스타트업 IR 탐색 vs 아이디어 제작 요청소) ── */}
+      <div className="flex items-center gap-3 border-b border-white/10 mb-6 pb-1">
+        <button
+          onClick={() => {
+            setActiveTab("browse");
+            setSelectedIdeaRequest(null);
+          }}
+          className={`pb-2.5 px-3 text-sm font-bold transition-all cursor-pointer relative flex items-center gap-2 ${
+            activeTab === "browse"
+              ? "text-brand-primary border-b-2 border-brand-primary font-extrabold"
+              : "text-white/60 hover:text-white"
+          }`}
+        >
+          <Briefcase className="w-4 h-4" /> 스타트업 & IR 탐색
+          <span className="text-xs px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-primary border border-brand-primary/30">
+            {projects.length}
+          </span>
+        </button>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col gap-3 mb-6">
-        {/* Row 1: 분야 필터 + 등록 버튼 */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-2 flex-wrap">
-            {dynamicFields.map((f) => (
-              <button
-                key={f}
-                onClick={() => setActiveField(f)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                  activeField === f
-                    ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
-                    : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          {/* 프로젝트 등록 버튼 — 로그인 회원 누구나 */}
-          {isLoggedIn && (
-            <button
-              onClick={() => setShowCreateProjectModal(true)}
-              className="text-xs font-semibold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <span className="text-base leading-none">+</span> 프로젝트 등록
-            </button>
-          )}
-        </div>
-        {/* Row 2: 검색창 + Pagination */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-            <input
-              type="text"
-              placeholder="스타트업명, 아이템, 태그 검색..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-            />
-          </div>
-          {totalPages > 1 && (
-            <div className="ml-auto">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={filtered.length}
-                itemsPerPage={itemsPerPage}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Row 3: 인기 트렌딩 태그 클라우드 */}
-        {popularTags.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-brand-border/20">
-            <span className="text-[11px] font-semibold text-brand-on-surface-variant flex items-center gap-1">
-              <Sparkles size={12} className="text-brand-primary" /> 트렌딩 키워드:
-            </span>
-            {popularTags.map((tag) => {
-              const isSelected = activeTag === tag;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => setActiveTag(isSelected ? null : tag)}
-                  className={`text-[11px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 ${
-                    isSelected
-                      ? "bg-brand-primary/20 text-brand-primary border-brand-primary font-bold shadow-sm"
-                      : "bg-brand-surface-low border-brand-border/60 text-slate-400 hover:text-white hover:border-brand-border"
-                  }`}
-                >
-                  #{tag}
-                  {isSelected && <X size={10} className="ml-0.5" />}
-                </button>
-              );
-            })}
-            {activeTag && (
-              <button
-                onClick={() => setActiveTag(null)}
-                className="text-[10px] text-brand-on-surface-variant hover:text-white underline ml-1 cursor-pointer"
-              >
-                전체보기
-              </button>
-            )}
-          </div>
-        )}
+        <button
+          onClick={() => {
+            setActiveTab("ideas");
+            setSelectedProject(null);
+          }}
+          className={`pb-2.5 px-3 text-sm font-bold transition-all cursor-pointer relative flex items-center gap-2 ${
+            activeTab === "ideas"
+              ? "text-cyan-400 border-b-2 border-cyan-400 font-extrabold"
+              : "text-white/60 hover:text-white"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-cyan-400" /> 아이디어 제작 요청소
+          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+            빌더 역제안
+          </span>
+        </button>
       </div>
 
-      {/* Project Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {paginatedProjects.map((project, idx) => (
-          <div
-            key={project.id}
-            className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
-            style={{ animationDelay: `${idx * 50}ms` }}
-            onClick={() => setSelectedProject(project)}
-          >
-            <div>
-              {/* Thumbnail Header — 첨부 이미지 스타일의 일관된 바이올렛/인디고 헤더 */}
-              <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
-                <span className="text-3xl opacity-50 drop-shadow-md select-none">🚀</span>
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 1. 스타트업 & IR 탐색 (BROWSE TAB)                         */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {activeTab === "browse" && (
+        <>
+          {/* Filter & Search Bar */}
+          <div className="flex flex-col gap-3 mb-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {dynamicFields.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveField(f)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      activeField === f
+                        ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
+                        : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              {/* 프로젝트 등록 버튼 */}
+              {isLoggedIn && (
+                <button
+                  onClick={() => setShowCreateProjectModal(true)}
+                  className="text-xs font-semibold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md"
+                >
+                  <span className="text-base leading-none">+</span> 프로젝트 등록
+                </button>
+              )}
+            </div>
 
-                <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
-                    {project.field}
-                  </span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-md border ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
-                    {project.investmentStage}
-                  </span>
-                  {project.demoVideoUrl && (
-                    <span className="text-xs font-bold px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 flex items-center gap-1">
-                      <Play size={10} /> 영상
+            {/* Search + Pagination */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="스타트업명, 아이템, 태그 검색..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                />
+              </div>
+              {totalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalItems={filtered.length}
+                    itemsPerPage={itemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Tag Cloud */}
+            {popularTags.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-brand-border/20">
+                <span className="text-[11px] font-semibold text-brand-on-surface-variant flex items-center gap-1">
+                  <Sparkles size={12} className="text-brand-primary" /> 트렌딩 키워드:
+                </span>
+                {popularTags.map((tag) => {
+                  const isSelected = activeTag === tag;
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => setActiveTag(isSelected ? null : tag)}
+                      className={`text-[11px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 ${
+                        isSelected
+                          ? "bg-brand-primary/20 text-brand-primary border-brand-primary font-bold shadow-sm"
+                          : "bg-brand-surface-low border-brand-border/60 text-slate-400 hover:text-white hover:border-brand-border"
+                      }`}
+                    >
+                      #{tag}
+                      {isSelected && <X size={10} className="ml-0.5" />}
+                    </button>
+                  );
+                })}
+                {activeTag && (
+                  <button
+                    onClick={() => setActiveTag(null)}
+                    className="text-[10px] text-brand-on-surface-variant hover:text-white underline ml-1 cursor-pointer"
+                  >
+                    전체보기
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Project Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedProjects.map((project, idx) => (
+              <div
+                key={project.id}
+                data-testid="project-card"
+                className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
+                style={{ animationDelay: `${idx * 50}ms` }}
+                onClick={() => setSelectedProject(project)}
+              >
+                <div>
+                  <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#0f766e] to-[#042f2e] flex items-center justify-center">
+                    <span className="text-3xl opacity-40 drop-shadow-md select-none">🚀</span>
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
+                        {project.field}
+                      </span>
+                      {project.isHiring && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
+                          채용중
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white/90">{project.teamName}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleBookmark(project.id);
+                        }}
+                        className="text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
+                      >
+                        {project.bookmarked ? (
+                          <BookmarkCheck className="w-4 h-4 text-amber-400 fill-amber-400" />
+                        ) : (
+                          <Bookmark className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    <h3 className="font-display text-base font-bold text-white mt-2 group-hover:text-brand-primary transition-colors line-clamp-1">
+                      {project.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                      {project.oneLiner}
+                    </p>
+
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {project.tags.slice(0, 3).map((tag, tIdx) => (
+                          <span
+                            key={tIdx}
+                            className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-5 pt-0">
+                  <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80">
+                    <div className="flex -space-x-2">
+                      {project.members.slice(0, 3).map((m, i) => (
+                        <div
+                          key={i}
+                          className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold text-brand-primary"
+                        >
+                          {m.name.charAt(0)}
+                        </div>
+                      ))}
+                      {project.members.length > 3 && (
+                        <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] text-slate-400">
+                          +{project.members.length - 3}
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-xs px-2.5 py-1 rounded border font-semibold ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
+                      {project.investmentStage}
                     </span>
-                  )}
-                  {project.isHiring && (
-                    <span className="text-xs font-bold px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300">
-                      채용중
-                    </span>
-                  )}
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="p-5">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span className="font-mono">{project.field}</span>
-                  <span className={`px-2 py-0.5 rounded border font-bold text-[10px] ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
-                    {project.investmentStage}
-                  </span>
+          {filtered.length === 0 && (
+            <div className="text-center py-16 bg-brand-card rounded-xl border border-brand-border/40 mt-4">
+              <p className="text-brand-on-surface-variant text-sm">검색 결과가 없습니다</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 2. 아이디어 제작 요청소 (REVERSE PROPOSALS TAB)            */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {activeTab === "ideas" && (
+        <div className="space-y-6">
+          {/* Hero Banner for Idea Requests */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-950/50 via-blue-950/40 to-slate-900 border border-cyan-500/20 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5" /> 문제 발제 & 빌더 역제안 매칭
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
+                아이디어와 시장 문제를 발제하면, <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-200">
+                  실력 있는 개발팀/빌더가 MVP 제작을 역제안합니다.
+                </span>
+              </h2>
+              <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
+                잠재 고객의 공감 투표로 시장성을 검증하고, 빌더 팀의 제안을 수락하면 정식 스타트업 IR 프로젝트로 즉시 승격됩니다.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                if (!isLoggedIn) {
+                  onLoginClick();
+                  return;
+                }
+                setShowIdeaRequestModal(true);
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-sm shadow-xl shadow-cyan-500/20 transition-all transform active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <Sparkles className="w-4 h-4" /> + 아이디어 제작 의뢰
+            </button>
+          </div>
+
+          {/* Filter & Search Bar for Ideas */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              {/* Category & Status Filter */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {dynamicFields.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveField(f)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      activeField === f
+                        ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300 font-bold"
+                        : "border-brand-border text-brand-on-surface-variant hover:text-white"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+
+                <span className="text-white/20">|</span>
+
+                {["전체", "모집중", "빌더제안중", "매칭완료"].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setIdeaStatusFilter(st)}
+                    className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                      ideaStatusFilter === st
+                        ? "bg-white/15 text-white font-bold"
+                        : "text-white/40 hover:text-white/70"
+                    }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sort Switch */}
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 text-xs">
+                <button
+                  onClick={() => setIdeaSort("popular")}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    ideaSort === "popular"
+                      ? "bg-cyan-500/20 text-cyan-300 font-bold"
+                      : "text-white/50 hover:text-white"
+                  }`}
+                >
+                  🔥 공감순
+                </button>
+                <button
+                  onClick={() => setIdeaSort("recent")}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    ideaSort === "recent"
+                      ? "bg-cyan-500/20 text-cyan-300 font-bold"
+                      : "text-white/50 hover:text-white"
+                  }`}
+                >
+                  ⏱️ 최신순
+                </button>
+              </div>
+            </div>
+
+            {/* Search + Pagination */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="아이디어, 문제점, 솔루션 검색..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-cyan-500 transition-colors w-full"
+                />
+              </div>
+              {totalIdeaPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={ideaPage}
+                    totalPages={totalIdeaPages}
+                    onPageChange={setIdeaPage}
+                    totalItems={filteredIdeaRequests.length}
+                    itemsPerPage={ideasPerPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Master-Detail Split Layout for Ideas */}
+          <div className="flex gap-6 items-start">
+            {/* Left: Cards Grid */}
+            <div className={`transition-all duration-300 ${selectedIdeaRequest ? "w-full lg:w-3/5" : "w-full"}`}>
+              {requestsLoading ? (
+                <div className="text-center py-16 text-white/50 text-sm">아이디어 요청 목록을 불러오는 중...</div>
+              ) : paginatedIdeaRequests.length === 0 ? (
+                <div className="text-center py-16 bg-brand-card rounded-2xl border border-white/10">
+                  <p className="text-white/60 text-sm">등록된 아이디어 제작 의뢰가 없습니다.</p>
+                  <button
+                    onClick={() => setShowIdeaRequestModal(true)}
+                    className="mt-3 text-xs text-cyan-400 hover:underline font-semibold"
+                  >
+                    + 첫 번째 아이디어 제작 의뢰 등록하기
+                  </button>
+                </div>
+              ) : (
+                <div className={`grid gap-4 ${selectedIdeaRequest ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
+                  {paginatedIdeaRequests.map((req) => {
+                    const isSelected = selectedIdeaRequest?.id === req.id;
+                    const isUpvoted = req.upvotes?.includes(userName || "u-student-1");
+
+                    return (
+                      <div
+                        key={req.id}
+                        onClick={() => setSelectedIdeaRequest(req)}
+                        className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between shadow-lg relative overflow-hidden group ${
+                          isSelected
+                            ? "bg-brand-surface-high border-cyan-500/60 ring-2 ring-cyan-500/20"
+                            : "bg-[#0f172a] border-slate-800 hover:border-slate-700 hover:bg-[#131d36]"
+                        }`}
+                      >
+                        <div>
+                          {/* Header badges */}
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <span
+                              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                req.status === "모집중"
+                                  ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                                  : req.status === "빌더제안중"
+                                  ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                  : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                              }`}
+                            >
+                              {req.status === "모집중" ? "💡 빌더 모집중" : req.status === "빌더제안중" ? "🛠️ 제작 제안 검토중" : "✓ 매칭 완료"}
+                            </span>
+                            <span className="text-[10px] text-white/50">{req.category}</span>
+                          </div>
+
+                          <h3 className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-2 leading-snug">
+                            {req.title}
+                          </h3>
+
+                          {/* Problem/Solution Summary */}
+                          <div className="mt-2.5 space-y-1.5">
+                            <p className="text-xs text-white/60 line-clamp-2">
+                              <span className="text-red-400 font-semibold mr-1">[문제]</span>
+                              {req.problem}
+                            </p>
+                            <p className="text-xs text-white/70 line-clamp-2">
+                              <span className="text-emerald-400 font-semibold mr-1">[솔루션]</span>
+                              {req.solutionConcept}
+                            </p>
+                          </div>
+
+                          {/* Reward & Roles */}
+                          <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              💎 {req.rewardType}
+                            </span>
+                            {req.requiredRoles?.slice(0, 2).map((role, rIdx) => (
+                              <span
+                                key={rIdx}
+                                className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-white/60 border border-white/10"
+                              >
+                                {role}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="mt-4 pt-3.5 border-t border-white/10 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={(e) => handleUpvoteIdea(e, req.id)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                              isUpvoted
+                                ? "bg-cyan-500 text-black border-cyan-500 shadow-sm"
+                                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <ThumbsUp className={`w-3.5 h-3.5 ${isUpvoted ? "fill-black" : ""}`} />
+                            {isUpvoted ? "공감 완료" : "나도 쓸래요!"} ({req.upvoteCount})
+                          </button>
+
+                          <div className="text-[11px] text-cyan-300 font-medium">
+                            빌더 제안 {req.proposals?.length || 0}건
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Right: Master-Detail Slide-in Panel */}
+            {selectedIdeaRequest && (
+              <div className="w-full lg:w-2/5 bg-brand-surface/95 border border-white/15 rounded-2xl p-6 shadow-2xl animate-slideInFromRight sticky top-24 max-h-[85vh] overflow-y-auto space-y-5">
+                {/* Detail Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                        selectedIdeaRequest.status === "모집중"
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                          : selectedIdeaRequest.status === "빌더제안중"
+                          ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                          : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                      }`}
+                    >
+                      {selectedIdeaRequest.status}
+                    </span>
+                    <span className="text-xs text-white/50">{selectedIdeaRequest.category}</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedIdeaRequest(null)}
+                    className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
-                <h3 className="font-display text-base font-bold text-white mt-1.5 group-hover:text-brand-primary transition-colors line-clamp-1 leading-snug">
-                  {project.teamName}
-                </h3>
-                <p className="text-xs text-brand-primary font-medium mt-0.5 truncate">{project.title}</p>
-                <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                  {project.oneLiner}
-                </p>
+                {/* Idea Info */}
+                <div>
+                  <h3 className="text-lg font-bold text-white">{selectedIdeaRequest.title}</h3>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-white/60">
+                    <span>발제자: <b className="text-white">{selectedIdeaRequest.requestedBy.userName}</b></span>
+                    <span>•</span>
+                    <span>협업 조건: <b className="text-amber-400">{selectedIdeaRequest.rewardType} ({selectedIdeaRequest.rewardDetail || "협의"})</b></span>
+                  </div>
+                </div>
 
-                {/* AI 자동 추출 태그 뱃지 */}
-                {project.tags && project.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {project.tags.slice(0, 3).map((tag, tIdx) => (
+                {/* Problem & Solution Cards */}
+                <div className="space-y-2.5">
+                  <div className="p-3.5 rounded-xl bg-red-950/20 border border-red-500/20 text-xs text-white/80 leading-relaxed">
+                    <div className="font-semibold text-red-400 mb-1 flex items-center gap-1">
+                      <Target className="w-3.5 h-3.5" /> 문제점 (Pain Point)
+                    </div>
+                    {selectedIdeaRequest.problem}
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs text-white/80 leading-relaxed">
+                    <div className="font-semibold text-emerald-400 mb-1 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" /> 제안 솔루션 & MVP 컨셉
+                    </div>
+                    {selectedIdeaRequest.solutionConcept}
+                  </div>
+                </div>
+
+                {/* Required Roles */}
+                <div>
+                  <div className="text-xs font-semibold text-white/70 mb-1.5">필요한 빌더 포지션:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedIdeaRequest.requiredRoles?.map((r, i) => (
                       <span
-                        key={tIdx}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/30"
+                        key={i}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/80"
                       >
-                        #{tag}
+                        ✓ {r}
                       </span>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* Footer */}
-            <div className="p-5 pt-0">
-              <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80">
-                <div className="flex -space-x-2">
-                  {project.members.slice(0, 3).map((m, i) => (
-                    <div
-                      key={i}
-                      className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold text-brand-primary"
-                    >
-                      {m.name.charAt(0)}
+                {/* Upvote CTA */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/40 to-slate-900 border border-cyan-500/30 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs text-white/60">출시 응원 잠재고객</div>
+                    <div className="text-base font-bold text-cyan-400">
+                      {selectedIdeaRequest.upvoteCount}명 공감 중
                     </div>
-                  ))}
-                  {project.members.length > 3 && (
-                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] text-slate-400">
-                      +{project.members.length - 3}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => handleUpvoteIdea(e, selectedIdeaRequest.id)}
+                    className="px-4 py-2 rounded-xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <ThumbsUp className="w-4 h-4 fill-black" />
+                    나도 쓸래요 (+1)
+                  </button>
+                </div>
+
+                {/* Builder Proposals Section */}
+                <div className="pt-2 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      🛠️ 빌더 팀 제작 제안서 ({selectedIdeaRequest.proposals?.length || 0}건)
+                    </h4>
+                    <button
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          onLoginClick();
+                          return;
+                        }
+                        setProposalTargetIdea(selectedIdeaRequest);
+                        setShowIdeaProposalModal(true);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors font-medium cursor-pointer"
+                    >
+                      + 저희가 제작하겠습니다
+                    </button>
+                  </div>
+
+                  {(!selectedIdeaRequest.proposals || selectedIdeaRequest.proposals.length === 0) ? (
+                    <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center text-xs text-white/50">
+                      아직 등록된 빌더 팀의 제안서가 없습니다. <br />
+                      개발/기획 팀이시라면 MVP 제작을 제안해보세요!
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedIdeaRequest.proposals.map((prop) => (
+                        <div
+                          key={prop.id}
+                          className={`p-4 rounded-xl border transition-all ${
+                            prop.status === "수락됨"
+                              ? "bg-emerald-950/30 border-emerald-500/50"
+                              : "bg-white/5 border-white/10"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-cyan-500/30 text-cyan-300 flex items-center justify-center text-xs font-bold">
+                                {prop.proposerName.charAt(0)}
+                              </div>
+                              <span className="text-xs font-bold text-white">{prop.proposerName} 팀</span>
+                            </div>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
+                                prop.status === "수락됨"
+                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                  : "bg-white/10 text-white/60"
+                              }`}
+                            >
+                              {prop.status}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-white/90 font-medium mb-2">{prop.teamSummary}</div>
+
+                          <div className="flex items-center gap-3 text-[11px] text-white/60 mb-2">
+                            <span>예상 기간: <b className="text-cyan-400">{prop.estimatedWeeks}주 완성</b></span>
+                            {prop.contactEmail && (
+                              <>
+                                <span>•</span>
+                                <span>이메일: <b className="text-white/80">{prop.contactEmail}</b></span>
+                              </>
+                            )}
+                          </div>
+
+                          {prop.techStack && prop.techStack.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2.5">
+                              {prop.techStack.map((tech, tIdx) => (
+                                <span
+                                  key={tIdx}
+                                  className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          <p className="text-xs text-white/80 bg-black/30 p-2.5 rounded-lg border border-white/5 leading-relaxed whitespace-pre-line mb-3">
+                            {prop.planSummary}
+                          </p>
+
+                          {prop.status === "대기중" && (
+                            <button
+                              onClick={() => handleAcceptIdeaProposal(selectedIdeaRequest.id, prop.id)}
+                              className="w-full py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                            >
+                              ✓ 이 팀과 제작 확정하기 (정식 스타트업 IR 승격)
+                            </button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded border font-semibold ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
-                  {project.investmentStage}
-                </span>
               </div>
-            </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-16 bg-brand-card rounded-xl border border-brand-border/40 mt-4">
-          <p className="text-brand-on-surface-variant text-sm">검색 결과가 없습니다</p>
         </div>
       )}
 
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* Modals                                                     */}
+      {/* ────────────────────────────────────────────────────────── */}
       {/* 스타트업 IR 프로젝트 등록 모달 */}
       <ProjectCreateEditModal
         isOpen={showCreateProjectModal}
@@ -902,6 +1468,32 @@ export default function IRPage({
           if (onSaveProject) {
             onSaveProject(newProject);
           }
+        }}
+      />
+
+      {/* 아이디어 제작 의뢰 모달 */}
+      <IdeaRequestModal
+        isOpen={showIdeaRequestModal}
+        onClose={() => setShowIdeaRequestModal(false)}
+        userName={userName || "김수강생"}
+        userId="u-student-1"
+        onRequestCreated={(newReq) => {
+          setIdeaRequests((prev) => [newReq, ...prev]);
+        }}
+      />
+
+      {/* 빌더 제작 역제안 모달 */}
+      <IdeaProposalModal
+        request={proposalTargetIdea}
+        isOpen={showIdeaProposalModal}
+        onClose={() => {
+          setShowIdeaProposalModal(false);
+          setProposalTargetIdea(null);
+        }}
+        proposerName={userName || "오승환"}
+        proposerId="u-builder-1"
+        onProposalSubmitted={() => {
+          fetchIdeaRequests();
         }}
       />
     </div>

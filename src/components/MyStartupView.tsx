@@ -15,10 +15,12 @@ import {
   Search,
   X,
   RotateCcw,
+  Lightbulb,
 } from "lucide-react";
-import type { IRProject, TeamBuildingRequest, InvestmentProposal } from "../types";
+import type { IRProject, TeamBuildingRequest, InvestmentProposal, IdeaRequest } from "../types";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import Pagination from "./common/Pagination";
+import { api } from "../lib/api";
 
 interface MyStartupViewProps {
   myProjects: IRProject[];
@@ -41,9 +43,25 @@ export default function MyStartupView({
   isModalOpenExternal,
   onCloseModalExternal,
 }: MyStartupViewProps) {
-  const [activeSubTab, setActiveSubTab] = React.useState<"projects" | "teambuilding" | "proposals">("projects");
+  const [activeSubTab, setActiveSubTab] = React.useState<"projects" | "teambuilding" | "proposals" | "ideas">("projects");
   const [showProjectModal, setShowProjectModal] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<IRProject | null>(null);
+
+  // SubTab: Idea Requests
+  const [myIdeas, setMyIdeas] = React.useState<IdeaRequest[]>([]);
+  const [ideasLoading, setIdeasLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (activeSubTab === "ideas") {
+      setIdeasLoading(true);
+      api.getIdeaRequests()
+        .then((res) => {
+          setMyIdeas(res.requests || []);
+        })
+        .catch((err) => console.error("Failed to load idea requests", err))
+        .finally(() => setIdeasLoading(false));
+    }
+  }, [activeSubTab]);
 
   // SubTab 1: Projects Search & Pagination
   const [searchProject, setSearchProject] = React.useState("");
@@ -208,6 +226,16 @@ export default function MyStartupView({
           }`}
         >
           <TrendingUp size={14} /> 받은 투자 제안 ({receivedProposals.length})
+        </button>
+        <button
+          onClick={() => setActiveSubTab("ideas")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeSubTab === "ideas"
+              ? "text-cyan-400 border-b-2 border-cyan-400 tab-active font-extrabold"
+              : "text-brand-on-surface-variant hover:text-white"
+          }`}
+        >
+          <Sparkles size={14} className="text-cyan-400" /> 내가 의뢰한 아이디어
         </button>
       </div>
 
@@ -668,6 +696,60 @@ export default function MyStartupView({
                   >
                     {prop.status}
                   </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SubTab 4: 내가 의뢰한 아이디어 ── */}
+      {activeSubTab === "ideas" && (
+        <div className="flex flex-col gap-4 animate-fadeIn">
+          <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between">
+            <div className="text-xs text-cyan-200">
+              💡 내가 발제한 아이디어 제작 의뢰 건입니다. 빌더 팀이 제안한 개발 계획을 확인하고 수락하면 정식 IR 프로젝트로 전환됩니다.
+            </div>
+          </div>
+
+          {ideasLoading ? (
+            <div className="text-center py-12 text-white/50 text-xs">아이디어 목록 로딩 중...</div>
+          ) : myIdeas.length === 0 ? (
+            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-white/10">
+              <p className="text-xs text-white/50">등록된 아이디어 제작 의뢰가 없습니다.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {myIdeas.map((idea) => (
+                <div
+                  key={idea.id}
+                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          idea.status === "모집중"
+                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                            : idea.status === "빌더제안중"
+                            ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                            : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                        }`}
+                      >
+                        {idea.status}
+                      </span>
+                      <span className="text-[10px] text-white/50">{idea.category}</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white line-clamp-1">{idea.title}</h4>
+                    <p className="text-xs text-white/60 mt-1 line-clamp-2">{idea.problem}</p>
+                    <div className="mt-3 flex items-center justify-between text-xs">
+                      <span className="text-amber-300 font-medium">💎 {idea.rewardType} ({idea.rewardDetail || "협의"})</span>
+                      <span className="text-cyan-400 font-bold">{idea.upvoteCount}명 공감</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                    <span className="text-cyan-300 font-medium">빌더 제안 {idea.proposals?.length || 0}건</span>
+                  </div>
                 </div>
               ))}
             </div>

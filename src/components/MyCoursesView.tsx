@@ -12,9 +12,12 @@ import {
   Search,
   X,
   RotateCcw,
+  Lightbulb,
+  ThumbsUp,
 } from "lucide-react";
-import type { Course } from "../types";
+import type { Course, CourseRequest } from "../types";
 import Pagination from "./common/Pagination";
+import { api } from "../lib/api";
 
 interface MyCoursesViewProps {
   courses: Course[];
@@ -27,11 +30,27 @@ export default function MyCoursesView({
   onViewCourse,
   onNavigateToCourses,
 }: MyCoursesViewProps) {
+  const [viewTab, setViewTab] = React.useState<"enrolled" | "requested">("enrolled");
+  const [myRequests, setMyRequests] = React.useState<CourseRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = React.useState(false);
+
   const enrolledCourses = courses.filter((c) => c.isEnrolled);
   const [filter, setFilter] = React.useState<"all" | "in_progress" | "completed">("all");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
+
+  React.useEffect(() => {
+    if (viewTab === "requested") {
+      setRequestsLoading(true);
+      api.getCourseRequests()
+        .then((res) => {
+          setMyRequests(res.requests || []);
+        })
+        .catch((err) => console.error("Failed to load requests", err))
+        .finally(() => setRequestsLoading(false));
+    }
+  }, [viewTab]);
 
   const filteredCourses = enrolledCourses.filter((course) => {
     const matchFilter =
@@ -66,20 +85,112 @@ export default function MyCoursesView({
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
-      {/* ── Header ── */}
+      {/* ── Header with Tab Switcher ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
             <BookOpen size={20} className="text-brand-primary" /> 내 강의실 (수강 관리)
           </h2>
           <p className="text-xs text-brand-on-surface-variant mt-1">
-            수강 중인 강의의 일정, 실시간 진도율 및 학습 슬라이드/VOD를 확인하세요
+            수강 중인 강의의 일정 및 진도율, 또는 내가 요청한 개강 건의 강사 제안 현황을 확인하세요
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10 self-start">
+          <button
+            onClick={() => setViewTab("enrolled")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              viewTab === "enrolled"
+                ? "bg-brand-primary text-black shadow-md"
+                : "text-white/60 hover:text-white"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" /> 수강 중인 강의 ({enrolledCourses.length})
+          </button>
+          <button
+            onClick={() => setViewTab("requested")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              viewTab === "requested"
+                ? "bg-amber-500 text-black shadow-md"
+                : "text-white/60 hover:text-white"
+            }`}
+          >
+            <Lightbulb className="w-3.5 h-3.5" /> 개강 요청 건
+          </button>
         </div>
       </div>
 
-      {/* ── Filter Pills & Search Bar (Community Style) ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      {viewTab === "requested" ? (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+            <div className="text-xs text-amber-200">
+              💡 내가 등록하거나 참여한 개강 요청 건입니다. 목표 공감 수가 모이면 전문 강사가 맞춤 커리큘럼을 제안합니다.
+            </div>
+            {onNavigateToCourses && (
+              <button
+                onClick={onNavigateToCourses}
+                className="text-xs font-bold text-amber-400 hover:underline shrink-0 ml-2"
+              >
+                개강 요청소 가기 →
+              </button>
+            )}
+          </div>
+
+          {requestsLoading ? (
+            <div className="text-center py-12 text-white/50 text-xs">요청 목록 로딩 중...</div>
+          ) : myRequests.length === 0 ? (
+            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-white/10">
+              <p className="text-xs text-white/50">등록된 개강 요청이 없습니다.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {myRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          req.status === "모집중"
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                            : req.status === "강사매칭중"
+                            ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                            : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                        }`}
+                      >
+                        {req.status}
+                      </span>
+                      <span className="text-[10px] text-white/50">{req.category}</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white line-clamp-1">{req.title}</h4>
+                    <p className="text-xs text-white/60 mt-1 line-clamp-2">{req.description}</p>
+                    <div className="mt-3 flex items-center justify-between text-xs">
+                      <span className="text-white/50">공감 수강생</span>
+                      <span className="text-amber-400 font-bold">{req.upvoteCount} / {req.targetCount}명</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                    <span className="text-purple-300 font-medium">강사 제안 {req.proposals?.length || 0}건</span>
+                    {onNavigateToCourses && (
+                      <button
+                        onClick={onNavigateToCourses}
+                        className="text-xs text-brand-primary hover:underline font-semibold"
+                      >
+                        제안서 보기 →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* ── Filter Pills & Search Bar (Community Style) ── */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
           <button
             onClick={() => setFilter("all")}
@@ -301,6 +412,8 @@ export default function MyCoursesView({
             );
           })}
         </div>
+      )}
+      </>
       )}
     </div>
   );

@@ -127,6 +127,47 @@ export interface Review {
   courseTitle?: string;
 }
 
+// ── Course Reverse Proposal (개강 요청 & 역제안) ──
+export interface CourseProposal {
+  id: string;
+  requestId: string;
+  instructorId: string;
+  instructorName: string;
+  instructorAvatar: string;
+  instructorTitle?: string;
+  proposedTitle: string;
+  curriculumDraft: string[];
+  proposedPrice: number;
+  proposedSchedule: string;
+  message: string;
+  status: "대기중" | "채택됨" | "반려";
+  createdAt: string;
+}
+
+export interface CourseRequest {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  tags?: string[];
+  targetLevel?: "입문" | "초급" | "중급" | "고급" | string;
+  preferredSchedule?: string;
+  expectedPriceRange?: string;
+  requestedBy: {
+    userId: string;
+    userName: string;
+    avatar: string;
+  };
+  upvotes: string[];
+  upvoteCount: number;
+  targetCount: number;
+  status: "모집중" | "강사매칭중" | "개강완료" | "마감";
+  matchedCourseId?: string;
+  proposals?: CourseProposal[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
 // ── IR / Startup ──
 export interface HiringRoleDetail {
   id: string;
@@ -174,6 +215,48 @@ export interface IRProject {
   bookmarked?: boolean;
   investmentStage: "Pre-Seed" | "Seed" | "Pre-A" | "Series A" | string;
 }
+
+// ── Startup & IR Reverse Proposal (아이디어 제작 의뢰 & 빌더 역제안) ──
+export interface IdeaProposal {
+  id: string;
+  requestId: string;
+  proposerId: string;
+  proposerName: string;
+  proposerAvatar: string;
+  teamSummary: string;
+  techStack: string[];
+  planSummary: string;
+  estimatedWeeks: number;
+  portfolioUrl?: string;
+  contactEmail?: string;
+  status: "대기중" | "수락됨" | "거절됨";
+  createdAt: string;
+}
+
+export interface IdeaRequest {
+  id: string;
+  title: string;
+  problem: string;
+  solutionConcept: string;
+  category: string;
+  tags?: string[];
+  requiredRoles: string[];
+  rewardType: "지분공유(코파운더)" | "개발보상" | "수익셰어" | "협의" | string;
+  rewardDetail?: string;
+  requestedBy: {
+    userId: string;
+    userName: string;
+    avatar: string;
+  };
+  upvotes: string[];
+  upvoteCount: number;
+  status: "모집중" | "빌더제안중" | "매칭완료" | "마감";
+  matchedProjectId?: string;
+  proposals?: IdeaProposal[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
 
 // ── Community / Board & Comments ──
 export type BoardType = "공지사항" | "팀빌딩" | "QnA";

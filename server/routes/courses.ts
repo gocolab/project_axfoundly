@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { classifyContent } from "../services/aiClassifier.js";
-import type { Course, PaymentRecord, Notification, Review } from "../../src/types.js";
+import type { Course, PaymentRecord, Notification, Review, CourseRequest, CourseProposal } from "../../src/types.js";
 
 const router = Router();
 
@@ -34,6 +34,326 @@ router.get("/categories", (req, res) => {
     categories: ["전체", ...popularCategories],
     popularTags,
   });
+});
+
+// ── Course Reverse Proposals (수강생 개강 요청 & 강사 역제안 API) ──
+
+// GET /api/courses/requests
+router.get("/requests", (req, res) => {
+  const { category, tag, search, sort = "popular", status, page, limit } = req.query as {
+    category?: string;
+    tag?: string;
+    search?: string;
+    sort?: "popular" | "recent";
+    status?: string;
+    page?: string;
+    limit?: string;
+  };
+
+  let requests = (db.get("courseRequests") || []) as CourseRequest[];
+  const proposals = (db.get("courseProposals") || []) as CourseProposal[];
+
+  // Attach proposals to each request
+  requests = requests.map((r) => ({
+    ...r,
+    proposals: proposals.filter((p) => p.requestId === r.id),
+  }));
+
+  if (category && category !== "전체") {
+    requests = requests.filter((r) => r.category === category);
+  }
+
+  if (tag && tag !== "전체") {
+    requests = requests.filter((r) => r.tags?.includes(tag));
+  }
+
+  if (status && status !== "전체") {
+    requests = requests.filter((r) => r.status === status);
+  }
+
+  if (search) {
+    const q = search.toLowerCase();
+    requests = requests.filter(
+      (r) =>
+        r.title.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        r.requestedBy?.userName.toLowerCase().includes(q) ||
+        r.category?.toLowerCase().includes(q) ||
+        r.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }
+
+  if (sort === "popular") {
+    requests.sort((a, b) => (b.upvoteCount || 0) - (a.upvoteCount || 0));
+  } else {
+    requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  const pageNum = parseInt(page || "1", 10);
+  const limitNum = parseInt(limit || "100", 10);
+  const total = requests.length;
+  const paginated = requests.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+
+  res.json({
+    requests: paginated,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum),
+  });
+});
+
+// POST /api/courses/requests (Create new request)
+router.post("/requests", async (req, res) => {
+  try {
+    const { title, description, category, tags, targetLevel, preferredSchedule, expectedPriceRange, requestedBy } = req.body;
+    if (!title || !description) {
+      return res.status(400).json({ error: "제목과 설명은 필수입니다." });
+    }
+
+    let finalTags = tags || [];
+    let finalCategory = category || "AI 모델링";
+
+    if (!finalTags.length || !finalCategory) {
+      const classified = await classifyContent("course", { title, description });
+      finalTags = finalTags.length ? finalTags : classified.tags;
+      finalCategory = finalCategory || classified.category;
+    }
+
+    const newRequest: CourseRequest = {
+      id: `cr-${Date.now()}`,
+      title,
+      description,
+      category: finalCategory,
+      tags: finalTags,
+      targetLevel: targetLevel || "입문",
+      preferredSchedule: preferredSchedule || "평일 저녁",
+      expectedPriceRange: expectedPriceRange || "협의",
+      requestedBy: requestedBy || {
+        userId: "u-current",
+        userName: "김수강생",
+        avatar: "",
+      },
+      upvotes: [requestedBy?.userId || "u-current"],
+      upvoteCount: 1,
+      targetCount: 20,
+      status: "모집중",
+      createdAt: new Date().toISOString(),
+    };
+
+    db.update("courseRequests", (list) => [newRequest, ...(list || [])]);
+
+    const notif: Notification = {
+      id: `notif-${Date.now()}`,
+      type: "course",
+      title: "개강 요청 등록 완료",
+      message: `'${title}' 개강 요청이 성공적으로 등록되었습니다.`,
+      time: "방금 전",
+      isRead: false,
+    };
+    db.update("notifications", (notifs) => [notif, ...notifs]);
+
+    res.status(201).json({ success: true, request: newRequest });
+  } catch (error) {
+    console.error("Error creating course request:", error);
+    res.status(500).json({ error: "Failed to create course request" });
+  }
+});
+
+// GET /api/courses/requests/:id
+router.get("/requests/:id", (req, res) => {
+  const { id } = req.params;
+  const request = (db.get("courseRequests") || []).find((r) => r.id === id);
+  if (!request) {
+    return res.status(404).json({ error: "개강 요청을 찾을 수 없습니다." });
+  }
+  const proposals = (db.get("courseProposals") || []).filter((p) => p.requestId === id);
+  res.json({ request: { ...request, proposals } });
+});
+
+// POST /api/courses/requests/:id/upvote
+router.post("/requests/:id/upvote", (req, res) => {
+  const { id } = req.params;
+  const { userId = "u-student-1" } = req.body;
+
+  let updatedRequest: CourseRequest | null = null;
+  let isUpvoted = false;
+
+  db.update("courseRequests", (list) =>
+    (list || []).map((r) => {
+      if (r.id === id) {
+        const upvotes = r.upvotes || [];
+        const exists = upvotes.includes(userId);
+        let newUpvotes: string[];
+        if (exists) {
+          newUpvotes = upvotes.filter((u) => u !== userId);
+          isUpvoted = false;
+        } else {
+          newUpvotes = [...upvotes, userId];
+          isUpvoted = true;
+        }
+        const count = newUpvotes.length;
+        let newStatus = r.status;
+        if (count >= r.targetCount && r.status === "모집중") {
+          newStatus = "강사매칭중";
+        }
+        updatedRequest = { ...r, upvotes: newUpvotes, upvoteCount: count, status: newStatus };
+        return updatedRequest;
+      }
+      return r;
+    })
+  );
+
+  if (!updatedRequest) {
+    return res.status(404).json({ error: "개강 요청을 찾을 수 없습니다." });
+  }
+
+  res.json({ success: true, isUpvoted, request: updatedRequest });
+});
+
+// POST /api/courses/requests/:id/proposals (Instructor submits a proposal)
+router.post("/requests/:id/proposals", (req, res) => {
+  const { id } = req.params;
+  const {
+    instructorId = "ins-1",
+    instructorName = "김소현",
+    instructorAvatar = "",
+    instructorTitle = "전문 강사",
+    proposedTitle,
+    curriculumDraft = [],
+    proposedPrice = 300000,
+    proposedSchedule = "일정 협의",
+    message = "",
+  } = req.body;
+
+  const request = (db.get("courseRequests") || []).find((r) => r.id === id);
+  if (!request) {
+    return res.status(404).json({ error: "개강 요청을 찾을 수 없습니다." });
+  }
+
+  const newProposal: CourseProposal = {
+    id: `cp-${Date.now()}`,
+    requestId: id,
+    instructorId,
+    instructorName,
+    instructorAvatar,
+    instructorTitle,
+    proposedTitle: proposedTitle || `${request.title} 실전 완성`,
+    curriculumDraft: Array.isArray(curriculumDraft) ? curriculumDraft : [curriculumDraft],
+    proposedPrice: Number(proposedPrice) || 300000,
+    proposedSchedule,
+    message,
+    status: "대기중",
+    createdAt: new Date().toISOString(),
+  };
+
+  db.update("courseProposals", (list) => [newProposal, ...(list || [])]);
+
+  db.update("courseRequests", (list) =>
+    (list || []).map((r) => (r.id === id && r.status === "모집중" ? { ...r, status: "강사매칭중" } : r))
+  );
+
+  const notif: Notification = {
+    id: `notif-${Date.now()}`,
+    type: "course",
+    title: "새로운 강사 개강 제안서 도착",
+    message: `'${request.title}' 요청에 ${instructorName} 강사님의 개강 제안서가 등록되었습니다.`,
+    time: "방금 전",
+    isRead: false,
+  };
+  db.update("notifications", (notifs) => [notif, ...notifs]);
+
+  res.status(201).json({ success: true, proposal: newProposal });
+});
+
+// POST /api/courses/requests/:id/accept-proposal
+router.post("/requests/:id/accept-proposal", (req, res) => {
+  const { id } = req.params;
+  const { proposalId } = req.body;
+
+  const request = (db.get("courseRequests") || []).find((r) => r.id === id);
+  const proposal = (db.get("courseProposals") || []).find((p) => p.id === proposalId);
+
+  if (!request || !proposal) {
+    return res.status(404).json({ error: "요청 또는 제안서를 찾을 수 없습니다." });
+  }
+
+  db.update("courseProposals", (list) =>
+    (list || []).map((p) => {
+      if (p.requestId === id) {
+        return p.id === proposalId ? { ...p, status: "채택됨" } : { ...p, status: "반려" };
+      }
+      return p;
+    })
+  );
+
+  const newCourseId = `c-rev-${Date.now()}`;
+  const curriculumItems = (proposal.curriculumDraft || []).map((c, idx) => ({
+    week: idx + 1,
+    sessionNumber: idx + 1,
+    title: typeof c === "string" ? c : `차시 ${idx + 1}`,
+    description: "역제안 매칭을 통해 개설된 실습 커리큘럼",
+    duration: "2시간",
+  }));
+
+  const newCourse: Course = {
+    id: newCourseId,
+    title: proposal.proposedTitle,
+    description: `${request.description}\n\n[수강생 역제안 매칭으로 개설된 강의입니다.]`,
+    category: request.category,
+    tags: request.tags,
+    aiSummary: `수강생 ${request.upvoteCount}명의 요청으로 개설된 ${proposal.instructorName} 강사의 집중 실전 클래스`,
+    instructor: proposal.instructorName,
+    instructorTitle: proposal.instructorTitle,
+    instructorAvatar: proposal.instructorAvatar,
+    price: proposal.proposedPrice,
+    discountedPrice: Math.round(proposal.proposedPrice * 0.8),
+    thumbnail: "",
+    rating: 5.0,
+    reviewCount: 0,
+    studentCount: request.upvoteCount,
+    status: "모집중",
+    schedule: {
+      startDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+      endDate: new Date(Date.now() + 35 * 86400000).toISOString().split("T")[0],
+      daysOfWeek: ["화", "목"],
+      timeSlot: "19:30 ~ 21:30",
+      totalSessions: curriculumItems.length > 0 ? curriculumItems.length : 8,
+      scheduleType: "stepping_stone",
+    },
+    curriculum: curriculumItems.length > 0 ? curriculumItems : [
+      { week: 1, sessionNumber: 1, title: "1차시: 기초 및 요구사항 분석", description: "실전 워크플로우 셋업", duration: "2시간" },
+      { week: 2, sessionNumber: 2, title: "2차시: 핵심 프로토타입 구현", description: "실전 파이프라인 개발", duration: "2시간" }
+    ],
+    reviews: [],
+  };
+
+  db.update("courses", (courses) => [newCourse, ...courses]);
+
+  db.update("courseRequests", (list) =>
+    (list || []).map((r) => (r.id === id ? { ...r, status: "개강완료", matchedCourseId: newCourseId } : r))
+  );
+
+  const notif: Notification = {
+    id: `notif-${Date.now()}`,
+    type: "course",
+    title: "🎉 개강 제안 채택 및 강의 개설 완료!",
+    message: `'${proposal.proposedTitle}' 강의가 정식으로 개설되었습니다.`,
+    time: "방금 전",
+    isRead: false,
+    courseTitle: proposal.proposedTitle,
+  };
+  db.update("notifications", (notifs) => [notif, ...notifs]);
+
+  res.json({ success: true, course: newCourse, request: { ...request, status: "개강완료", matchedCourseId: newCourseId } });
+});
+
+// DELETE /api/courses/requests/:id
+router.delete("/requests/:id", (req, res) => {
+  const { id } = req.params;
+  db.update("courseRequests", (list) => (list || []).filter((r) => r.id !== id));
+  db.update("courseProposals", (list) => (list || []).filter((p) => p.requestId !== id));
+  res.json({ success: true });
 });
 
 // GET /api/courses

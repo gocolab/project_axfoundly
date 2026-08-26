@@ -19,11 +19,19 @@ import type {
   UserRole,
   CodeGroup,
   CommonCode,
+  CourseRequest,
+  CourseProposal,
+  IdeaRequest,
+  IdeaProposal,
 } from "../src/types";
 
 export interface DatabaseSchema {
   courses: Course[];
+  courseRequests: CourseRequest[];
+  courseProposals: CourseProposal[];
   irProjects: IRProject[];
+  ideaRequests: IdeaRequest[];
+  ideaProposals: IdeaProposal[];
   posts: BoardPost[];
   comments: Comment[];
   notifications: Notification[];
@@ -830,12 +838,165 @@ const SEED_COMMON_CODES: CommonCode[] = [
   },
 ];
 
+// ── 역제안 시드 데이터 (교육 개강 요청 / 스타트업 아이디어 제작 요청) ──
+
+const SEED_COURSE_REQUESTS: CourseRequest[] = [
+  {
+    id: "cr-1",
+    title: "실전 LangGraph & 멀티 에이전트 자율 코딩 시스템 개강 요청",
+    description: "단순 프롬프트 엔지니어링을 넘어 LangGraph 기반 상태 관리, 서브에이전트 조율, 코드 자가 수정 루프를 직접 구현하는 실무 집중 강의를 열어주세요!",
+    category: "AI 모델링",
+    tags: ["LangGraph", "MultiAgent", "AgenticDev", "Python"],
+    targetLevel: "중급",
+    preferredSchedule: "평일 저녁 (화/목 19:30~21:30)",
+    expectedPriceRange: "40~60만원대",
+    requestedBy: {
+      userId: "u-student-1",
+      userName: "김수강생",
+      avatar: "",
+    },
+    upvotes: ["u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7", "u-member-8", "u-member-9", "u-member-10", "u-member-11", "u-member-12", "u-member-13", "u-member-14", "u-member-15", "u-member-16", "u-member-17", "u-member-18"],
+    upvoteCount: 18,
+    targetCount: 20,
+    status: "모집중",
+    createdAt: "2025-09-01T10:00:00Z",
+  },
+  {
+    id: "cr-2",
+    title: "비개발자 창업자를 위한 AI 마케팅 & CRM 자동화 (Make + n8n + GPT-4o)",
+    description: "코딩을 몰라도 웹 스크래핑, SNS 콘텐츠 자동 발행, 카카오톡 알림톡/CRM 연동까지 1인 창업자가 혼자서 매출을 만드는 자동화 파이프라인을 배우고 싶습니다.",
+    category: "마케팅",
+    tags: ["n8n", "Make", "CRM자동화", "노코드"],
+    targetLevel: "입문",
+    preferredSchedule: "주말 오전 (토/일 10:00~13:00)",
+    expectedPriceRange: "30~45만원대",
+    requestedBy: {
+      userId: "u-founder-2",
+      userName: "이창업",
+      avatar: "",
+    },
+    upvotes: ["u-founder-2", "u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7", "u-member-8", "u-member-9", "u-member-10", "u-member-11", "u-member-12", "u-member-13", "u-member-14", "u-member-15", "u-member-16", "u-member-17", "u-member-18", "u-member-19", "u-member-20", "u-member-21", "u-member-22", "u-member-23", "u-member-24"],
+    upvoteCount: 24,
+    targetCount: 20,
+    status: "강사매칭중",
+    createdAt: "2025-08-28T14:30:00Z",
+  },
+  {
+    id: "cr-3",
+    title: "AI 헬스케어 규제 샌드박스 통과 및 의료기기 인허가 전략",
+    description: "생성형 AI를 의료/헬스케어에 접목할 때 식약처 인허가 및 개인정보보호법 가이드라인을 실제 통과한 실무자의 생생한 케이스 스터디가 필요합니다.",
+    category: "비즈니스 기획",
+    tags: ["디지털헬스케어", "규제샌드박스", "식약처인허가"],
+    targetLevel: "고급",
+    preferredSchedule: "평일 저녁",
+    expectedPriceRange: "50만원 이상",
+    requestedBy: {
+      userId: "u-med-1",
+      userName: "최의료",
+      avatar: "",
+    },
+    upvotes: ["u-med-1", "u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7"],
+    upvoteCount: 8,
+    targetCount: 15,
+    status: "모집중",
+    createdAt: "2025-09-02T09:15:00Z",
+  },
+];
+
+const SEED_COURSE_PROPOSALS: CourseProposal[] = [
+  {
+    id: "cp-1",
+    requestId: "cr-2",
+    instructorId: "ins-1",
+    instructorName: "김소현",
+    instructorAvatar: "",
+    instructorTitle: "전) 글로벌 테크 유니콘 AI PM 리드",
+    proposedTitle: "1인 창업자를 위한 노코드 AI 그로스해킹 & 마케팅 자동화 4주 완성",
+    curriculumDraft: [
+      "1회차: Make & n8n 기초 및 웹훅(Webhook) 데이터 수집",
+      "2회차: GPT-4o API 기반 맞춤형 카피라이팅 & SNS 자동 포스팅",
+      "3회차: 리드 수집 랜딩페이지 구축 및 카카오 알림톡 CRM 연동",
+      "4회차: 유료 광고 성과 대시보드 자동화 및 A/B 테스트 파이프라인",
+    ],
+    proposedPrice: 390000,
+    proposedSchedule: "매주 토/일 10:00~12:30 (총 8회차 / 4주)",
+    message: "안녕하세요, 비개발자 분들이 바로 당일 실무에 적용해 매출을 낼 수 있는 실습 100% 커리큘럼으로 준비했습니다!",
+    status: "대기중",
+    createdAt: "2025-08-30T11:00:00Z",
+  },
+];
+
+const SEED_IDEA_REQUESTS: IdeaRequest[] = [
+  {
+    id: "ir-req-1",
+    title: "초기 창업자를 위한 AI 계약서 위험조항 자동 검토 & 수정 제안 SaaS",
+    problem: "초기 스타트업은 수백만원의 법률 자문료를 감당하기 어렵고, 투자계약서나 외주계약서 내 독소조항을 제때 발견하지 못해 큰 피해를 입는 경우가 빈번합니다.",
+    solutionConcept: "계약서 PDF/Word 문서를 업로드하면 LLM과 리걸 온톨로지가 10초 만에 불공정 조항, 누락된 보호 장치를 색출하고 스타트업 친화적인 대체 문구를 제안하는 서비스.",
+    category: "AI/SaaS",
+    tags: ["LegalTech", "계약서검토", "SaaS", "AI에이전트"],
+    requiredRoles: ["풀스택 개발자", "AI 엔지니어", "UI/UX 디자이너"],
+    rewardType: "지분공유(코파운더)",
+    rewardDetail: "지분 15~25% 협의 + 공동대표(Co-founder) 지위",
+    requestedBy: {
+      userId: "u-founder-legal",
+      userName: "박창업 (변리사/예비창업자)",
+      avatar: "",
+    },
+    upvotes: ["u-founder-legal", "u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7", "u-member-8", "u-member-9", "u-member-10", "u-member-11", "u-member-12", "u-member-13", "u-member-14", "u-member-15", "u-member-16", "u-member-17", "u-member-18", "u-member-19", "u-member-20", "u-member-21", "u-member-22", "u-member-23", "u-member-24", "u-member-25", "u-member-26", "u-member-27", "u-member-28", "u-member-29", "u-member-30", "u-member-31", "u-member-32"],
+    upvoteCount: 32,
+    status: "빌더제안중",
+    createdAt: "2025-08-25T16:00:00Z",
+  },
+  {
+    id: "ir-req-2",
+    title: "로컬 디저트 카페 맞춤형 당일 마감할인 & 재고 예측 AI 에이전트",
+    problem: "동네 카페/베이커리 사장님들은 매일 오후 남은 빵과 케이크를 폐기해야 하는 손실을 겪고 있으나, 복잡한 배달앱 설정이나 타임세일 관리에 일손이 부족합니다.",
+    solutionConcept: "당일 날씨, 유동인구, 판매 추이를 학습해 적정 마감세일 개시 시간과 할인율을 카톡으로 추천하고, 인근 단골에게 자동 타임세일 알림톡을 발송하는 경량 솔루션.",
+    category: "커머스",
+    tags: ["로컬커머스", "재고예측", "소상공인", "알림톡"],
+    requiredRoles: ["프론트엔드", "백엔드 개발자"],
+    rewardType: "개발보상",
+    rewardDetail: "MVP 개발비 400만원 + 런칭 후 월 구독료 30% 셰어",
+    requestedBy: {
+      userId: "u-cafe-owner",
+      userName: "최점주 (베이커리 대표)",
+      avatar: "",
+    },
+    upvotes: ["u-cafe-owner", "u-student-1", "u-member-2", "u-member-3", "u-member-4", "u-member-5", "u-member-6", "u-member-7", "u-member-8", "u-member-9", "u-member-10", "u-member-11", "u-member-12", "u-member-13", "u-member-14", "u-member-15"],
+    upvoteCount: 15,
+    status: "모집중",
+    createdAt: "2025-09-01T11:20:00Z",
+  },
+];
+
+const SEED_IDEA_PROPOSALS: IdeaProposal[] = [
+  {
+    id: "ip-1",
+    requestId: "ir-req-1",
+    proposerId: "u-builder-1",
+    proposerName: "오승환",
+    proposerAvatar: "",
+    teamSummary: "테크 스타트업 리드 개발자 출신 풀스택 1인 + LangChain 전문 AI 엔지니어 1인 팀",
+    techStack: ["React", "TypeScript", "FastAPI", "OpenAI Embeddings", "MongoDB"],
+    planSummary: "3주차에 계약서 파싱 및 RAG 기반 위험조항 추출 MVP 완성, 4주차에 PDF 리포트 생성 및 UI 완성 계획입니다.",
+    estimatedWeeks: 4,
+    portfolioUrl: "https://github.com/example/legal-ai-demo",
+    contactEmail: "builder.oh@gmail.com",
+    status: "대기중",
+    createdAt: "2025-08-27T10:00:00Z",
+  },
+];
+
 // ──────────────────── 초기 시드 데이터 맵 ────────────────────
 
 function buildSeedData(): DatabaseSchema {
   return {
     courses: SEED_COURSES,
+    courseRequests: SEED_COURSE_REQUESTS,
+    courseProposals: SEED_COURSE_PROPOSALS,
     irProjects: SEED_IR_PROJECTS,
+    ideaRequests: SEED_IDEA_REQUESTS,
+    ideaProposals: SEED_IDEA_PROPOSALS,
     posts: SEED_POSTS,
     comments: SEED_COMMENTS,
     notifications: SEED_NOTIFICATIONS,

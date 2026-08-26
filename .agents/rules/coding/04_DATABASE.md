@@ -220,6 +220,10 @@ erDiagram
 | `boards` | board | 게시판 정의 | 📝 |
 | `posts` | board | 게시글 | 📝 |
 | `comments` | board | 댓글 | 📝 |
+| `course_requests` | reverse-course | 수강생 개강 요청소 | ✅ |
+| `course_proposals` | reverse-course | 강사 개강 역제안서 | ✅ |
+| `idea_requests` | reverse-ir | 아이디어 제작 의뢰소 | ✅ |
+| `idea_proposals` | reverse-ir | 빌더 팀 MVP 제작 역제안서 | ✅ |
 | `notifications` | notification | 알림 이력 (카카오·이메일) | 📝 |
 | `ai_match_profiles` | ai | AI 매칭용 임베딩 프로필 | 📝 |
 

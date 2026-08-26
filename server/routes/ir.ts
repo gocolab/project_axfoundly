@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { classifyContent } from "../services/aiClassifier.js";
-import type { IRProject, JobApplication, Notification } from "../../src/types.js";
+import type { IRProject, JobApplication, Notification, IdeaRequest, IdeaProposal } from "../../src/types.js";
 
 const router = Router();
 
@@ -34,6 +34,307 @@ router.get("/categories", (req, res) => {
     categories: ["전체", ...popularCategories],
     popularTags,
   });
+});
+
+// ── Startup & IR Reverse Proposals (아이디어 제작 요청 & 빌더 역제안 API) ──
+
+// GET /api/ir/idea-requests
+router.get("/idea-requests", (req, res) => {
+  const { category, tag, search, sort = "popular", status, page, limit } = req.query as {
+    category?: string;
+    tag?: string;
+    search?: string;
+    sort?: "popular" | "recent";
+    status?: string;
+    page?: string;
+    limit?: string;
+  };
+
+  let requests = (db.get("ideaRequests") || []) as IdeaRequest[];
+  const proposals = (db.get("ideaProposals") || []) as IdeaProposal[];
+
+  requests = requests.map((r) => ({
+    ...r,
+    proposals: proposals.filter((p) => p.requestId === r.id),
+  }));
+
+  if (category && category !== "전체") {
+    requests = requests.filter((r) => r.category === category);
+  }
+
+  if (tag && tag !== "전체") {
+    requests = requests.filter((r) => r.tags?.includes(tag));
+  }
+
+  if (status && status !== "전체") {
+    requests = requests.filter((r) => r.status === status);
+  }
+
+  if (search) {
+    const q = search.toLowerCase();
+    requests = requests.filter(
+      (r) =>
+        r.title.toLowerCase().includes(q) ||
+        r.problem.toLowerCase().includes(q) ||
+        r.solutionConcept.toLowerCase().includes(q) ||
+        r.requestedBy?.userName.toLowerCase().includes(q) ||
+        r.category?.toLowerCase().includes(q) ||
+        r.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }
+
+  if (sort === "popular") {
+    requests.sort((a, b) => (b.upvoteCount || 0) - (a.upvoteCount || 0));
+  } else {
+    requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  const pageNum = parseInt(page || "1", 10);
+  const limitNum = parseInt(limit || "100", 10);
+  const total = requests.length;
+  const paginated = requests.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+
+  res.json({
+    requests: paginated,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum),
+  });
+});
+
+// POST /api/ir/idea-requests (Create new request)
+router.post("/idea-requests", async (req, res) => {
+  try {
+    const { title, problem, solutionConcept, category, tags, requiredRoles, rewardType, rewardDetail, requestedBy } = req.body;
+    if (!title || !problem || !solutionConcept) {
+      return res.status(400).json({ error: "제목, 문제점, 솔루션 컨셉은 필수 항목입니다." });
+    }
+
+    let finalTags = tags || [];
+    let finalCategory = category || "AI/SaaS";
+
+    if (!finalTags.length || !finalCategory) {
+      const classified = await classifyContent("ir", { title, problem, solution: solutionConcept });
+      finalTags = finalTags.length ? finalTags : classified.tags;
+      finalCategory = finalCategory || classified.category;
+    }
+
+    const newRequest: IdeaRequest = {
+      id: `ir-req-${Date.now()}`,
+      title,
+      problem,
+      solutionConcept,
+      category: finalCategory,
+      tags: finalTags,
+      requiredRoles: Array.isArray(requiredRoles) && requiredRoles.length ? requiredRoles : ["개발자", "디자이너"],
+      rewardType: rewardType || "지분공유(코파운더)",
+      rewardDetail: rewardDetail || "협의",
+      requestedBy: requestedBy || {
+        userId: "u-current",
+        userName: "김수강생",
+        avatar: "",
+      },
+      upvotes: [requestedBy?.userId || "u-current"],
+      upvoteCount: 1,
+      status: "모집중",
+      createdAt: new Date().toISOString(),
+    };
+
+    db.update("ideaRequests", (list) => [newRequest, ...(list || [])]);
+
+    const notif: Notification = {
+      id: `notif-${Date.now()}`,
+      type: "team",
+      title: "아이디어 제작 의뢰 등록 완료",
+      message: `'${title}' 아이디어 제작 의뢰가 성공적으로 등록되었습니다.`,
+      time: "방금 전",
+      isRead: false,
+    };
+    db.update("notifications", (notifs) => [notif, ...notifs]);
+
+    res.status(201).json({ success: true, request: newRequest });
+  } catch (error) {
+    console.error("Error creating idea request:", error);
+    res.status(500).json({ error: "Failed to create idea request" });
+  }
+});
+
+// GET /api/ir/idea-requests/:id
+router.get("/idea-requests/:id", (req, res) => {
+  const { id } = req.params;
+  const request = (db.get("ideaRequests") || []).find((r) => r.id === id);
+  if (!request) {
+    return res.status(404).json({ error: "아이디어 요청을 찾을 수 없습니다." });
+  }
+  const proposals = (db.get("ideaProposals") || []).filter((p) => p.requestId === id);
+  res.json({ request: { ...request, proposals } });
+});
+
+// POST /api/ir/idea-requests/:id/upvote
+router.post("/idea-requests/:id/upvote", (req, res) => {
+  const { id } = req.params;
+  const { userId = "u-student-1" } = req.body;
+
+  let updatedRequest: IdeaRequest | null = null;
+  let isUpvoted = false;
+
+  db.update("ideaRequests", (list) =>
+    (list || []).map((r) => {
+      if (r.id === id) {
+        const upvotes = r.upvotes || [];
+        const exists = upvotes.includes(userId);
+        let newUpvotes: string[];
+        if (exists) {
+          newUpvotes = upvotes.filter((u) => u !== userId);
+          isUpvoted = false;
+        } else {
+          newUpvotes = [...upvotes, userId];
+          isUpvoted = true;
+        }
+        const count = newUpvotes.length;
+        updatedRequest = { ...r, upvotes: newUpvotes, upvoteCount: count };
+        return updatedRequest;
+      }
+      return r;
+    })
+  );
+
+  if (!updatedRequest) {
+    return res.status(404).json({ error: "아이디어 요청을 찾을 수 없습니다." });
+  }
+
+  res.json({ success: true, isUpvoted, request: updatedRequest });
+});
+
+// POST /api/ir/idea-requests/:id/proposals (Builder submits proposal)
+router.post("/idea-requests/:id/proposals", (req, res) => {
+  const { id } = req.params;
+  const {
+    proposerId = "u-builder-1",
+    proposerName = "오승환",
+    proposerAvatar = "",
+    teamSummary = "풀스택 개발팀",
+    techStack = ["React", "Node.js", "MongoDB"],
+    planSummary = "",
+    estimatedWeeks = 4,
+    portfolioUrl = "",
+    contactEmail = "",
+  } = req.body;
+
+  const request = (db.get("ideaRequests") || []).find((r) => r.id === id);
+  if (!request) {
+    return res.status(404).json({ error: "아이디어 요청을 찾을 수 없습니다." });
+  }
+
+  const newProposal: IdeaProposal = {
+    id: `ip-${Date.now()}`,
+    requestId: id,
+    proposerId,
+    proposerName,
+    proposerAvatar,
+    teamSummary,
+    techStack: Array.isArray(techStack) ? techStack : [techStack],
+    planSummary,
+    estimatedWeeks: Number(estimatedWeeks) || 4,
+    portfolioUrl,
+    contactEmail,
+    status: "대기중",
+    createdAt: new Date().toISOString(),
+  };
+
+  db.update("ideaProposals", (list) => [newProposal, ...(list || [])]);
+
+  db.update("ideaRequests", (list) =>
+    (list || []).map((r) => (r.id === id && r.status === "모집중" ? { ...r, status: "빌더제안중" } : r))
+  );
+
+  const notif: Notification = {
+    id: `notif-${Date.now()}`,
+    type: "team",
+    title: "새로운 빌더 제작 제안서 도착",
+    message: `'${request.title}' 의뢰에 ${proposerName} 팀의 제작 제안서가 등록되었습니다.`,
+    time: "방금 전",
+    isRead: false,
+  };
+  db.update("notifications", (notifs) => [notif, ...notifs]);
+
+  res.status(201).json({ success: true, proposal: newProposal });
+});
+
+// POST /api/ir/idea-requests/:id/accept-proposal (Accept builder proposal & promote to IRProject)
+router.post("/idea-requests/:id/accept-proposal", (req, res) => {
+  const { id } = req.params;
+  const { proposalId } = req.body;
+
+  const request = (db.get("ideaRequests") || []).find((r) => r.id === id);
+  const proposal = (db.get("ideaProposals") || []).find((p) => p.id === proposalId);
+
+  if (!request || !proposal) {
+    return res.status(404).json({ error: "요청 또는 제안서를 찾을 수 없습니다." });
+  }
+
+  // 1. Update proposal status
+  db.update("ideaProposals", (list) =>
+    (list || []).map((p) => {
+      if (p.requestId === id) {
+        return p.id === proposalId ? { ...p, status: "수락됨" } : { ...p, status: "거절됨" };
+      }
+      return p;
+    })
+  );
+
+  // 2. Promote to IRProject in irProjects
+  const newProjectId = `ir-rev-${Date.now()}`;
+  const newProject: IRProject = {
+    id: newProjectId,
+    teamName: `${request.title.slice(0, 10)} 팀`,
+    title: request.title,
+    oneLiner: request.solutionConcept.slice(0, 60),
+    description: `${request.problem}\n\n[솔루션]\n${request.solutionConcept}\n\n[빌더 제안 플랜]\n${proposal.planSummary}`,
+    field: request.category,
+    tags: request.tags,
+    aiSummary: `아이디어 역제안 매칭 완료: ${request.requestedBy.userName} 발제자 x ${proposal.proposerName} 빌더팀`,
+    thumbnail: "",
+    members: [
+      { name: request.requestedBy.userName, role: "아이디어 발제 / 기획 리드", avatar: request.requestedBy.avatar },
+      { name: proposal.proposerName, role: "기술 총괄(CTO) / 빌더 리드", avatar: proposal.proposerAvatar }
+    ],
+    businessModel: "B2B / B2C 구독 및 수수료 모델",
+    problem: request.problem,
+    solution: request.solutionConcept,
+    isHiring: true,
+    hiringRoles: request.requiredRoles || ["풀스택 개발자"],
+    investmentStage: "Pre-Seed",
+  };
+
+  db.update("irProjects", (projects) => [newProject, ...projects]);
+
+  // 3. Mark request as 매칭완료
+  db.update("ideaRequests", (list) =>
+    (list || []).map((r) => (r.id === id ? { ...r, status: "매칭완료", matchedProjectId: newProjectId } : r))
+  );
+
+  // 4. Notification
+  const notif: Notification = {
+    id: `notif-${Date.now()}`,
+    type: "investor",
+    title: "🚀 스타트업 프로젝트 승격 및 팀 빌딩 매칭 완료!",
+    message: `'${request.title}' 프로젝트가 정식 IR 스타트업으로 등록되었습니다.`,
+    time: "방금 전",
+    isRead: false,
+  };
+  db.update("notifications", (notifs) => [notif, ...notifs]);
+
+  res.json({ success: true, project: newProject, request: { ...request, status: "매칭완료", matchedProjectId: newProjectId } });
+});
+
+// DELETE /api/ir/idea-requests/:id
+router.delete("/idea-requests/:id", (req, res) => {
+  const { id } = req.params;
+  db.update("ideaRequests", (list) => (list || []).filter((r) => r.id !== id));
+  db.update("ideaProposals", (list) => (list || []).filter((p) => p.requestId !== id));
+  res.json({ success: true });
 });
 
 // GET /api/ir/projects
