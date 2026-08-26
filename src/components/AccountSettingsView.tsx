@@ -69,6 +69,25 @@ export default function AccountSettingsView({
     }, 300);
   };
 
+  const handlePaymentClick = (p: PaymentRecord) => {
+    if (selectedPayment?.id === p.id) {
+      handleClosePaymentDetail();
+    } else {
+      setSelectedPayment(p);
+      setIsClosingPayment(false);
+    }
+  };
+
+  const handleNotificationClick = (msg: Notification) => {
+    if (selectedNotification?.id === msg.id) {
+      handleCloseNotificationDetail();
+    } else {
+      setSelectedNotification(msg);
+      setIsClosingNotification(false);
+      msg.isRead = true;
+    }
+  };
+
   // SubTab 1: Payments Search, Filter & Pagination
   const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<"all" | "완료" | "환불">("all");
   const [searchPayment, setSearchPayment] = React.useState("");
@@ -305,7 +324,7 @@ export default function AccountSettingsView({
                   paginatedPayments.map((p) => (
                     <div
                       key={p.id}
-                      onClick={() => setSelectedPayment(p)}
+                      onClick={() => handlePaymentClick(p)}
                       className={`flex items-center px-5 py-3.5 border-b border-brand-border/20 last:border-0 transition-colors duration-200 cursor-pointer gap-3 ${
                         selectedPayment?.id === p.id
                           ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
@@ -343,7 +362,7 @@ export default function AccountSettingsView({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedPayment(p);
+                              handlePaymentClick(p);
                             }}
                             className="text-[11px] px-3 py-1 rounded-lg bg-brand-surface-high hover:bg-brand-surface-highest text-white border border-brand-border/50 transition-colors cursor-pointer inline-flex items-center gap-1 font-medium shadow-sm"
                           >
@@ -491,10 +510,7 @@ export default function AccountSettingsView({
                   {paginatedNotifications.map((msg) => (
                     <div
                       key={msg.id}
-                      onClick={() => {
-                        setSelectedNotification(msg);
-                        msg.isRead = true;
-                      }}
+                      onClick={() => handleNotificationClick(msg)}
                       className={`bg-brand-card border rounded-xl p-4 shadow-md transition-all duration-200 cursor-pointer ${
                         selectedNotification?.id === msg.id
                           ? "border-brand-primary bg-brand-primary-container/15 ring-1 ring-brand-primary/40 shadow-md"
@@ -709,18 +725,6 @@ export default function AccountSettingsView({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Payment Receipt Modal */}
-      {selectedPayment && (
-        <PaymentReceiptModal
-          payment={selectedPayment}
-          onClose={() => setSelectedPayment(null)}
-          onRefundCompleted={(updatedPayment) => {
-            setSelectedPayment(null);
-            onRefundPayment(updatedPayment);
-          }}
-        />
       )}
     </div>
   );
