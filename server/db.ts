@@ -911,7 +911,7 @@ class Database {
           }
         } else {
           const docs = await collection.find({}).toArray();
-          (this.cache as any)[key] = docs.map((d: any) => {
+          const mappedDocs = docs.map((d: any) => {
             const { _id, ...rest } = d;
             if (key === "members") {
               const roles: UserRole[] = Array.isArray(rest.roles) && rest.roles.length > 0
@@ -927,52 +927,64 @@ class Database {
             }
             return rest;
           });
+
+          // 고유 ID 기준 중복 제거 방어
+          const seen = new Set<string>();
+          (this.cache as any)[key] = mappedDocs.filter((item: any) => {
+            if (item && item.id) {
+              if (seen.has(item.id)) return false;
+              seen.add(item.id);
+            }
+            return true;
+          });
         }
       }
 
-      // ── AI 메타데이터 자동 마이그레이션 (기존 레코드에 tags/aiSummary 자동 부여) ──
-      try {
-        const { classifyContent } = await import("./services/aiClassifier.js");
-        
-        let coursesMigrated = false;
-        for (const c of (this.cache.courses || [])) {
-          if (!c.tags || c.tags.length === 0 || !c.aiSummary) {
-            const res = await classifyContent("course", {
-              title: c.title,
-              description: c.description,
-            });
-            c.tags = c.tags && c.tags.length > 0 ? c.tags : res.tags;
-            c.aiSummary = c.aiSummary || res.aiSummary;
-            coursesMigrated = true;
+      // ── AI 메타데이터 자동 마이그레이션 (기존 레코드에 tags/aiSummary 자동 부여 - 백그라운드 실행) ──
+      (async () => {
+        try {
+          const { classifyContent } = await import("./services/aiClassifier.js");
+          
+          let coursesMigrated = false;
+          for (const c of (this.cache.courses || [])) {
+            if (!c.tags || c.tags.length === 0 || !c.aiSummary) {
+              const res = await classifyContent("course", {
+                title: c.title,
+                description: c.description,
+              });
+              c.tags = c.tags && c.tags.length > 0 ? c.tags : res.tags;
+              c.aiSummary = c.aiSummary || res.aiSummary;
+              coursesMigrated = true;
+            }
           }
-        }
-        if (coursesMigrated) {
-          await this.syncToMongo("courses");
-          console.log("[DB Migration] Courses successfully enriched with AI tags and summary");
-        }
+          if (coursesMigrated) {
+            await this.syncToMongo("courses");
+            console.log("[DB Migration] Courses successfully enriched with AI tags and summary");
+          }
 
-        let irMigrated = false;
-        for (const p of (this.cache.irProjects || [])) {
-          if (!p.tags || p.tags.length === 0 || !p.aiSummary) {
-            const res = await classifyContent("ir", {
-              title: p.title,
-              description: p.description,
-              oneLiner: p.oneLiner,
-              problem: p.problem,
-              solution: p.solution,
-            });
-            p.tags = p.tags && p.tags.length > 0 ? p.tags : res.tags;
-            p.aiSummary = p.aiSummary || res.aiSummary;
-            irMigrated = true;
+          let irMigrated = false;
+          for (const p of (this.cache.irProjects || [])) {
+            if (!p.tags || p.tags.length === 0 || !p.aiSummary) {
+              const res = await classifyContent("ir", {
+                title: p.title,
+                description: p.description,
+                oneLiner: p.oneLiner,
+                problem: p.problem,
+                solution: p.solution,
+              });
+              p.tags = p.tags && p.tags.length > 0 ? p.tags : res.tags;
+              p.aiSummary = p.aiSummary || res.aiSummary;
+              irMigrated = true;
+            }
           }
+          if (irMigrated) {
+            await this.syncToMongo("irProjects");
+            console.log("[DB Migration] IR projects successfully enriched with AI tags and summary");
+          }
+        } catch (migError) {
+          console.warn("[DB Migration] AI metadata migration skipped or encountered non-critical error:", migError);
         }
-        if (irMigrated) {
-          await this.syncToMongo("irProjects");
-          console.log("[DB Migration] IR projects successfully enriched with AI tags and summary");
-        }
-      } catch (migError) {
-        console.warn("[DB Migration] AI metadata migration skipped or encountered non-critical error:", migError);
-      }
+      })();
 
       this.initialized = true;
       console.log("[DB] All collections loaded into cache");

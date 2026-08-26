@@ -15,6 +15,14 @@ router.get("/posts", (req, res) => {
 
   let posts = db.get("posts");
 
+  // 고유 ID 기준 중복 제거
+  const seenIds = new Set<string>();
+  posts = posts.filter((p) => {
+    if (!p.id || seenIds.has(p.id)) return false;
+    seenIds.add(p.id);
+    return true;
+  });
+
   if (boardType && boardType !== "전체") {
     posts = posts.filter((p) => p.boardType === boardType);
   }

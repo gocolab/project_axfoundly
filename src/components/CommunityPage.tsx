@@ -70,7 +70,17 @@ export default function CommunityPage({
     { type: "QnA", label: "Q&A 자유게시판", icon: <HelpCircle size={14} />, desc: "기술/사업 질의응답" },
   ];
 
-  const filtered = posts.filter((p) => {
+  // 중복 ID 방어 및 고유 게시글 정제
+  const uniquePosts = React.useMemo(() => {
+    const seen = new Set<string>();
+    return posts.filter((p) => {
+      if (!p.id || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [posts]);
+
+  const filtered = uniquePosts.filter((p) => {
     const matchBoard = activeBoard === "전체" || p.boardType === activeBoard;
     const matchSearch =
       p.title.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -107,6 +117,15 @@ export default function CommunityPage({
       setIsClosing(false);
       if (onClearSelectedPost) onClearSelectedPost();
     }, 300);
+  };
+
+  const handleRowClick = (post: BoardPost) => {
+    if (selectedPost?.id === post.id) {
+      handleCloseDetail();
+    } else {
+      setSelectedPost(post);
+      setIsClosing(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -222,15 +241,13 @@ export default function CommunityPage({
                 <div
                   key={post.id}
                   data-testid="community-post-row"
-                  onClick={() => setSelectedPost(post)}
+                  onClick={() => handleRowClick(post)}
                   className={`grid ${selectedPost ? "grid-cols-4 gap-2" : "grid-cols-12 gap-2"} px-5 py-3.5 items-center transition-all cursor-pointer ${
                     idx < paginatedPosts.length - 1 ? "border-b border-brand-border/20" : ""
                   } ${
                     selectedPost?.id === post.id
-                      ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                      : post.isPinned
-                      ? "bg-brand-primary-container/5 hover:bg-brand-surface-low"
-                      : "hover:bg-brand-surface-low"
+                      ? "bg-brand-primary-container/25 border-l-4 border-brand-primary text-white shadow-sm"
+                      : "border-l-4 border-transparent hover:bg-brand-surface-low text-brand-on-surface-variant"
                   }`}
                 >
                   <div className="col-span-1">
@@ -248,7 +265,11 @@ export default function CommunityPage({
                   </div>
                   <div className={`${selectedPost ? "col-span-3" : "col-span-6 sm:col-span-6"} flex items-center gap-1.5 min-w-0`}>
                     {post.isPinned && <Pin size={11} className="text-brand-accent-rose flex-shrink-0" />}
-                    <span className="text-xs text-white truncate font-medium hover:text-brand-primary transition-colors">
+                    <span className={`text-xs truncate transition-colors ${
+                      selectedPost?.id === post.id
+                        ? "text-white font-semibold"
+                        : "text-white/90 font-medium hover:text-brand-primary"
+                    }`}>
                       {post.title}
                     </span>
                     {post.commentCount > 0 && (
