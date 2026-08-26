@@ -158,7 +158,9 @@ router.post("/login", (req, res) => {
   if (email) {
     const member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
     if (member) {
-      userRoles = Array.isArray(member.roles) && member.roles.length > 0 ? member.roles : ["member"];
+      userRoles = Array.isArray(roles) && roles.length > 0 
+        ? roles 
+        : (Array.isArray(member.roles) && member.roles.length > 0 ? member.roles : ["member"]);
       userName = member.name;
       userEmail = member.email;
     }

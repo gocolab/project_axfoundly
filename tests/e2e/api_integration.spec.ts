@@ -302,15 +302,20 @@ test.describe('TC-08: 백엔드 11개 도메인 REST API 전수 무결성 및 C/
     expect(membersRes.status()).toBe(200);
     const membersData = await membersRes.json();
     expect(membersData.members.length).toBeGreaterThan(0);
-
     const targetMember = membersData.members.find((m: any) => m.email === 'student@mail.com') || membersData.members[0];
     const firstMemberId = targetMember.id;
+    const originalRoles = targetMember.roles || ['member'];
 
     // Change Role
     const roleRes = await request.patch(`/api/admin/members/${firstMemberId}/roles`, {
       data: { roles: ['admin'] },
     });
     expect(roleRes.status()).toBe(200);
+
+    // Restore original role so test does not pollute seed/user data
+    await request.patch(`/api/admin/members/${firstMemberId}/roles`, {
+      data: { roles: originalRoles },
+    });
 
     // Change Status
     const statusRes = await request.patch(`/api/admin/members/${firstMemberId}/status`, {
