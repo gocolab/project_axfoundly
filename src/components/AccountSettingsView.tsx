@@ -36,6 +36,38 @@ export default function AccountSettingsView({
 }: AccountSettingsViewProps) {
   const [activeSubTab, setActiveSubTab] = React.useState<"payments" | "notifications" | "profile">("payments");
   const [selectedPayment, setSelectedPayment] = React.useState<PaymentRecord | null>(null);
+  const [isClosingPayment, setIsClosingPayment] = React.useState(false);
+
+  const [selectedNotification, setSelectedNotification] = React.useState<Notification | null>(null);
+  const [isClosingNotification, setIsClosingNotification] = React.useState(false);
+
+  // ESC key listener to close detail panel
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedPayment) handleClosePaymentDetail();
+        if (selectedNotification) handleCloseNotificationDetail();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPayment, selectedNotification]);
+
+  const handleClosePaymentDetail = () => {
+    setIsClosingPayment(true);
+    setTimeout(() => {
+      setSelectedPayment(null);
+      setIsClosingPayment(false);
+    }, 300);
+  };
+
+  const handleCloseNotificationDetail = () => {
+    setIsClosingNotification(true);
+    setTimeout(() => {
+      setSelectedNotification(null);
+      setIsClosingNotification(false);
+    }, 300);
+  };
 
   // SubTab 1: Payments Search, Filter & Pagination
   const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<"all" | "완료" | "환불">("all");
@@ -227,68 +259,122 @@ export default function AccountSettingsView({
             </div>
           </div>
 
-          <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
-            <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
-              <span className="col-span-5">항목 / 강의명</span>
-              <span className="col-span-2">결제 금액</span>
-              <span className="col-span-2">결제일</span>
-              <span className="col-span-1">상태</span>
-              <span className="col-span-2 text-right">영수증 / 환불</span>
-            </div>
+          <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+            {/* Left Side: Payments Table (Master View) */}
+            <div
+              className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                selectedPayment ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"
+              }`}
+            >
+              <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
+                {/* Header row */}
+                <div className="flex items-center px-5 py-3 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
+                  <span className="flex-1 min-w-0">항목 / 강의명</span>
+                  <span className="w-24 text-right shrink-0">결제 금액</span>
+                  <div
+                    className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                      selectedPayment
+                        ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                        : "w-52 sm:w-64 opacity-100"
+                    }`}
+                  >
+                    <span className="w-24 text-center font-mono">결제일</span>
+                    <span className="w-14 text-center">상태</span>
+                    <span className="w-24 text-right">영수증 / 환불</span>
+                  </div>
+                </div>
 
-            {payments.length === 0 ? (
-              <p className="px-5 py-12 text-center text-xs text-brand-on-surface-variant">
-                결제 내역이 존재하지 않습니다.
-              </p>
-            ) : filteredPayments.length === 0 ? (
-              <div className="px-5 py-12 text-center text-xs text-brand-on-surface-variant">
-                <p>일치하는 결제 내역이 없습니다.</p>
-                <button
-                  onClick={() => {
-                    setPaymentStatusFilter("all");
-                    setSearchPayment("");
-                  }}
-                  className="mt-3 px-3 py-1 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1 cursor-pointer"
-                >
-                  <RotateCcw size={12} /> 조건 초기화
-                </button>
-              </div>
-            ) : (
-              paginatedPayments.map((p) => (
-                <div
-                  key={p.id}
-                  className="grid grid-cols-12 gap-2 px-5 py-3.5 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors"
-                >
-                  <span className="col-span-5 text-xs text-white truncate font-medium">
-                    {p.courseTitle}
-                  </span>
-                  <span className="col-span-2 text-xs text-brand-on-surface-variant font-mono font-bold">
-                    ₩{p.amount.toLocaleString()}
-                  </span>
-                  <span className="col-span-2 text-[10px] text-brand-on-surface-variant font-mono">
-                    {p.date}
-                  </span>
-                  <span className="col-span-1">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        p.status === "완료"
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                          : "bg-red-500/15 text-red-400 border border-red-500/30"
+                {payments.length === 0 ? (
+                  <p className="px-5 py-12 text-center text-xs text-brand-on-surface-variant">
+                    결제 내역이 존재하지 않습니다.
+                  </p>
+                ) : filteredPayments.length === 0 ? (
+                  <div className="px-5 py-12 text-center text-xs text-brand-on-surface-variant">
+                    <p>일치하는 결제 내역이 없습니다.</p>
+                    <button
+                      onClick={() => {
+                        setPaymentStatusFilter("all");
+                        setSearchPayment("");
+                      }}
+                      className="mt-3 px-3 py-1 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw size={12} /> 조건 초기화
+                    </button>
+                  </div>
+                ) : (
+                  paginatedPayments.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => setSelectedPayment(p)}
+                      className={`flex items-center px-5 py-3.5 border-b border-brand-border/20 last:border-0 transition-colors duration-200 cursor-pointer gap-3 ${
+                        selectedPayment?.id === p.id
+                          ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
+                          : "border-l-4 border-transparent hover:bg-brand-surface-low/80 text-brand-on-surface-variant"
                       }`}
                     >
-                      {p.status}
-                    </span>
-                  </span>
-                  <span className="col-span-2 text-right">
-                    <button
-                      onClick={() => setSelectedPayment(p)}
-                      className="text-[11px] px-3 py-1 rounded-lg bg-brand-surface-high hover:bg-brand-surface-highest text-white border border-brand-border/50 transition-colors cursor-pointer inline-flex items-center gap-1 font-medium shadow-sm"
-                    >
-                      <Receipt size={12} /> 영수증 조회
-                    </button>
-                  </span>
-                </div>
-              ))
+                      <span className="flex-1 min-w-0 text-xs text-white truncate font-medium">
+                        {p.courseTitle}
+                      </span>
+                      <span className="w-24 text-right text-xs text-brand-primary font-mono font-bold shrink-0">
+                        ₩{p.amount.toLocaleString()}
+                      </span>
+                      <div
+                        className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                          selectedPayment
+                            ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                            : "w-52 sm:w-64 opacity-100"
+                        }`}
+                      >
+                        <span className="w-24 text-[10px] text-brand-on-surface-variant text-center font-mono">
+                          {p.date}
+                        </span>
+                        <span className="w-14 text-center">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              p.status === "완료"
+                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                : "bg-red-500/15 text-red-400 border border-red-500/30"
+                            }`}
+                          >
+                            {p.status}
+                          </span>
+                        </span>
+                        <span className="w-24 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPayment(p);
+                            }}
+                            className="text-[11px] px-3 py-1 rounded-lg bg-brand-surface-high hover:bg-brand-surface-highest text-white border border-brand-border/50 transition-colors cursor-pointer inline-flex items-center gap-1 font-medium shadow-sm"
+                          >
+                            <Receipt size={12} /> 영수증
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Right Side: Payment Receipt Detail Panel (Detail View) */}
+            {selectedPayment && (
+              <div
+                className={`w-full lg:w-[48%] xl:w-[45%] flex-shrink-0 sticky top-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isClosingPayment ? "opacity-0 translate-x-8 scale-[0.98]" : "animate-slideInFromRight"
+                }`}
+              >
+                <PaymentReceiptModal
+                  inline
+                  key={selectedPayment.id}
+                  payment={selectedPayment}
+                  onClose={handleClosePaymentDetail}
+                  onRefundCompleted={(updated) => {
+                    onRefundPayment(updated);
+                    setSelectedPayment(updated);
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -377,55 +463,125 @@ export default function AccountSettingsView({
             </div>
           </div>
 
-          {notifications.length === 0 ? (
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
-              <p className="text-xs text-brand-on-surface-variant">수신된 알림이 없습니다.</p>
-            </div>
-          ) : filteredNotifications.length === 0 ? (
-            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
-              <p className="text-xs text-brand-on-surface-variant">일치하는 알림 또는 메시지가 없습니다.</p>
-              <button
-                onClick={() => {
-                  setNotificationFilter("all");
-                  setSearchNotification("");
-                }}
-                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw size={12} /> 조건 초기화
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {paginatedNotifications.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`bg-brand-card border rounded-xl p-4 shadow-md transition-colors ${
-                    !msg.isRead
-                      ? "border-brand-primary-container/50 bg-brand-primary-container/5"
-                      : "border-brand-border/60"
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      {!msg.isRead && <span className="w-2 h-2 rounded-full bg-brand-primary-container" />}
-                      <span className="text-xs font-bold text-white">{msg.title}</span>
-                    </div>
-                    <span className="text-[10px] text-brand-on-surface-variant font-mono">
-                      {msg.time}
-                    </span>
-                  </div>
-                  <p className="text-xs text-brand-on-surface-variant leading-relaxed pl-3 border-l-2 border-brand-primary-container/40">
-                    {msg.message}
-                  </p>
-                  {msg.courseTitle && (
-                    <p className="text-[10px] text-brand-primary font-mono mt-2">
-                      연관 강의: {msg.courseTitle}
-                    </p>
-                  )}
+          <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+            <div
+              className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                selectedNotification ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"
+              }`}
+            >
+              {notifications.length === 0 ? (
+                <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center shadow-md">
+                  <p className="text-xs text-brand-on-surface-variant">수신된 알림이 없습니다.</p>
                 </div>
-              ))}
+              ) : filteredNotifications.length === 0 ? (
+                <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center shadow-md">
+                  <p className="text-xs text-brand-on-surface-variant">일치하는 알림 또는 메시지가 없습니다.</p>
+                  <button
+                    onClick={() => {
+                      setNotificationFilter("all");
+                      setSearchNotification("");
+                    }}
+                    className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw size={12} /> 조건 초기화
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {paginatedNotifications.map((msg) => (
+                    <div
+                      key={msg.id}
+                      onClick={() => {
+                        setSelectedNotification(msg);
+                        msg.isRead = true;
+                      }}
+                      className={`bg-brand-card border rounded-xl p-4 shadow-md transition-all duration-200 cursor-pointer ${
+                        selectedNotification?.id === msg.id
+                          ? "border-brand-primary bg-brand-primary-container/15 ring-1 ring-brand-primary/40 shadow-md"
+                          : !msg.isRead
+                          ? "border-brand-primary-container/50 bg-brand-primary-container/5 hover:bg-brand-surface-low"
+                          : "border-brand-border/60 hover:bg-brand-surface-low"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {!msg.isRead && <span className="w-2 h-2 rounded-full bg-brand-primary flex-shrink-0" />}
+                          <span className="text-xs font-bold text-white truncate">{msg.title}</span>
+                        </div>
+                        <span className="text-[10px] text-brand-on-surface-variant font-mono flex-shrink-0 ml-2">
+                          {msg.time}
+                        </span>
+                      </div>
+                      <p className="text-xs text-brand-on-surface-variant leading-relaxed pl-3 border-l-2 border-brand-primary-container/40 line-clamp-2">
+                        {msg.message}
+                      </p>
+                      {msg.courseTitle && (
+                        <p className="text-[10px] text-brand-primary font-mono mt-2 truncate">
+                          연관 강의: {msg.courseTitle}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Right Side: Notification Detail Panel (Detail View) */}
+            {selectedNotification && (
+              <div
+                className={`w-full lg:w-[48%] xl:w-[45%] flex-shrink-0 sticky top-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isClosingNotification ? "opacity-0 translate-x-8 scale-[0.98]" : "animate-slideInFromRight"
+                }`}
+              >
+                <div className="glass-panel-heavy border border-brand-border/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full">
+                  <div className="p-4 sm:p-5 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-primary animate-pulse" />
+                      <h3 className="font-display font-bold text-white text-sm">알림 및 메시지 상세</h3>
+                    </div>
+                    <button
+                      onClick={handleCloseNotificationDetail}
+                      className="text-brand-on-surface-variant hover:text-white p-1 rounded-lg hover:bg-brand-surface-high transition-colors cursor-pointer"
+                      title="닫기 (ESC)"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-4 text-xs">
+                    <div className="bg-brand-surface-low/60 rounded-xl p-4 border border-brand-border/30 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-primary-container/20 text-brand-primary border border-brand-primary/30">
+                          {selectedNotification.type === "instructor_msg"
+                            ? "강사 피드백"
+                            : selectedNotification.type === "course"
+                            ? "강의 알림"
+                            : selectedNotification.type === "team"
+                            ? "팀 빌딩 알림"
+                            : selectedNotification.type === "investor"
+                            ? "투자 제안 알림"
+                            : "시스템 공식 알림"}
+                        </span>
+                        <span className="text-[10px] text-brand-on-surface-variant font-mono">
+                          {selectedNotification.time}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-white leading-snug">
+                        {selectedNotification.title}
+                      </h4>
+                      <p className="text-xs text-brand-on-surface leading-relaxed whitespace-pre-wrap bg-brand-surface-low/40 p-3.5 rounded-lg border border-brand-border/20">
+                        {selectedNotification.message}
+                      </p>
+                      {selectedNotification.courseTitle && (
+                        <div className="pt-2 border-t border-brand-border/30 text-[11px] text-brand-primary flex items-center justify-between">
+                          <span>연관 강의: <span className="font-semibold text-white">{selectedNotification.courseTitle}</span></span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

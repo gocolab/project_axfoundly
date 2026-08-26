@@ -4,21 +4,35 @@ import type { PaymentRecord } from "../types";
 import { api } from "../lib/api";
 
 interface PaymentReceiptModalProps {
+  key?: React.Key;
   payment: PaymentRecord | null;
   onClose: () => void;
   onRefundCompleted: (updatedPayment: PaymentRecord) => void;
+  inline?: boolean;
 }
 
 export default function PaymentReceiptModal({
   payment,
   onClose,
   onRefundCompleted,
+  inline = false,
 }: PaymentReceiptModalProps) {
   const [receipt, setReceipt] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
   const [showRefundForm, setShowRefundForm] = React.useState(false);
   const [refundReason, setRefundReason] = React.useState("");
   const [refunding, setRefunding] = React.useState(false);
+
+  // ESC key listener to close modal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && payment) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [payment, onClose]);
 
   React.useEffect(() => {
     if (!payment) return;
@@ -54,29 +68,29 @@ export default function PaymentReceiptModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/85 backdrop-blur-md p-4 animate-fadeIn">
-      <div className="glass-panel-heavy rounded-2xl max-w-md w-full shadow-2xl border border-brand-border overflow-hidden">
-        {/* Header */}
-        <div className="p-5 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-primary-container/20 text-brand-primary flex items-center justify-center">
-              <FileText size={18} />
-            </div>
-            <div>
-              <h2 className="font-display text-base font-bold text-white">결제 영수증 & 환불 관리</h2>
-              <p className="text-[10px] text-brand-on-surface-variant font-mono">
-                {receipt?.receiptId || `REC-${payment.id.toUpperCase()}`}
-              </p>
-            </div>
+  const content = (
+    <div className={`glass-panel-heavy ${inline ? "rounded-2xl border border-brand-border/60 shadow-xl" : "rounded-2xl max-w-md border border-brand-border shadow-2xl"} w-full overflow-hidden`}>
+      {/* Header */}
+      <div className="p-4 sm:p-5 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-brand-primary-container/20 text-brand-primary flex items-center justify-center">
+            <FileText size={18} />
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+          <div>
+            <h2 className="font-display text-sm sm:text-base font-bold text-white">결제 영수증 & 환불 관리</h2>
+            <p className="text-[10px] text-brand-on-surface-variant font-mono">
+              {receipt?.receiptId || `REC-${payment.id.toUpperCase()}`}
+            </p>
+          </div>
         </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-lg text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high transition-colors cursor-pointer"
+          title="닫기 (ESC)"
+        >
+          <X size={18} />
+        </button>
+      </div>
 
         {/* Content */}
         <div className="p-6 space-y-4 text-xs">
@@ -183,6 +197,20 @@ export default function PaymentReceiptModal({
           )}
         </div>
       </div>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/85 backdrop-blur-md p-4 animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {content}
     </div>
   );
 }

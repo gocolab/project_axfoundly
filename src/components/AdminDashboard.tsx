@@ -82,6 +82,17 @@ export default function AdminDashboard({
     }
   }, [currentPage, searchQuery]);
 
+  // ESC key listener to close detail panel
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedPanelItem) {
+        handleCloseDetail();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPanelItem]);
+
   const handleCloseDetail = () => {
     setIsClosing(true);
     setTimeout(() => {
@@ -93,20 +104,31 @@ export default function AdminDashboard({
   const renderDetailPanel = () => {
     if (!selectedPanelItem) return null;
     return (
-      <div className={`w-80 lg:w-[400px] flex-shrink-0 bg-brand-surface-high border border-brand-border/60 rounded-2xl shadow-xl flex flex-col overflow-hidden sticky top-20 ${isClosing ? "animate-slideOutToRight" : "animate-slideInFromRight"}`}>
-        <div className="p-4 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
-            <h3 className="font-bold text-white text-sm">상세 정보</h3>
+      <div
+        className={`w-full lg:w-[48%] xl:w-[45%] flex-shrink-0 sticky top-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isClosing ? "opacity-0 translate-x-8 scale-[0.98]" : "animate-slideInFromRight"
+        }`}
+      >
+        <div className="glass-panel-heavy border border-brand-border/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full">
+          <div className="p-4 sm:p-5 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-primary animate-pulse" />
+              <h3 className="font-display font-bold text-white text-sm">
+                {selectedPanelItem.type === "member" && "회원 상세 정보"}
+                {selectedPanelItem.type === "course" && "강의 검수 & 승인"}
+                {selectedPanelItem.type === "board" && "게시판 상세 관리"}
+                {selectedPanelItem.type === "payment" && "결제 영수증 상세"}
+                {selectedPanelItem.type === "crm" && "CRM 발송 상세"}
+              </h3>
+            </div>
+            <button
+              onClick={handleCloseDetail}
+              className="text-brand-on-surface-variant hover:text-white p-1 rounded-lg hover:bg-brand-surface-high transition-colors cursor-pointer"
+              title="닫기 (ESC)"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            onClick={handleCloseDetail}
-            className="text-brand-on-surface-variant hover:text-white p-1 rounded-lg hover:bg-brand-surface-low transition-colors cursor-pointer"
-            title="닫기"
-          >
-            <X size={18} />
-          </button>
-        </div>
         <div className="p-5 overflow-y-auto max-h-[calc(100vh-140px)] space-y-4">
           {selectedPanelItem.type === 'member' && (
             <div className="space-y-4 text-sm text-brand-on-surface-variant">
@@ -192,6 +214,7 @@ export default function AdminDashboard({
           )}
         </div>
       </div>
+    </div>
     );
   };
 
@@ -415,58 +438,83 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
-                <div className="flex gap-5 items-start">
-                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
-                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                      <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                        <span className="col-span-2">이름</span>
-                        {!selectedPanelItem && <span className="col-span-2">이메일</span>}
-                        <span>역할</span>
-                        {!selectedPanelItem && <span>가입일</span>}
-                        {!selectedPanelItem && <span>상태</span>}
-                        <span className="text-right">액션</span>
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
+                      {/* Header row */}
+                      <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
+                        <span className="flex-1 min-w-0">이름</span>
+                        <span className="w-16 shrink-0">역할</span>
+                        <div
+                          className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                            selectedPanelItem
+                              ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                              : "w-56 sm:w-72 opacity-100"
+                          }`}
+                        >
+                          <span className="flex-1 min-w-0">이메일</span>
+                          <span className="w-20 text-center font-mono">가입일</span>
+                          <span className="w-12 text-center">상태</span>
+                        </div>
+                        <span className="w-12 text-right shrink-0">액션</span>
                       </div>
+
                       {paginatedMembers.map((member) => (
                         <div
                           key={member.id}
                           onClick={() => setSelectedPanelItem({ type: 'member', data: member })}
-                          className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1"} px-5 py-2.5 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                          className={`flex items-center px-5 py-3 border-b border-brand-border/20 last:border-0 transition-colors duration-200 cursor-pointer gap-3 ${
                             selectedPanelItem?.type === 'member' && selectedPanelItem.data.id === member.id
-                              ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                              : "hover:bg-brand-surface-low"
+                              ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
+                              : "border-l-4 border-transparent hover:bg-brand-surface-low/80 text-brand-on-surface-variant"
                           }`}
                         >
-                          <div className="col-span-2 flex items-center gap-2 min-w-0">
+                          {/* Name & Avatar */}
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-brand-surface-high flex items-center justify-center text-[9px] font-bold text-brand-primary flex-shrink-0">
                               {member.name.charAt(0)}
                             </div>
                             <div className="min-w-0">
-                              <span className="text-xs text-white truncate block">{member.name}</span>
+                              <span className="text-xs text-white truncate block font-medium">{member.name}</span>
                               {selectedPanelItem && <span className="text-[9px] text-brand-on-surface-variant truncate block">{member.email}</span>}
                             </div>
                           </div>
-                          {!selectedPanelItem && <span className="col-span-2 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>}
-                          <div>
+
+                          {/* Role Select */}
+                          <div className="w-16 shrink-0">
                             <select
                               value={member.roles.includes("admin") ? "admin" : "member"}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => onChangeRole(member.id, [e.target.value as UserRole])}
-                              className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
+                              className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1.5 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
                             >
                               <option value="member">수강생</option>
                               <option value="admin">관리자</option>
                             </select>
                           </div>
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{member.joinDate}</span>}
-                          {!selectedPanelItem && (
-                            <span className={`text-[9px] font-bold ${
-                              member.status === "활성" ? "text-brand-tertiary" :
-                              member.status === "정지" ? "text-brand-accent-orange" : "text-error"
-                            }`}>
-                              {member.status}
+
+                          {/* Metadata Columns (Collapses smoothly) */}
+                          <div
+                            className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                              selectedPanelItem
+                                ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                                : "w-56 sm:w-72 opacity-100"
+                            }`}
+                          >
+                            <span className="flex-1 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>
+                            <span className="w-20 text-[10px] text-brand-on-surface-variant text-center font-mono">{member.joinDate}</span>
+                            <span className="w-12 text-center">
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                member.status === "활성" ? "text-brand-tertiary bg-brand-tertiary/10" :
+                                member.status === "정지" ? "text-brand-accent-orange bg-brand-accent-orange/10" : "text-error bg-error/10"
+                              }`}>
+                                {member.status}
+                              </span>
                             </span>
-                          )}
-                          <div className="flex justify-end gap-1">
+                          </div>
+
+                          {/* Actions */}
+                          <div className="w-12 flex justify-end gap-1 shrink-0">
                             <button className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer p-0.5" title="상세">
                               <Eye size={11} />
                             </button>
@@ -519,63 +567,65 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              <div className="flex gap-5 items-start">
-                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
+              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
                     {filteredCourses.length === 0 ? (
-                      <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+                      <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center shadow-md">
                         <CheckCircle size={32} className="text-brand-tertiary mx-auto mb-3" />
                         <p className="text-sm text-brand-on-surface-variant">검수 대기 중인 강의가 없습니다</p>
                       </div>
                     ) : (
-                      paginatedCourses.map((course) => (
-                        <div
-                          key={course.id}
-                          onClick={() => setSelectedPanelItem({ type: 'course', data: course })}
-                          className={`bg-brand-card border rounded-xl p-4 transition-all cursor-pointer ${
-                            selectedPanelItem?.type === 'course' && selectedPanelItem.data.id === course.id
-                              ? "border-brand-primary bg-brand-primary-container/10 ring-1 ring-brand-primary/40 shadow-md"
-                              : "border-brand-border/60 hover:bg-brand-surface-low"
-                          }`}
-                        >
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0">
-                              <BookOpen size={20} className="text-white/50" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-xs font-bold text-white truncate">{course.title}</h3>
-                              <p className="text-[10px] text-brand-on-surface-variant mt-0.5 truncate">
-                                {course.instructor} · {course.category} · {course.curriculum.length}주 과정
-                              </p>
-                              <p className="text-[10px] text-brand-on-surface-variant">
-                                수강료: ₩{(course.discountedPrice || course.price).toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="flex gap-1.5 flex-shrink-0">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onApproveCourse(course.id); }}
-                                className="text-[10px] bg-brand-tertiary/15 text-brand-tertiary py-1 px-2.5 rounded-lg border border-brand-tertiary/25 hover:bg-brand-tertiary/25 transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <CheckCircle size={11} /> 승인
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onRejectCourse(course.id); }}
-                                className="text-[10px] bg-error/10 text-error py-1 px-2.5 rounded-lg border border-error/20 hover:bg-error/20 transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <XCircle size={11} /> 반려
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setSelectedPanelItem({ type: 'course', data: course }); }}
-                                className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <Eye size={11} /> 상세
-                              </button>
+                      <div className="flex flex-col gap-3">
+                        {paginatedCourses.map((course) => (
+                          <div
+                            key={course.id}
+                            onClick={() => setSelectedPanelItem({ type: 'course', data: course })}
+                            className={`bg-brand-card border rounded-xl p-4 transition-all duration-200 cursor-pointer shadow-sm ${
+                              selectedPanelItem?.type === 'course' && selectedPanelItem.data.id === course.id
+                                ? "border-brand-primary bg-brand-primary-container/15 ring-1 ring-brand-primary/40 shadow-md"
+                                : "border-brand-border/60 hover:bg-brand-surface-low"
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0 shadow-inner">
+                                <BookOpen size={20} className="text-white/60" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-xs font-bold text-white truncate">{course.title}</h3>
+                                <p className="text-[10px] text-brand-on-surface-variant mt-0.5 truncate">
+                                  {course.instructor} · {course.category} · {course.curriculum.length}주 과정
+                                </p>
+                                <p className="text-[10px] text-brand-on-surface-variant font-mono">
+                                  수강료: ₩{(course.discountedPrice || course.price).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="flex gap-1.5 flex-shrink-0">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onApproveCourse(course.id); }}
+                                  className="text-[10px] bg-brand-tertiary/15 text-brand-tertiary py-1 px-2.5 rounded-lg border border-brand-tertiary/25 hover:bg-brand-tertiary/25 transition-colors cursor-pointer flex items-center gap-1 font-bold"
+                                >
+                                  <CheckCircle size={11} /> 승인
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onRejectCourse(course.id); }}
+                                  className="text-[10px] bg-error/10 text-error py-1 px-2.5 rounded-lg border border-error/20 hover:bg-error/20 transition-colors cursor-pointer flex items-center gap-1 font-bold"
+                                >
+                                  <XCircle size={11} /> 반려
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelectedPanelItem({ type: 'course', data: course }); }}
+                                  className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <Eye size={11} /> 상세
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     )}
 
-                    <div className="border-t border-brand-border/30 pt-4 mt-2">
+                    <div className="border-t border-brand-border/30 pt-4 mt-4">
                       <h2 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
                         <RefreshCw size={14} className="text-brand-primary" />
                         환불 처리
@@ -630,33 +680,49 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              <div className="flex gap-5 items-start">
-                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
-                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                      <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                        <span className="col-span-2">게시판명</span>
-                        {!selectedPanelItem && <span>읽기 권한</span>}
-                        {!selectedPanelItem && <span>쓰기 권한</span>}
-                        {!selectedPanelItem && <span>템플릿</span>}
-                        <span>게시글 수</span>
-                        <span className="text-right">액션</span>
+              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
+                      <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
+                        <span className="flex-1 min-w-0">게시판명</span>
+                        <div
+                          className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                            selectedPanelItem
+                              ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                              : "w-56 sm:w-72 opacity-100"
+                          }`}
+                        >
+                          <span className="w-16 text-center">읽기 권한</span>
+                          <span className="w-16 text-center">쓰기 권한</span>
+                          <span className="w-16 text-center">템플릿</span>
+                        </div>
+                        <span className="w-16 text-center shrink-0">게시글 수</span>
+                        <span className="w-12 text-right shrink-0">액션</span>
                       </div>
                       {paginatedBoards.map((board) => (
                         <div
                           key={board.id}
                           onClick={() => setSelectedPanelItem({ type: 'board', data: board })}
-                          className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                          className={`flex items-center px-5 py-3 border-b border-brand-border/20 last:border-0 transition-colors duration-200 cursor-pointer gap-3 ${
                             selectedPanelItem?.type === 'board' && selectedPanelItem.data.id === board.id
-                              ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                              : "hover:bg-brand-surface-low"
+                              ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
+                              : "border-l-4 border-transparent hover:bg-brand-surface-low/80 text-brand-on-surface-variant"
                           }`}
                         >
-                          <span className="col-span-2 text-xs font-semibold text-white truncate">{board.name}</span>
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.readPermission}</span>}
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.writePermission}</span>}
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{board.template}</span>}
-                          <span className="text-[10px] text-brand-on-surface-variant">{board.postCount}</span>
-                          <div className="flex justify-end gap-1.5">
+                          <span className="flex-1 text-xs font-semibold text-white truncate">{board.name}</span>
+                          <div
+                            className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                              selectedPanelItem
+                                ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                                : "w-56 sm:w-72 opacity-100"
+                            }`}
+                          >
+                            <span className="w-16 text-[10px] text-brand-on-surface-variant text-center">{board.readPermission}</span>
+                            <span className="w-16 text-[10px] text-brand-on-surface-variant text-center">{board.writePermission}</span>
+                            <span className="w-16 text-[10px] text-brand-on-surface-variant text-center">{board.template}</span>
+                          </div>
+                          <span className="w-16 text-[10px] text-brand-on-surface-variant text-center font-mono shrink-0">{board.postCount}</span>
+                          <div className="w-12 flex justify-end gap-1.5 shrink-0">
                             <button onClick={(e) => e.stopPropagation()} className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer"><Edit size={11} /></button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDeleteBoard(board.id, board.name); }}
@@ -669,11 +735,11 @@ export default function AdminDashboard({
                       ))}
                     </div>
 
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2 mt-2">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2 mt-4">
                       <Eye size={14} className="text-brand-on-surface-variant" />
                       게시글 모니터링
                     </h3>
-                    <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center shadow-sm mt-2">
                       <p className="text-xs text-brand-on-surface-variant">신고된 불량 게시물이 없습니다 ✓</p>
                     </div>
                   </div>
@@ -726,35 +792,51 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              <div className="flex gap-5 items-start">
-                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
-                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                      <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                        <span>유형</span>
-                        {!selectedPanelItem && <span>대상</span>}
-                        <span className="col-span-2">제목</span>
-                        {!selectedPanelItem && <span>발송일</span>}
-                        {!selectedPanelItem && <span>수신 수</span>}
-                        <span className="text-right">상태</span>
+              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
+                      <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
+                        <span className="w-14 shrink-0">유형</span>
+                        <span className="flex-1 min-w-0">제목</span>
+                        <div
+                          className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                            selectedPanelItem
+                              ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                              : "w-56 sm:w-72 opacity-100"
+                          }`}
+                        >
+                          <span className="w-20 text-center">대상</span>
+                          <span className="w-20 text-center font-mono">발송일</span>
+                          <span className="w-12 text-center">수신 수</span>
+                        </div>
+                        <span className="w-12 text-right shrink-0">상태</span>
                       </div>
                       {paginatedLogs.map((log) => (
                         <div
                           key={log.id}
                           onClick={() => setSelectedPanelItem({ type: 'crm', data: log })}
-                          className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                          className={`flex items-center px-5 py-3 border-b border-brand-border/20 last:border-0 transition-colors duration-200 cursor-pointer gap-3 ${
                             selectedPanelItem?.type === 'crm' && selectedPanelItem.data.id === log.id
-                              ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                              : "hover:bg-brand-surface-low"
+                              ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
+                              : "border-l-4 border-transparent hover:bg-brand-surface-low/80 text-brand-on-surface-variant"
                           }`}
                         >
-                          <span className={`text-[10px] font-bold ${log.type === "이메일" ? "text-brand-primary" : "text-brand-accent-orange"}`}>
+                          <span className={`w-14 shrink-0 text-[10px] font-bold ${log.type === "이메일" ? "text-brand-primary" : "text-brand-accent-orange"}`}>
                             {log.type}
                           </span>
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.target}</span>}
-                          <span className="col-span-2 text-xs text-white truncate">{log.subject}</span>
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.sentAt}</span>}
-                          {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{log.count}건</span>}
-                          <span className={`text-[9px] font-bold text-right ${
+                          <span className="flex-1 min-w-0 text-xs text-white truncate font-medium">{log.subject}</span>
+                          <div
+                            className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                              selectedPanelItem
+                                ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                                : "w-56 sm:w-72 opacity-100"
+                            }`}
+                          >
+                            <span className="w-20 text-[10px] text-brand-on-surface-variant text-center truncate">{log.target}</span>
+                            <span className="w-20 text-[10px] text-brand-on-surface-variant text-center font-mono">{log.sentAt}</span>
+                            <span className="w-12 text-[10px] text-brand-on-surface-variant text-center font-mono">{log.count}건</span>
+                          </div>
+                          <span className={`w-12 shrink-0 text-[9px] font-bold text-right ${
                             log.status === "성공" ? "text-brand-tertiary" : "text-brand-accent-orange"
                           }`}>
                             {log.status}
@@ -819,16 +901,24 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              <div className="flex gap-5 items-start">
-                  <div className={`transition-all duration-300 ease-out min-w-0 ${selectedPanelItem ? "flex-1" : "w-full"}`}>
-                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden">
-                  <div className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider transition-all duration-300`}>
-                    {!selectedPanelItem && <span>주문번호</span>}
-                    <span className="col-span-2">강의명</span>
-                    {!selectedPanelItem && <span>결제자</span>}
-                    {!selectedPanelItem && <span>결제일</span>}
-                    <span>금액</span>
-                    <span className="text-right">기능</span>
+              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
+                    <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
+                  <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
+                    <span className="flex-1 min-w-0">강의명</span>
+                    <div
+                      className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                        selectedPanelItem
+                          ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                          : "w-56 sm:w-72 opacity-100"
+                      }`}
+                    >
+                      <span className="w-20 font-mono text-center">주문번호</span>
+                      <span className="w-20 text-center">결제자</span>
+                      <span className="w-20 text-center font-mono">결제일</span>
+                    </div>
+                    <span className="w-16 text-right shrink-0">금액</span>
+                    <span className="w-14 text-right shrink-0">상태</span>
                   </div>
                   {filteredPayments.length === 0 ? (
                     <div className="py-10 text-center text-sm text-brand-on-surface-variant">
@@ -839,18 +929,26 @@ export default function AdminDashboard({
                       <div
                         key={p.id}
                         onClick={() => setSelectedPanelItem({ type: 'payment', data: p })}
-                        className={`grid ${selectedPanelItem ? "grid-cols-4 gap-2" : "grid-cols-7 gap-2"} px-5 py-3 items-center border-b border-brand-border/20 last:border-0 transition-all cursor-pointer ${
+                        className={`flex items-center px-5 py-3 border-b border-brand-border/20 last:border-0 transition-colors duration-200 cursor-pointer gap-3 ${
                           selectedPanelItem?.type === 'payment' && selectedPanelItem.data.id === p.id
-                            ? "bg-brand-primary-container/20 border-l-2 border-brand-primary"
-                            : "hover:bg-brand-surface-low"
+                            ? "bg-brand-primary-container/20 border-l-4 border-brand-primary text-white shadow-sm"
+                            : "border-l-4 border-transparent hover:bg-brand-surface-low/80 text-brand-on-surface-variant"
                         }`}
                       >
-                        {!selectedPanelItem && <span className="text-[10px] font-mono text-brand-on-surface-variant truncate">{p.id}</span>}
-                        <span className="col-span-2 text-xs text-white truncate">{p.courseTitle || p.course}</span>
-                        {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant truncate">{p.userId || p.user}</span>}
-                        {!selectedPanelItem && <span className="text-[10px] text-brand-on-surface-variant">{p.date}</span>}
-                        <span className="text-[10px] font-semibold text-white">₩{p.amount.toLocaleString()}</span>
-                        <div className="flex items-center justify-end gap-1">
+                        <span className="flex-1 min-w-0 text-xs text-white truncate font-medium">{p.courseTitle || p.course}</span>
+                        <div
+                          className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
+                            selectedPanelItem
+                              ? "w-0 opacity-0 pointer-events-none overflow-hidden"
+                              : "w-56 sm:w-72 opacity-100"
+                          }`}
+                        >
+                          <span className="w-20 text-[10px] font-mono text-brand-on-surface-variant text-center truncate">{p.id}</span>
+                          <span className="w-20 text-[10px] text-brand-on-surface-variant text-center truncate">{p.userId || p.user}</span>
+                          <span className="w-20 text-[10px] text-brand-on-surface-variant text-center font-mono">{p.date}</span>
+                        </div>
+                        <span className="w-16 text-[10px] font-semibold text-white text-right font-mono shrink-0">₩{p.amount.toLocaleString()}</span>
+                        <div className="w-14 flex items-center justify-end gap-1 shrink-0">
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                             p.status === "완료" ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"
                           }`}>{p.status}</span>
