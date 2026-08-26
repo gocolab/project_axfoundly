@@ -29,7 +29,7 @@ export default function AuthModal({
   };
 
   const demoUsers = [
-    { roles: ["member"] as UserRole[], email: "student@mail.com", label: "일반 회원 (수강생)" },
+    { roles: ["member"] as UserRole[], email: "student@mail.com", label: "일반 회원 (member)" },
     { roles: ["admin"] as UserRole[], email: "admin@platform.com", label: "관리자" },
   ];
 

@@ -252,9 +252,9 @@ export default function CommunityPostDetailModal({
                           {comment.author.charAt(0)}
                         </div>
                         <span className="text-xs font-semibold text-white">{comment.author}</span>
-                        {comment.authorRoles && comment.authorRoles.length > 0 && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-primary-container/10 text-brand-primary">
-                            {comment.authorRoles.includes("admin") ? "관리자" : "수강생"}
+                        {comment.authorRoles && comment.authorRoles.includes("admin") && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-primary-container/10 text-brand-primary font-medium">
+                            관리자
                           </span>
                         )}
                       </div>

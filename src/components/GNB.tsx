@@ -54,8 +54,8 @@ export default function GNB({
 
 
   const roleLabel: Record<UserRole, string> = {
-    member: "수강생",
-    manager: "매니저",
+    member: "member",
+    manager: "manager",
     admin: "관리자",
   };
 

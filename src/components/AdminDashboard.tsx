@@ -143,7 +143,7 @@ export default function AdminDashboard({
                 <p>
                   <span className="font-semibold text-white">권한:</span>{" "}
                   {selectedPanelItem.data.roles
-                    .map((r) => (r === "admin" ? "관리자" : r === "manager" ? "매니저" : "수강생"))
+                    .map((r) => (r === "admin" ? "관리자" : r === "manager" ? "manager" : "member"))
                     .join(", ")}
                 </p>
               </div>
@@ -506,9 +506,9 @@ export default function AdminDashboard({
                               }}
                               className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1.5 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
                             >
-                              <option value="member">수강생</option>
+                              <option value="member">member</option>
                               <option value="admin">관리자</option>
-                              <option value="admin,member">관리자+수강생</option>
+                              <option value="admin,member">관리자+member</option>
                             </select>
                           </div>
 
