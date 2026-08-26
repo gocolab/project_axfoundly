@@ -23,9 +23,12 @@ import {
   Square,
   AlertCircle,
   ChevronRight,
+  Search,
+  RotateCcw,
 } from "lucide-react";
 import type { Course, SettlementRecord, CurriculumItem, CourseSchedule, CRMMessage } from "../types";
 import { api } from "../lib/api";
+import Pagination from "./common/Pagination";
 
 interface InstructorDashboardProps {
   myCourses: Course[];
@@ -48,6 +51,24 @@ export default function InstructorDashboard({
 }: InstructorDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement">("courses");
   const [selectedCourseForCRM, setSelectedCourseForCRM] = React.useState<string>(myCourses[0]?.id || "c1");
+
+  // SubTab 1: Courses Search, Filter & Pagination
+  const [courseStatusFilter, setCourseStatusFilter] = React.useState<"all" | "모집중" | "진행중" | "종료">("all");
+  const [searchCourse, setSearchCourse] = React.useState("");
+  const [coursePage, setCoursePage] = React.useState(1);
+  const courseItemsPerPage = 5;
+
+  // SubTab 2: Students Search, Filter & Pagination
+  const [studentFilter, setStudentFilter] = React.useState<"all" | "behind" | "high">("all");
+  const [searchStudent, setSearchStudent] = React.useState("");
+  const [studentPage, setStudentPage] = React.useState(1);
+  const studentItemsPerPage = 6;
+
+  // SubTab 3: Settlement Search, Filter & Pagination
+  const [settlementFilter, setSettlementFilter] = React.useState<"all" | "정산완료" | "출금신청" | "대기중">("all");
+  const [searchSettlement, setSearchSettlement] = React.useState("");
+  const [settlementPage, setSettlementPage] = React.useState(1);
+  const settlementItemsPerPage = 5;
 
   // Course Creation Modal States
   const [showCreateModal, setShowCreateModal] = React.useState(false);
@@ -86,7 +107,6 @@ export default function InstructorDashboard({
   // CRM Messaging States
   const [showMessageModal, setShowMessageModal] = React.useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = React.useState<string[]>([]);
-  const [studentFilter, setStudentFilter] = React.useState<"all" | "behind" | "high">("all");
   const [messageTitle, setMessageTitle] = React.useState("");
   const [messageContent, setMessageContent] = React.useState("");
   const [messageChannels, setMessageChannels] = React.useState<{ inapp: boolean; email: boolean; alimtalk: boolean }>({
@@ -114,7 +134,6 @@ export default function InstructorDashboard({
     { id: "settlement" as const, label: "정산 관리", icon: <DollarSign size={14} /> },
   ];
 
-
   // Mock student data
   const mockStudents = [
     { id: "s1", name: "김현우", email: "hw.kim@mail.com", progress: 85, lastActive: "2시간 전" },
@@ -125,11 +144,68 @@ export default function InstructorDashboard({
     { id: "s6", name: "한지우", email: "jw.han@mail.com", progress: 78, lastActive: "5시간 전" },
   ];
 
-  const filteredStudents = mockStudents.filter((s) => {
-    if (studentFilter === "behind") return s.progress < 50;
-    if (studentFilter === "high") return s.progress >= 80;
-    return true;
+  // 1. Filtered Courses
+  const filteredCourses = myCourses.filter((course) => {
+    const matchStatus = courseStatusFilter === "all" ? true : course.status === courseStatusFilter;
+    const query = searchCourse.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      course.title.toLowerCase().includes(query) ||
+      course.category.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query);
+    return matchStatus && matchSearch;
   });
+  const courseTotalPages = Math.ceil(filteredCourses.length / courseItemsPerPage);
+  const paginatedCourses = filteredCourses.slice(
+    (coursePage - 1) * courseItemsPerPage,
+    coursePage * courseItemsPerPage
+  );
+  React.useEffect(() => {
+    setCoursePage(1);
+  }, [courseStatusFilter, searchCourse]);
+
+  // 2. Filtered Students
+  const filteredStudents = mockStudents.filter((s) => {
+    const matchProgress =
+      studentFilter === "behind"
+        ? s.progress < 50
+        : studentFilter === "high"
+        ? s.progress >= 80
+        : true;
+    const query = searchStudent.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      s.name.toLowerCase().includes(query) ||
+      s.email.toLowerCase().includes(query);
+    return matchProgress && matchSearch;
+  });
+  const studentTotalPages = Math.ceil(filteredStudents.length / studentItemsPerPage);
+  const paginatedStudents = filteredStudents.slice(
+    (studentPage - 1) * studentItemsPerPage,
+    studentPage * studentItemsPerPage
+  );
+  React.useEffect(() => {
+    setStudentPage(1);
+  }, [studentFilter, searchStudent]);
+
+  // 3. Filtered Settlements
+  const filteredSettlements = settlements.filter((record) => {
+    const matchStatus = settlementFilter === "all" ? true : record.status === settlementFilter;
+    const query = searchSettlement.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      record.period.toLowerCase().includes(query) ||
+      record.status.toLowerCase().includes(query);
+    return matchStatus && matchSearch;
+  });
+  const settlementTotalPages = Math.ceil(filteredSettlements.length / settlementItemsPerPage);
+  const paginatedSettlements = filteredSettlements.slice(
+    (settlementPage - 1) * settlementItemsPerPage,
+    settlementPage * settlementItemsPerPage
+  );
+  React.useEffect(() => {
+    setSettlementPage(1);
+  }, [settlementFilter, searchSettlement]);
 
   const totalRevenue = settlements.reduce((sum, s) => sum + s.netAmount, 0);
 
@@ -363,76 +439,170 @@ export default function InstructorDashboard({
                 setCreateStep("ai_chat");
                 setShowCreateModal(true);
               }}
-              className="text-xs bg-brand-primary-container/20 text-brand-primary border border-brand-primary/40 font-bold px-3 py-2 rounded-xl hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              className="text-xs bg-brand-primary-container/20 text-brand-primary border border-brand-primary/40 font-bold px-3 py-2 rounded-xl hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
             >
               <Sparkles size={14} /> AI 강의 개설
             </button>
-
           </div>
 
-          {myCourses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md"
-            >
-              <div className="flex items-start sm:items-center gap-4 min-w-0">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0 text-white font-bold">
-                  <BookOpen size={24} className="text-white/60" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-bold text-white">{course.title}</h3>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                        course.status === "모집중"
-                          ? "badge-recruiting"
-                          : course.status === "진행중"
-                          ? "badge-progress"
-                          : "badge-closed"
-                      }`}
-                    >
-                      {course.status}
-                    </span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-surface-high text-brand-tertiary">
-                      {course.schedule.scheduleType === "stepping_stone" ? "징검다리 일정" : "정기 일정"}
-                    </span>
-                  </div>
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setCourseStatusFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  courseStatusFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({myCourses.length})
+              </button>
+              <button
+                onClick={() => setCourseStatusFilter("모집중")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  courseStatusFilter === "모집중"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                모집중 ({myCourses.filter((c) => c.status === "모집중").length})
+              </button>
+              <button
+                onClick={() => setCourseStatusFilter("진행중")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  courseStatusFilter === "진행중"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                진행중 ({myCourses.filter((c) => c.status === "진행중").length})
+              </button>
+              <button
+                onClick={() => setCourseStatusFilter("종료")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  courseStatusFilter === "종료"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                종료 ({myCourses.filter((c) => c.status === "종료").length})
+              </button>
+            </div>
 
-                  <p className="text-[11px] text-brand-on-surface-variant mt-1">
-                    {course.category} · {course.studentCount}명 수강 · 총 {course.curriculum.length}회차 과정
-                  </p>
-
-                  <div className="flex items-center gap-3 mt-2 text-[10px] text-brand-on-surface-variant font-mono">
-                    <span className="flex items-center gap-1">
-                      <CalendarIcon size={11} className="text-brand-primary" />
-                      {course.schedule.startDate} ~ {course.schedule.endDate}
-                    </span>
-                    <span>({course.schedule.daysOfWeek.join("·")} {course.schedule.timeSlot})</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 flex-shrink-0 self-end md:self-center">
-                {onViewCourse && (
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="강의명, 카테고리 검색..."
+                  value={searchCourse}
+                  onChange={(e) => setSearchCourse(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchCourse && (
                   <button
-                    onClick={() => onViewCourse(course.id)}
-                    className="text-xs bg-brand-surface-high text-white py-2 px-3 rounded-lg border border-brand-border/40 hover:bg-brand-surface-highest transition-colors cursor-pointer flex items-center gap-1"
+                    onClick={() => setSearchCourse("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
                   >
-                    <Eye size={12} /> 강의 보기
+                    <X size={12} />
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    handleApplyDraft(course);
-                    setShowCreateModal(true);
-                  }}
-                  className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-2 px-3 rounded-lg border border-brand-border/30 hover:text-white hover:border-brand-primary/40 transition-colors cursor-pointer flex items-center gap-1"
-                >
-                  <Edit size={12} /> 수정 / 달력 설정
-                </button>
               </div>
+
+              {courseTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={coursePage}
+                    totalPages={courseTotalPages}
+                    onPageChange={setCoursePage}
+                    totalItems={filteredCourses.length}
+                    itemsPerPage={courseItemsPerPage}
+                  />
+                </div>
+              )}
             </div>
-          ))}
+          </div>
+
+          {filteredCourses.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">일치하는 개설 강의가 없습니다.</p>
+              <button
+                onClick={() => {
+                  setCourseStatusFilter("all");
+                  setSearchCourse("");
+                }}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 검색 조건 초기화
+              </button>
+            </div>
+          ) : (
+            paginatedCourses.map((course) => (
+              <div
+                key={course.id}
+                className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md"
+              >
+                <div className="flex items-start sm:items-center gap-4 min-w-0">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0 text-white font-bold">
+                    <BookOpen size={24} className="text-white/60" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-white">{course.title}</h3>
+                      <span
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          course.status === "모집중"
+                            ? "badge-recruiting"
+                            : course.status === "진행중"
+                            ? "badge-progress"
+                            : "badge-closed"
+                        }`}
+                      >
+                        {course.status}
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-surface-high text-brand-tertiary">
+                        {course.schedule.scheduleType === "stepping_stone" ? "징검다리 일정" : "정기 일정"}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-brand-on-surface-variant mt-1">
+                      {course.category} · {course.studentCount}명 수강 · 총 {course.curriculum.length}회차 과정
+                    </p>
+
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-brand-on-surface-variant font-mono">
+                      <span className="flex items-center gap-1">
+                        <CalendarIcon size={11} className="text-brand-primary" />
+                        {course.schedule.startDate} ~ {course.schedule.endDate}
+                      </span>
+                      <span>({course.schedule.daysOfWeek.join("·")} {course.schedule.timeSlot})</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 flex-shrink-0 self-end md:self-center">
+                  {onViewCourse && (
+                    <button
+                      onClick={() => onViewCourse(course.id)}
+                      className="text-xs bg-brand-surface-high text-white py-2 px-3 rounded-lg border border-brand-border/40 hover:bg-brand-surface-highest transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Eye size={12} /> 강의 보기
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      handleApplyDraft(course);
+                      setShowCreateModal(true);
+                    }}
+                    className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-2 px-3 rounded-lg border border-brand-border/30 hover:text-white hover:border-brand-primary/40 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Edit size={12} /> 수정 / 달력 설정
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -443,61 +613,95 @@ export default function InstructorDashboard({
             <h2 className="text-sm font-bold text-white">수강생 명단 및 진도 관리</h2>
             <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 수강생들의 학습 현황을 확인하고 맞춤 CRM 메시지를 발송하세요.</p>
           </div>
-          {/* Top Bar: Course Selector & Filter */}
 
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-brand-surface-low p-4 rounded-xl border border-brand-border/40">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-brand-on-surface-variant">강의 선택:</span>
-              {myCourses.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    setSelectedCourseForCRM(c.id);
-                    setSelectedStudentIds([]);
-                  }}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                    selectedCourseForCRM === c.id
-                      ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold"
-                      : "border-brand-border text-brand-on-surface-variant hover:text-white"
-                  }`}
-                >
-                  {c.title}
-                </button>
-              ))}
-            </div>
+          {/* Top Bar: Course Selector */}
+          <div className="flex items-center gap-2 flex-wrap bg-brand-surface-low p-3.5 rounded-xl border border-brand-border/40">
+            <span className="text-xs font-semibold text-brand-on-surface-variant">강의 선택:</span>
+            {myCourses.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedCourseForCRM(c.id);
+                  setSelectedStudentIds([]);
+                }}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                  selectedCourseForCRM === c.id
+                    ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
+                    : "border-brand-border text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                {c.title}
+              </button>
+            ))}
+          </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-brand-on-surface-variant">대상 필터:</span>
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
               <button
                 onClick={() => setStudentFilter("all")}
-                className={`text-[11px] px-2.5 py-1 rounded-md border cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   studentFilter === "all"
-                    ? "bg-brand-surface-high text-white font-bold border-brand-border"
-                    : "text-brand-on-surface-variant border-transparent"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
                 }`}
               >
                 전체 ({mockStudents.length})
               </button>
               <button
                 onClick={() => setStudentFilter("behind")}
-                className={`text-[11px] px-2.5 py-1 rounded-md border cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   studentFilter === "behind"
-                    ? "bg-brand-accent-rose/20 text-brand-accent-rose font-bold border-brand-accent-rose/40"
-                    : "text-brand-on-surface-variant border-transparent"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
                 }`}
               >
-                진도율 50% 미만 (3명)
+                진도율 50% 미만 ({mockStudents.filter((s) => s.progress < 50).length})
               </button>
               <button
                 onClick={() => setStudentFilter("high")}
-                className={`text-[11px] px-2.5 py-1 rounded-md border cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   studentFilter === "high"
-                    ? "bg-brand-tertiary/20 text-brand-tertiary font-bold border-brand-tertiary/40"
-                    : "text-brand-on-surface-variant border-transparent"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
                 }`}
               >
-                우수 수강생 (2명)
+                우수 수강생 ({mockStudents.filter((s) => s.progress >= 80).length})
               </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="수강생 이름, 이메일 검색..."
+                  value={searchStudent}
+                  onChange={(e) => setSearchStudent(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchStudent && (
+                  <button
+                    onClick={() => setSearchStudent("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {studentTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={studentPage}
+                    totalPages={studentTotalPages}
+                    onPageChange={setStudentPage}
+                    totalItems={filteredStudents.length}
+                    itemsPerPage={studentItemsPerPage}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -506,7 +710,7 @@ export default function InstructorDashboard({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  if (selectedStudentIds.length === filteredStudents.length) {
+                  if (selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0) {
                     setSelectedStudentIds([]);
                   } else {
                     setSelectedStudentIds(filteredStudents.map((s) => s.id));
@@ -544,73 +748,79 @@ export default function InstructorDashboard({
               <span className="col-span-2 text-right">개별 발송</span>
             </div>
 
-            {filteredStudents.map((student) => {
-              const isChecked = selectedStudentIds.includes(student.id);
-              return (
-                <div
-                  key={student.id}
-                  className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors ${
-                    isChecked ? "bg-brand-primary-container/5" : ""
-                  }`}
-                >
-                  <div className="col-span-1">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => {
-                        setSelectedStudentIds((prev) =>
-                          isChecked ? prev.filter((id) => id !== student.id) : [...prev, student.id]
-                        );
-                      }}
-                      className="rounded border-brand-border text-brand-primary focus:ring-0 cursor-pointer"
-                    />
-                  </div>
-                  <div className="col-span-4 flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-brand-surface-high flex items-center justify-center text-[10px] font-bold text-brand-primary">
-                      {student.name.charAt(0)}
+            {filteredStudents.length === 0 ? (
+              <div className="px-5 py-10 text-center text-xs text-brand-on-surface-variant">
+                일치하는 수강생이 없습니다.
+              </div>
+            ) : (
+              paginatedStudents.map((student) => {
+                const isChecked = selectedStudentIds.includes(student.id);
+                return (
+                  <div
+                    key={student.id}
+                    className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors ${
+                      isChecked ? "bg-brand-primary-container/5" : ""
+                    }`}
+                  >
+                    <div className="col-span-1">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          setSelectedStudentIds((prev) =>
+                            isChecked ? prev.filter((id) => id !== student.id) : [...prev, student.id]
+                          );
+                        }}
+                        className="rounded border-brand-border text-brand-primary focus:ring-0 cursor-pointer"
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-white">{student.name}</p>
-                      <p className="text-[10px] text-brand-on-surface-variant">{student.email}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-3">
-                    <div className="flex items-center gap-2">
-                      <div className="progress-bar w-24">
-                        <div
-                          className="progress-bar-fill"
-                          style={{
-                            width: `${student.progress}%`,
-                            backgroundColor: student.progress < 50 ? "#f43f5e" : undefined,
-                          }}
-                        />
+                    <div className="col-span-4 flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-brand-surface-high flex items-center justify-center text-[10px] font-bold text-brand-primary">
+                        {student.name.charAt(0)}
                       </div>
-                      <span
-                        className={`text-[10px] font-bold font-mono ${
-                          student.progress < 50 ? "text-brand-accent-rose" : "text-brand-tertiary"
-                        }`}
+                      <div>
+                        <p className="text-xs font-semibold text-white">{student.name}</p>
+                        <p className="text-[10px] text-brand-on-surface-variant">{student.email}</p>
+                      </div>
+                    </div>
+                    <div className="col-span-3">
+                      <div className="flex items-center gap-2">
+                        <div className="progress-bar w-24">
+                          <div
+                            className="progress-bar-fill"
+                            style={{
+                              width: `${student.progress}%`,
+                              backgroundColor: student.progress < 50 ? "#f43f5e" : undefined,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold font-mono ${
+                            student.progress < 50 ? "text-brand-accent-rose" : "text-brand-tertiary"
+                          }`}
+                        >
+                          {student.progress}%
+                        </span>
+                      </div>
+                    </div>
+                    <span className="col-span-2 text-xs text-brand-on-surface-variant">
+                      {student.lastActive}
+                    </span>
+                    <div className="col-span-2 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setSelectedStudentIds([student.id]);
+                          setShowMessageModal(true);
+                        }}
+                        className="text-[10px] bg-brand-primary-container/15 text-brand-primary py-1 px-2.5 rounded-lg border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                       >
-                        {student.progress}%
-                      </span>
+                        <Send size={10} /> 1:1 메시지
+                      </button>
                     </div>
                   </div>
-                  <span className="col-span-2 text-xs text-brand-on-surface-variant">
-                    {student.lastActive}
-                  </span>
-                  <div className="col-span-2 flex justify-end">
-                    <button
-                      onClick={() => {
-                        setSelectedStudentIds([student.id]);
-                        setShowMessageModal(true);
-                      }}
-                      className="text-[10px] bg-brand-primary-container/15 text-brand-primary py-1 px-2.5 rounded-lg border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <Send size={10} /> 1:1 메시지
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* CRM Message Sent History Log */}
@@ -659,7 +869,6 @@ export default function InstructorDashboard({
             <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 정산 내역 및 출금 신청 현황을 투명하게 확인하세요.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center stat-shimmer">
               <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">총 매출</p>
               <p className="text-2xl font-bold text-white font-display mt-1">₩{totalRevenue.toLocaleString()}</p>
@@ -678,6 +887,76 @@ export default function InstructorDashboard({
             </div>
           </div>
 
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setSettlementFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  settlementFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({settlements.length})
+              </button>
+              <button
+                onClick={() => setSettlementFilter("정산완료")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  settlementFilter === "정산완료"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                정산완료 ({settlements.filter((s) => s.status === "정산완료").length})
+              </button>
+              <button
+                onClick={() => setSettlementFilter("출금신청")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  settlementFilter === "출금신청"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                출금신청 ({settlements.filter((s) => s.status === "출금신청").length})
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="정산 기간, 상태 검색..."
+                  value={searchSettlement}
+                  onChange={(e) => setSearchSettlement(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchSettlement && (
+                  <button
+                    onClick={() => setSearchSettlement("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {settlementTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={settlementPage}
+                    totalPages={settlementTotalPages}
+                    onPageChange={setSettlementPage}
+                    totalItems={filteredSettlements.length}
+                    itemsPerPage={settlementItemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
             <div className="grid grid-cols-6 gap-2 px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
               <span>기간</span>
@@ -687,31 +966,37 @@ export default function InstructorDashboard({
               <span>실 정산액</span>
               <span className="text-right">상태</span>
             </div>
-            {settlements.map((record) => (
-              <div
-                key={record.id}
-                className="grid grid-cols-6 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors"
-              >
-                <span className="text-xs text-white">{record.period}</span>
-                <span className="text-xs text-brand-on-surface-variant">₩{record.totalRevenue.toLocaleString()}</span>
-                <span className="text-xs text-error">-₩{record.pgFee.toLocaleString()}</span>
-                <span className="text-xs text-error">-₩{record.platformFee.toLocaleString()}</span>
-                <span className="text-xs font-bold text-white">₩{record.netAmount.toLocaleString()}</span>
-                <div className="text-right">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      record.status === "정산완료"
-                        ? "badge-recruiting"
-                        : record.status === "출금신청"
-                        ? "badge-progress"
-                        : "badge-closed"
-                    }`}
-                  >
-                    {record.status}
-                  </span>
-                </div>
+            {filteredSettlements.length === 0 ? (
+              <div className="px-5 py-10 text-center text-xs text-brand-on-surface-variant">
+                일치하는 정산 내역이 없습니다.
               </div>
-            ))}
+            ) : (
+              paginatedSettlements.map((record) => (
+                <div
+                  key={record.id}
+                  className="grid grid-cols-6 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors"
+                >
+                  <span className="text-xs text-white">{record.period}</span>
+                  <span className="text-xs text-brand-on-surface-variant">₩{record.totalRevenue.toLocaleString()}</span>
+                  <span className="text-xs text-error">-₩{record.pgFee.toLocaleString()}</span>
+                  <span className="text-xs text-error">-₩{record.platformFee.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-white">₩{record.netAmount.toLocaleString()}</span>
+                  <div className="text-right">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        record.status === "정산완료"
+                          ? "badge-recruiting"
+                          : record.status === "출금신청"
+                          ? "badge-progress"
+                          : "badge-closed"
+                      }`}
+                    >
+                      {record.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <button className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 px-5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 self-start shadow-md">

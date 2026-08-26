@@ -9,8 +9,12 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
+  Search,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import type { Course } from "../types";
+import Pagination from "./common/Pagination";
 
 interface MyCoursesViewProps {
   courses: Course[];
@@ -25,12 +29,40 @@ export default function MyCoursesView({
 }: MyCoursesViewProps) {
   const enrolledCourses = courses.filter((c) => c.isEnrolled);
   const [filter, setFilter] = React.useState<"all" | "in_progress" | "completed">("all");
+  const [searchText, setSearchText] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 6;
 
   const filteredCourses = enrolledCourses.filter((course) => {
-    if (filter === "in_progress") return (course.progress || 0) < 100;
-    if (filter === "completed") return (course.progress || 0) === 100;
-    return true;
+    const matchFilter =
+      filter === "all"
+        ? true
+        : filter === "in_progress"
+        ? (course.progress || 0) < 100
+        : (course.progress || 0) === 100;
+    const matchSearch =
+      searchText.trim() === "" ||
+      course.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      course.category.toLowerCase().includes(searchText.toLowerCase()) ||
+      course.description.toLowerCase().includes(searchText.toLowerCase()) ||
+      (course.instructor && course.instructor.toLowerCase().includes(searchText.toLowerCase()));
+    return matchFilter && matchSearch;
   });
+
+  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const paginatedCourses = filteredCourses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchText]);
+
+  const handleResetFilters = () => {
+    setFilter("all");
+    setSearchText("");
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -44,12 +76,14 @@ export default function MyCoursesView({
             수강 중인 강의의 일정, 실시간 진도율 및 학습 슬라이드/VOD를 확인하세요
           </p>
         </div>
+      </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start">
+      {/* ── Filter Pills & Search Bar (Community Style) ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
           <button
             onClick={() => setFilter("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
               filter === "all"
                 ? "bg-brand-primary-container text-white shadow-sm"
                 : "text-brand-on-surface-variant hover:text-white"
@@ -59,7 +93,7 @@ export default function MyCoursesView({
           </button>
           <button
             onClick={() => setFilter("in_progress")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
               filter === "in_progress"
                 ? "bg-brand-primary-container text-white shadow-sm"
                 : "text-brand-on-surface-variant hover:text-white"
@@ -69,7 +103,7 @@ export default function MyCoursesView({
           </button>
           <button
             onClick={() => setFilter("completed")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
               filter === "completed"
                 ? "bg-brand-primary-container text-white shadow-sm"
                 : "text-brand-on-surface-variant hover:text-white"
@@ -78,10 +112,44 @@ export default function MyCoursesView({
             수료 ({enrolledCourses.filter((c) => (c.progress || 0) === 100).length})
           </button>
         </div>
+
+        <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+          <div className="relative w-full sm:w-60">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <input
+              type="text"
+              placeholder="강의명, 카테고리 검색..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+            />
+            {searchText && (
+              <button
+                onClick={() => setSearchText("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                title="검색어 지우기"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="ml-auto">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filteredCourses.length}
+                itemsPerPage={itemsPerPage}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Course Grid ── */}
-      {filteredCourses.length === 0 ? (
+      {enrolledCourses.length === 0 ? (
         <div className="bg-brand-card border border-brand-border/60 rounded-2xl p-12 text-center shadow-md">
           <div className="w-14 h-14 rounded-2xl bg-brand-surface-low border border-brand-border/40 mx-auto flex items-center justify-center mb-3">
             <BookOpen size={24} className="text-brand-on-surface-variant" />
@@ -99,9 +167,25 @@ export default function MyCoursesView({
             </button>
           )}
         </div>
+      ) : filteredCourses.length === 0 ? (
+        <div className="bg-brand-card border border-brand-border/60 rounded-2xl p-12 text-center shadow-md">
+          <div className="w-14 h-14 rounded-2xl bg-brand-surface-low border border-brand-border/40 mx-auto flex items-center justify-center mb-3">
+            <Search size={24} className="text-brand-on-surface-variant" />
+          </div>
+          <h3 className="text-sm font-bold text-white">일치하는 강의가 없습니다</h3>
+          <p className="text-xs text-brand-on-surface-variant mt-1 max-w-sm mx-auto">
+            검색어 또는 필터 조건을 변경해 보시거나 초기화해 보세요.
+          </p>
+          <button
+            onClick={handleResetFilters}
+            className="mt-4 px-4 py-2 rounded-xl bg-brand-surface-high border border-brand-border text-white text-xs font-bold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <RotateCcw size={13} /> 검색 조건 초기화
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredCourses.map((course) => {
+          {paginatedCourses.map((course) => {
             const schedule = course.schedule;
             const isCompleted = (course.progress || 0) === 100;
 

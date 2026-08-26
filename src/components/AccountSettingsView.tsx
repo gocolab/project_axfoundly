@@ -12,9 +12,12 @@ import {
   Clock,
   Sparkles,
   RotateCcw,
+  Search,
+  X,
 } from "lucide-react";
 import type { PaymentRecord, Notification, UserRole } from "../types";
 import PaymentReceiptModal from "./PaymentReceiptModal";
+import Pagination from "./common/Pagination";
 
 interface AccountSettingsViewProps {
   userName: string;
@@ -34,6 +37,18 @@ export default function AccountSettingsView({
   const [activeSubTab, setActiveSubTab] = React.useState<"payments" | "notifications" | "profile">("payments");
   const [selectedPayment, setSelectedPayment] = React.useState<PaymentRecord | null>(null);
 
+  // SubTab 1: Payments Search, Filter & Pagination
+  const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<"all" | "완료" | "환불">("all");
+  const [searchPayment, setSearchPayment] = React.useState("");
+  const [paymentPage, setPaymentPage] = React.useState(1);
+  const paymentItemsPerPage = 6;
+
+  // SubTab 2: Notifications Search, Filter & Pagination
+  const [notificationFilter, setNotificationFilter] = React.useState<"all" | "unread" | "instructor" | "system">("all");
+  const [searchNotification, setSearchNotification] = React.useState("");
+  const [notificationPage, setNotificationPage] = React.useState(1);
+  const notificationItemsPerPage = 6;
+
   // Profile Edit States
   const [isEditing, setIsEditing] = React.useState(false);
   const [displayName, setDisplayName] = React.useState(userName);
@@ -46,9 +61,52 @@ export default function AccountSettingsView({
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const instructorMessages = notifications.filter(
-    (n) => n.type === "instructor_msg" || n.type === "course"
+  // Filtered Payments
+  const filteredPayments = payments.filter((p) => {
+    const matchStatus = paymentStatusFilter === "all" ? true : p.status === paymentStatusFilter;
+    const query = searchPayment.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      p.courseTitle.toLowerCase().includes(query) ||
+      p.date.toLowerCase().includes(query) ||
+      p.amount.toString().includes(query);
+    return matchStatus && matchSearch;
+  });
+  const paymentTotalPages = Math.ceil(filteredPayments.length / paymentItemsPerPage);
+  const paginatedPayments = filteredPayments.slice(
+    (paymentPage - 1) * paymentItemsPerPage,
+    paymentPage * paymentItemsPerPage
   );
+  React.useEffect(() => {
+    setPaymentPage(1);
+  }, [paymentStatusFilter, searchPayment]);
+
+  // Filtered Notifications
+  const filteredNotifications = notifications.filter((n) => {
+    const matchFilter =
+      notificationFilter === "all"
+        ? true
+        : notificationFilter === "unread"
+        ? !n.isRead
+        : notificationFilter === "instructor"
+        ? n.type === "instructor_msg" || n.type === "course"
+        : n.type === "system" || n.type === "team" || n.type === "investor";
+    const query = searchNotification.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      n.title.toLowerCase().includes(query) ||
+      n.message.toLowerCase().includes(query) ||
+      (n.courseTitle && n.courseTitle.toLowerCase().includes(query));
+    return matchFilter && matchSearch;
+  });
+  const notificationTotalPages = Math.ceil(filteredNotifications.length / notificationItemsPerPage);
+  const paginatedNotifications = filteredNotifications.slice(
+    (notificationPage - 1) * notificationItemsPerPage,
+    notificationPage * notificationItemsPerPage
+  );
+  React.useEffect(() => {
+    setNotificationPage(1);
+  }, [notificationFilter, searchNotification]);
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -99,6 +157,76 @@ export default function AccountSettingsView({
       {/* ── SubTab 1: 결제 및 영수증 내역 ── */}
       {activeSubTab === "payments" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setPaymentStatusFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  paymentStatusFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({payments.length})
+              </button>
+              <button
+                onClick={() => setPaymentStatusFilter("완료")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  paymentStatusFilter === "완료"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                결제완료 ({payments.filter((p) => p.status === "완료").length})
+              </button>
+              <button
+                onClick={() => setPaymentStatusFilter("환불")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  paymentStatusFilter === "환불"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                환불 ({payments.filter((p) => p.status === "환불").length})
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="강의명, 결제일 검색..."
+                  value={searchPayment}
+                  onChange={(e) => setSearchPayment(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchPayment && (
+                  <button
+                    onClick={() => setSearchPayment("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {paymentTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={paymentPage}
+                    totalPages={paymentTotalPages}
+                    onPageChange={setPaymentPage}
+                    totalItems={filteredPayments.length}
+                    itemsPerPage={paymentItemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
             <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
               <span className="col-span-5">항목 / 강의명</span>
@@ -112,8 +240,21 @@ export default function AccountSettingsView({
               <p className="px-5 py-12 text-center text-xs text-brand-on-surface-variant">
                 결제 내역이 존재하지 않습니다.
               </p>
+            ) : filteredPayments.length === 0 ? (
+              <div className="px-5 py-12 text-center text-xs text-brand-on-surface-variant">
+                <p>일치하는 결제 내역이 없습니다.</p>
+                <button
+                  onClick={() => {
+                    setPaymentStatusFilter("all");
+                    setSearchPayment("");
+                  }}
+                  className="mt-3 px-3 py-1 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw size={12} /> 조건 초기화
+                </button>
+              </div>
             ) : (
-              payments.map((p) => (
+              paginatedPayments.map((p) => (
                 <div
                   key={p.id}
                   className="grid grid-cols-12 gap-2 px-5 py-3.5 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors"
@@ -124,7 +265,7 @@ export default function AccountSettingsView({
                   <span className="col-span-2 text-xs text-brand-on-surface-variant font-mono font-bold">
                     ₩{p.amount.toLocaleString()}
                   </span>
-                  <span className="col-span-2 text-[10px] text-brand-on-surface-variant">
+                  <span className="col-span-2 text-[10px] text-brand-on-surface-variant font-mono">
                     {p.date}
                   </span>
                   <span className="col-span-1">
@@ -156,20 +297,106 @@ export default function AccountSettingsView({
       {/* ── SubTab 2: 알림 & 메시지함 ── */}
       {activeSubTab === "notifications" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <MessageSquare size={15} className="text-brand-primary" />
-              수신된 메시지 & 강사 피드백 ({notifications.length}개)
-            </h3>
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setNotificationFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  notificationFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({notifications.length})
+              </button>
+              <button
+                onClick={() => setNotificationFilter("unread")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  notificationFilter === "unread"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                안읽음 ({notifications.filter((n) => !n.isRead).length})
+              </button>
+              <button
+                onClick={() => setNotificationFilter("instructor")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  notificationFilter === "instructor"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                강사 피드백 ({notifications.filter((n) => n.type === "instructor_msg" || n.type === "course").length})
+              </button>
+              <button
+                onClick={() => setNotificationFilter("system")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  notificationFilter === "system"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                시스템/제안 ({notifications.filter((n) => n.type !== "instructor_msg" && n.type !== "course").length})
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="알림 제목, 내용 검색..."
+                  value={searchNotification}
+                  onChange={(e) => setSearchNotification(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchNotification && (
+                  <button
+                    onClick={() => setSearchNotification("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {notificationTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={notificationPage}
+                    totalPages={notificationTotalPages}
+                    onPageChange={setNotificationPage}
+                    totalItems={filteredNotifications.length}
+                    itemsPerPage={notificationItemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {notifications.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
               <p className="text-xs text-brand-on-surface-variant">수신된 알림이 없습니다.</p>
             </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">일치하는 알림 또는 메시지가 없습니다.</p>
+              <button
+                onClick={() => {
+                  setNotificationFilter("all");
+                  setSearchNotification("");
+                }}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 조건 초기화
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {notifications.map((msg) => (
+              {paginatedNotifications.map((msg) => (
                 <div
                   key={msg.id}
                   className={`bg-brand-card border rounded-xl p-4 shadow-md transition-colors ${

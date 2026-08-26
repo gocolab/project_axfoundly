@@ -12,8 +12,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Search,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import type { IRProject, AIRecommendation, InvestmentProposal } from "../types";
+import Pagination from "./common/Pagination";
 
 interface InvestorDashboardProps {
   bookmarkedProjects: IRProject[];
@@ -32,11 +36,85 @@ export default function InvestorDashboard({
 }: InvestorDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"bookmarks" | "ai" | "proposals">("bookmarks");
 
+  // Tab 1: Bookmarks Search & Pagination
+  const [searchBookmark, setSearchBookmark] = React.useState("");
+  const [bookmarkPage, setBookmarkPage] = React.useState(1);
+  const bookmarkItemsPerPage = 6;
+
+  // Tab 2: AI Recommendations Search & Pagination
+  const [searchAi, setSearchAi] = React.useState("");
+  const [aiPage, setAiPage] = React.useState(1);
+  const aiItemsPerPage = 6;
+
+  // Tab 3: Proposals Search, Filter & Pagination
+  const [proposalFilter, setProposalFilter] = React.useState<"all" | "대기중" | "수락" | "거절">("all");
+  const [searchProposal, setSearchProposal] = React.useState("");
+  const [proposalPage, setProposalPage] = React.useState(1);
+  const proposalItemsPerPage = 5;
+
   const tabs = [
     { id: "bookmarks" as const, label: "관심 스타트업", icon: <Heart size={14} /> },
     { id: "ai" as const, label: "AI 추천 매칭", icon: <Sparkles size={14} /> },
     { id: "proposals" as const, label: "제안 및 미팅 관리", icon: <Calendar size={14} /> },
   ];
+
+  // Filtered Bookmarks
+  const filteredBookmarks = bookmarkedProjects.filter((project) => {
+    const query = searchBookmark.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      project.teamName.toLowerCase().includes(query) ||
+      project.oneLiner.toLowerCase().includes(query) ||
+      project.field.toLowerCase().includes(query) ||
+      project.investmentStage.toLowerCase().includes(query)
+    );
+  });
+  const bookmarkTotalPages = Math.ceil(filteredBookmarks.length / bookmarkItemsPerPage);
+  const paginatedBookmarks = filteredBookmarks.slice(
+    (bookmarkPage - 1) * bookmarkItemsPerPage,
+    bookmarkPage * bookmarkItemsPerPage
+  );
+  React.useEffect(() => {
+    setBookmarkPage(1);
+  }, [searchBookmark]);
+
+  // Filtered AI Recommendations
+  const filteredAi = recommendations.filter((rec) => {
+    const query = searchAi.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      rec.projectName.toLowerCase().includes(query) ||
+      rec.field.toLowerCase().includes(query) ||
+      rec.matchReasons.some((r) => r.toLowerCase().includes(query))
+    );
+  });
+  const aiTotalPages = Math.ceil(filteredAi.length / aiItemsPerPage);
+  const paginatedAi = filteredAi.slice(
+    (aiPage - 1) * aiItemsPerPage,
+    aiPage * aiItemsPerPage
+  );
+  React.useEffect(() => {
+    setAiPage(1);
+  }, [searchAi]);
+
+  // Filtered Proposals
+  const filteredProposals = proposals.filter((proposal) => {
+    const matchFilter = proposalFilter === "all" ? true : proposal.status === proposalFilter;
+    const query = searchProposal.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      proposal.projectName.toLowerCase().includes(query) ||
+      proposal.message.toLowerCase().includes(query);
+    return matchFilter && matchSearch;
+  });
+  const proposalTotalPages = Math.ceil(filteredProposals.length / proposalItemsPerPage);
+  const paginatedProposals = filteredProposals.slice(
+    (proposalPage - 1) * proposalItemsPerPage,
+    proposalPage * proposalItemsPerPage
+  );
+  React.useEffect(() => {
+    setProposalPage(1);
+  }, [proposalFilter, searchProposal]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -69,7 +147,7 @@ export default function InvestorDashboard({
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
               activeTab === tab.id
-                ? "text-brand-primary tab-active"
+                ? "text-brand-primary tab-active font-bold"
                 : "text-brand-on-surface-variant hover:text-white"
             }`}
           >
@@ -79,25 +157,78 @@ export default function InvestorDashboard({
         ))}
       </div>
 
-      {/* ── 관심 스타트업 ── */}
+      {/* ── 1. 관심 스타트업 ── */}
       {activeTab === "bookmarks" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Search Bar & Pagination Toolbar */}
+          {bookmarkedProjects.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-xs text-brand-on-surface-variant">
+                관심 등록: <span className="text-white font-semibold">{bookmarkedProjects.length}</span>개
+              </div>
+
+              <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+                <div className="relative w-full sm:w-60">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                  <input
+                    type="text"
+                    placeholder="스타트업명, 분야, 소개 검색..."
+                    value={searchBookmark}
+                    onChange={(e) => setSearchBookmark(e.target.value)}
+                    className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                  />
+                  {searchBookmark && (
+                    <button
+                      onClick={() => setSearchBookmark("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                      title="검색어 지우기"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {bookmarkTotalPages > 1 && (
+                  <div className="ml-auto">
+                    <Pagination
+                      currentPage={bookmarkPage}
+                      totalPages={bookmarkTotalPages}
+                      onPageChange={setBookmarkPage}
+                      totalItems={filteredBookmarks.length}
+                      itemsPerPage={bookmarkItemsPerPage}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {bookmarkedProjects.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
               <BookmarkCheck size={32} className="text-brand-on-surface-variant mx-auto mb-3" />
               <p className="text-sm text-brand-on-surface-variant">관심 등록한 스타트업이 없습니다</p>
               <p className="text-xs text-brand-on-surface-variant/60 mt-1">IR 게시판에서 관심 표시를 해보세요</p>
             </div>
+          ) : filteredBookmarks.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">일치하는 관심 스타트업이 없습니다.</p>
+              <button
+                onClick={() => setSearchBookmark("")}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 검색 조건 초기화
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {bookmarkedProjects.map((project) => (
+              {paginatedBookmarks.map((project) => (
                 <div
                   key={project.id}
                   className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group flex flex-col justify-between shadow-lg"
                   onClick={() => onViewProject(project.id)}
                 >
                   <div>
-                    {/* Thumbnail Header — 첨부 이미지 스타일의 바이올렛/인디고 헤더 */}
+                    {/* Thumbnail Header */}
                     <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#312e81] to-[#4338ca] flex items-center justify-center">
                       <span className="text-3xl opacity-50 drop-shadow-md select-none">🚀</span>
                       <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
@@ -145,10 +276,10 @@ export default function InvestorDashboard({
         </div>
       )}
 
-      {/* ── AI 추천 매칭 ── */}
+      {/* ── 2. AI 추천 매칭 ── */}
       {activeTab === "ai" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
-          <div className="bg-gradient-to-r from-brand-primary-container/10 to-brand-tertiary/5 border border-brand-primary-container/20 rounded-xl p-4 flex items-center gap-3 mb-2">
+          <div className="bg-gradient-to-r from-brand-primary-container/10 to-brand-tertiary/5 border border-brand-primary-container/20 rounded-xl p-4 flex items-center gap-3">
             <Sparkles size={20} className="text-brand-primary flex-shrink-0" />
             <div>
               <p className="text-xs font-semibold text-brand-primary">AI 맞춤 스타트업 추천</p>
@@ -156,49 +287,201 @@ export default function InvestorDashboard({
             </div>
           </div>
 
-
-          {recommendations.map((rec, idx) => (
-            <div
-              key={rec.projectId}
-              className="bg-brand-card border border-brand-border/60 rounded-xl p-5 card-hover cursor-pointer animate-slideUp"
-              style={{ animationDelay: `${idx * 80}ms` }}
-              onClick={() => onViewProject(rec.projectId)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-white">{rec.projectName}</h3>
-                  <span className="text-[9px] font-mono text-brand-on-surface-variant">{rec.field}</span>
-                </div>
-                <div className="flex items-center gap-1.5 bg-brand-primary-container/15 px-2.5 py-1 rounded-full border border-brand-primary-container/25">
-                  <Target size={12} className="text-brand-primary" />
-                  <span className="text-xs font-bold text-brand-primary">{rec.matchScore}%</span>
-                  <span className="text-[9px] text-brand-on-surface-variant">매칭</span>
-                </div>
+          {/* Search Bar & Pagination Toolbar */}
+          {recommendations.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-xs text-brand-on-surface-variant">
+                추천 프로젝트: <span className="text-white font-semibold">{recommendations.length}</span>개
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
-                {rec.matchReasons.map((reason, i) => (
-                  <span key={i} className="text-[9px] px-2 py-0.5 rounded bg-brand-surface-low text-brand-on-surface-variant border border-brand-border/30">
-                    {reason}
-                  </span>
-                ))}
+              <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+                <div className="relative w-full sm:w-60">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                  <input
+                    type="text"
+                    placeholder="스타트업명, 추천 키워드 검색..."
+                    value={searchAi}
+                    onChange={(e) => setSearchAi(e.target.value)}
+                    className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                  />
+                  {searchAi && (
+                    <button
+                      onClick={() => setSearchAi("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                      title="검색어 지우기"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {aiTotalPages > 1 && (
+                  <div className="ml-auto">
+                    <Pagination
+                      currentPage={aiPage}
+                      totalPages={aiTotalPages}
+                      onPageChange={setAiPage}
+                      totalItems={filteredAi.length}
+                      itemsPerPage={aiItemsPerPage}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+          )}
+
+          {recommendations.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <Sparkles size={32} className="text-brand-on-surface-variant mx-auto mb-3" />
+              <p className="text-sm text-brand-on-surface-variant">추천 데이터가 없습니다</p>
+            </div>
+          ) : filteredAi.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">일치하는 추천 프로젝트가 없습니다.</p>
+              <button
+                onClick={() => setSearchAi("")}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 검색 조건 초기화
+              </button>
+            </div>
+          ) : (
+            paginatedAi.map((rec, idx) => (
+              <div
+                key={rec.projectId}
+                className="bg-brand-card border border-brand-border/60 rounded-xl p-5 card-hover cursor-pointer animate-slideUp"
+                style={{ animationDelay: `${idx * 80}ms` }}
+                onClick={() => onViewProject(rec.projectId)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white">{rec.projectName}</h3>
+                    <span className="text-[9px] font-mono text-brand-on-surface-variant">{rec.field}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-brand-primary-container/15 px-2.5 py-1 rounded-full border border-brand-primary-container/25">
+                    <Target size={12} className="text-brand-primary" />
+                    <span className="text-xs font-bold text-brand-primary">{rec.matchScore}%</span>
+                    <span className="text-[9px] text-brand-on-surface-variant">매칭</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {rec.matchReasons.map((reason, i) => (
+                    <span key={i} className="text-[9px] px-2 py-0.5 rounded bg-brand-surface-low text-brand-on-surface-variant border border-brand-border/30">
+                      {reason}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
-      {/* ── 제안 및 미팅 관리 ── */}
+      {/* ── 3. 제안 및 미팅 관리 ── */}
       {activeTab === "proposals" && (
-        <div className="flex flex-col gap-3 animate-fadeIn">
+        <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setProposalFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({proposals.length})
+              </button>
+              <button
+                onClick={() => setProposalFilter("대기중")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "대기중"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                대기중 ({proposals.filter((p) => p.status === "대기중").length})
+              </button>
+              <button
+                onClick={() => setProposalFilter("수락")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "수락"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                수락 ({proposals.filter((p) => p.status === "수락").length})
+              </button>
+              <button
+                onClick={() => setProposalFilter("거절")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "거절"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                거절 ({proposals.filter((p) => p.status === "거절").length})
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="스타트업명, 제안 내용 검색..."
+                  value={searchProposal}
+                  onChange={(e) => setSearchProposal(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchProposal && (
+                  <button
+                    onClick={() => setSearchProposal("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {proposalTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={proposalPage}
+                    totalPages={proposalTotalPages}
+                    onPageChange={setProposalPage}
+                    totalItems={filteredProposals.length}
+                    itemsPerPage={proposalItemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {proposals.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
               <Send size={32} className="text-brand-on-surface-variant mx-auto mb-3" />
               <p className="text-sm text-brand-on-surface-variant">보낸 투자 제안이 없습니다</p>
             </div>
+          ) : filteredProposals.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">일치하는 투자 제안 내역이 없습니다.</p>
+              <button
+                onClick={() => {
+                  setProposalFilter("all");
+                  setSearchProposal("");
+                }}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 조건 초기화
+              </button>
+            </div>
           ) : (
-            proposals.map((proposal) => (
-              <div key={proposal.id} className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex items-center justify-between">
+            paginatedProposals.map((proposal) => (
+              <div key={proposal.id} className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex items-center justify-between shadow-md">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                     proposal.status === "수락" ? "bg-brand-tertiary/15 text-brand-tertiary" :
@@ -214,7 +497,7 @@ export default function InvestorDashboard({
                     <p className="text-[10px] text-brand-on-surface-variant mt-0.5">
                       {proposal.message.slice(0, 60)}...
                     </p>
-                    <p className="text-[9px] text-brand-on-surface-variant/50 mt-1">{proposal.sentDate}</p>
+                    <p className="text-[9px] text-brand-on-surface-variant/50 mt-1 font-mono">{proposal.sentDate}</p>
                   </div>
                 </div>
                 <span className={`text-[10px] font-bold px-2.5 py-1 rounded ${

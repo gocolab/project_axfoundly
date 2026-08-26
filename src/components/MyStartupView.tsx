@@ -12,9 +12,13 @@ import {
   XCircle,
   Clock,
   TrendingUp,
+  Search,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import type { IRProject, TeamBuildingRequest, InvestmentProposal } from "../types";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
+import Pagination from "./common/Pagination";
 
 interface MyStartupViewProps {
   myProjects: IRProject[];
@@ -41,6 +45,23 @@ export default function MyStartupView({
   const [showProjectModal, setShowProjectModal] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<IRProject | null>(null);
 
+  // SubTab 1: Projects Search & Pagination
+  const [searchProject, setSearchProject] = React.useState("");
+  const [projectPage, setProjectPage] = React.useState(1);
+  const projectItemsPerPage = 6;
+
+  // SubTab 2: Team Building Search, Filter & Pagination
+  const [teamFilter, setTeamFilter] = React.useState<"all" | "received" | "sent" | "pending">("all");
+  const [searchTeam, setSearchTeam] = React.useState("");
+  const [teamPage, setTeamPage] = React.useState(1);
+  const teamItemsPerPage = 5;
+
+  // SubTab 3: Proposals Search, Filter & Pagination
+  const [proposalFilter, setProposalFilter] = React.useState<"all" | "대기중" | "수락" | "거절">("all");
+  const [searchProposal, setSearchProposal] = React.useState("");
+  const [proposalPage, setProposalPage] = React.useState(1);
+  const proposalItemsPerPage = 5;
+
   // External trigger handler
   React.useEffect(() => {
     if (isModalOpenExternal) {
@@ -57,6 +78,77 @@ export default function MyStartupView({
   const pendingRequestsCount = teamRequests.filter(
     (r) => r.type === "received" && r.status === "대기중"
   ).length;
+
+  // Filtered Projects
+  const filteredProjects = myProjects.filter((p) => {
+    if (!searchProject.trim()) return true;
+    const query = searchProject.toLowerCase();
+    return (
+      p.teamName.toLowerCase().includes(query) ||
+      p.title.toLowerCase().includes(query) ||
+      p.oneLiner.toLowerCase().includes(query) ||
+      p.field.toLowerCase().includes(query)
+    );
+  });
+  const projectTotalPages = Math.ceil(filteredProjects.length / projectItemsPerPage);
+  const paginatedProjects = filteredProjects.slice(
+    (projectPage - 1) * projectItemsPerPage,
+    projectPage * projectItemsPerPage
+  );
+
+  React.useEffect(() => {
+    setProjectPage(1);
+  }, [searchProject]);
+
+  // Filtered Team Requests
+  const filteredTeamRequests = teamRequests.filter((req) => {
+    const matchFilter =
+      teamFilter === "all"
+        ? true
+        : teamFilter === "received"
+        ? req.type === "received"
+        : teamFilter === "sent"
+        ? req.type === "sent"
+        : req.status === "대기중";
+    const query = searchTeam.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      req.projectName.toLowerCase().includes(query) ||
+      req.role.toLowerCase().includes(query) ||
+      req.message.toLowerCase().includes(query) ||
+      req.fromUser.toLowerCase().includes(query) ||
+      req.toUser.toLowerCase().includes(query);
+    return matchFilter && matchSearch;
+  });
+  const teamTotalPages = Math.ceil(filteredTeamRequests.length / teamItemsPerPage);
+  const paginatedTeamRequests = filteredTeamRequests.slice(
+    (teamPage - 1) * teamItemsPerPage,
+    teamPage * teamItemsPerPage
+  );
+
+  React.useEffect(() => {
+    setTeamPage(1);
+  }, [teamFilter, searchTeam]);
+
+  // Filtered Received Proposals
+  const filteredProposals = receivedProposals.filter((prop) => {
+    const matchFilter = proposalFilter === "all" ? true : prop.status === proposalFilter;
+    const query = searchProposal.toLowerCase().trim();
+    const matchSearch =
+      query === "" ||
+      prop.projectName.toLowerCase().includes(query) ||
+      prop.message.toLowerCase().includes(query);
+    return matchFilter && matchSearch;
+  });
+  const proposalTotalPages = Math.ceil(filteredProposals.length / proposalItemsPerPage);
+  const paginatedProposals = filteredProposals.slice(
+    (proposalPage - 1) * proposalItemsPerPage,
+    proposalPage * proposalItemsPerPage
+  );
+
+  React.useEffect(() => {
+    setProposalPage(1);
+  }, [proposalFilter, searchProposal]);
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -122,6 +214,49 @@ export default function MyStartupView({
       {/* ── SubTab 1: 내 IR 프로젝트 ── */}
       {activeSubTab === "projects" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Search & Pagination Toolbar */}
+          {myProjects.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-xs text-brand-on-surface-variant">
+                등록된 프로젝트: <span className="text-white font-semibold">{myProjects.length}</span>개
+              </div>
+
+              <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+                <div className="relative w-full sm:w-60">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                  <input
+                    type="text"
+                    placeholder="프로젝트명, 한줄소개 검색..."
+                    value={searchProject}
+                    onChange={(e) => setSearchProject(e.target.value)}
+                    className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                  />
+                  {searchProject && (
+                    <button
+                      onClick={() => setSearchProject("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                      title="검색어 지우기"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {projectTotalPages > 1 && (
+                  <div className="ml-auto">
+                    <Pagination
+                      currentPage={projectPage}
+                      totalPages={projectTotalPages}
+                      onPageChange={setProjectPage}
+                      totalItems={filteredProjects.length}
+                      itemsPerPage={projectItemsPerPage}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {myProjects.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-2xl p-12 text-center shadow-md">
               <div className="w-14 h-14 rounded-2xl bg-brand-surface-low border border-brand-border/40 mx-auto flex items-center justify-center mb-3">
@@ -141,9 +276,25 @@ export default function MyStartupView({
                 <Plus size={14} /> 신규 프로젝트 등록
               </button>
             </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-2xl p-12 text-center shadow-md">
+              <div className="w-14 h-14 rounded-2xl bg-brand-surface-low border border-brand-border/40 mx-auto flex items-center justify-center mb-3">
+                <Search size={24} className="text-brand-on-surface-variant" />
+              </div>
+              <h3 className="text-sm font-bold text-white">일치하는 프로젝트가 없습니다</h3>
+              <p className="text-xs text-brand-on-surface-variant mt-1 max-w-sm mx-auto">
+                검색어를 확인하거나 초기화해 보세요.
+              </p>
+              <button
+                onClick={() => setSearchProject("")}
+                className="mt-4 px-4 py-2 rounded-xl bg-brand-surface-high border border-brand-border text-white text-xs font-bold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <RotateCcw size={13} /> 검색 조건 초기화
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {myProjects.map((p) => (
+              {paginatedProjects.map((p) => (
                 <div
                   key={p.id}
                   className="bg-brand-card border border-brand-border/60 rounded-xl p-5 shadow-md flex flex-col justify-between hover:border-brand-tertiary/40 transition-all card-hover"
@@ -217,15 +368,110 @@ export default function MyStartupView({
       {/* ── SubTab 2: 팀 빌딩 및 지원자 관리 ── */}
       {activeSubTab === "teambuilding" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setTeamFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  teamFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({teamRequests.length})
+              </button>
+              <button
+                onClick={() => setTeamFilter("received")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  teamFilter === "received"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                받은 지원 ({teamRequests.filter((r) => r.type === "received").length})
+              </button>
+              <button
+                onClick={() => setTeamFilter("sent")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  teamFilter === "sent"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                보낸 제안 ({teamRequests.filter((r) => r.type === "sent").length})
+              </button>
+              <button
+                onClick={() => setTeamFilter("pending")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  teamFilter === "pending"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                대기중 ({teamRequests.filter((r) => r.status === "대기중").length})
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="프로젝트, 포지션, 지원자 검색..."
+                  value={searchTeam}
+                  onChange={(e) => setSearchTeam(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchTeam && (
+                  <button
+                    onClick={() => setSearchTeam("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {teamTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={teamPage}
+                    totalPages={teamTotalPages}
+                    onPageChange={setTeamPage}
+                    totalItems={filteredTeamRequests.length}
+                    itemsPerPage={teamItemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {teamRequests.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
               <p className="text-xs text-brand-on-surface-variant">
                 수신되거나 발신된 팀 빌딩 제안이 없습니다.
               </p>
             </div>
+          ) : filteredTeamRequests.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">
+                일치하는 팀 빌딩 제안 내역이 없습니다.
+              </p>
+              <button
+                onClick={() => {
+                  setTeamFilter("all");
+                  setSearchTeam("");
+                }}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 조건 초기화
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {teamRequests.map((req) => (
+              {paginatedTeamRequests.map((req) => (
                 <div
                   key={req.id}
                   className="bg-brand-card border border-brand-border/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
@@ -293,15 +539,110 @@ export default function MyStartupView({
       {/* ── SubTab 3: 받은 투자 제안 ── */}
       {activeSubTab === "proposals" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Filter Pills & Search Bar (Community Style) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
+              <button
+                onClick={() => setProposalFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "all"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                전체 ({receivedProposals.length})
+              </button>
+              <button
+                onClick={() => setProposalFilter("대기중")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "대기중"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                대기중 ({receivedProposals.filter((p) => p.status === "대기중").length})
+              </button>
+              <button
+                onClick={() => setProposalFilter("수락")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "수락"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                수락 ({receivedProposals.filter((p) => p.status === "수락").length})
+              </button>
+              <button
+                onClick={() => setProposalFilter("거절")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  proposalFilter === "거절"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                거절 ({receivedProposals.filter((p) => p.status === "거절").length})
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="프로젝트, 제안 메시지 검색..."
+                  value={searchProposal}
+                  onChange={(e) => setSearchProposal(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+                {searchProposal && (
+                  <button
+                    onClick={() => setSearchProposal("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {proposalTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={proposalPage}
+                    totalPages={proposalTotalPages}
+                    onPageChange={setProposalPage}
+                    totalItems={filteredProposals.length}
+                    itemsPerPage={proposalItemsPerPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {receivedProposals.length === 0 ? (
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
               <p className="text-xs text-brand-on-surface-variant">
                 아직 수신된 투자 미팅 제안이 없습니다. IR 프로젝트를 최신 정보로 업데이트해보세요!
               </p>
             </div>
+          ) : filteredProposals.length === 0 ? (
+            <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center">
+              <p className="text-xs text-brand-on-surface-variant">
+                일치하는 투자 제안 내역이 없습니다.
+              </p>
+              <button
+                onClick={() => {
+                  setProposalFilter("all");
+                  setSearchProposal("");
+                }}
+                className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-semibold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 조건 초기화
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {receivedProposals.map((prop) => (
+              {paginatedProposals.map((prop) => (
                 <div
                   key={prop.id}
                   className="bg-brand-card border border-brand-border/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
