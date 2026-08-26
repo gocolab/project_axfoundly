@@ -2,6 +2,7 @@ import React from "react";
 import { X, Rocket, Video, Shield, Plus, Trash2, Send, Sparkles } from "lucide-react";
 import type { IRProject, HiringRoleDetail, CommonCode } from "../types";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface ProjectCreateEditModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export default function ProjectCreateEditModal({
   initialProject,
   onSave,
 }: ProjectCreateEditModalProps) {
+  const toast = useToast();
   const [stageCodes, setStageCodes] = React.useState<CommonCode[]>([]);
   const [empTypeCodes, setEmpTypeCodes] = React.useState<CommonCode[]>([]);
 
@@ -131,7 +133,7 @@ export default function ProjectCreateEditModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamName.trim() || !title.trim()) {
-      alert("팀명과 프로젝트 제목을 입력해주세요.");
+      toast.warning("필수 입력 확인", "팀명과 프로젝트 제목을 입력해주세요.");
       return;
     }
 
@@ -167,11 +169,12 @@ export default function ProjectCreateEditModal({
       };
 
       const res = await api.saveIRProject(projectPayload);
+      toast.success("프로젝트 저장 완료", "스타트업 IR 정보가 성공적으로 등록/수정되었습니다.");
       onSave(res.project);
       onClose();
     } catch (error) {
       console.error("Failed to save project", error);
-      alert("프로젝트 저장에 실패했습니다.");
+      toast.error("프로젝트 저장 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setSaving(false);
     }

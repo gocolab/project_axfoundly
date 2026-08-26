@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { BoardPost, Comment, UserRole } from "../types";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface CommunityPostDetailModalProps {
   key?: React.Key;
@@ -37,6 +38,7 @@ export default function CommunityPostDetailModal({
   onSendTeamRequest,
   inline = false,
 }: CommunityPostDetailModalProps) {
+  const toast = useToast();
   const [comments, setComments] = React.useState<Comment[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [commentInput, setCommentInput] = React.useState("");
@@ -88,10 +90,11 @@ export default function CommunityPostDetailModal({
       });
       setComments((prev) => [...prev, res.comment]);
       setCommentInput("");
+      toast.success("댓글 등록 완료", "댓글이 성공적으로 등록되었습니다.");
       if (onCommentAdded) onCommentAdded(res.comment);
     } catch (error) {
       console.error("Failed to submit comment", error);
-      alert("댓글 작성에 실패했습니다.");
+      toast.error("댓글 작성 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -105,6 +108,7 @@ export default function CommunityPostDetailModal({
     }
     if (onSendTeamRequest) {
       onSendTeamRequest(post.title, proposalMsg.trim());
+      toast.success("팀 빌딩 제안 전송 완료", "작성자에게 팀 빌딩 제안이 성공적으로 전달되었습니다.");
     } else {
       api.sendTeamRequest({
         projectName: post.title,
@@ -112,7 +116,9 @@ export default function CommunityPostDetailModal({
         role: "팀원",
         message: proposalMsg.trim(),
       }).then(() => {
-        alert("팀 빌딩 제안이 전송되었습니다!");
+        toast.success("팀 빌딩 제안 전송 완료", "작성자에게 팀 빌딩 제안이 성공적으로 전달되었습니다.");
+      }).catch(() => {
+        toast.error("제안 전송 실패", "일시적인 오류가 발생했습니다.");
       });
     }
     setProposalMsg("");

@@ -2,6 +2,7 @@ import React from "react";
 import { X, TrendingUp, Send, Calendar, DollarSign, Sparkles } from "lucide-react";
 import type { IRProject, InvestmentProposal } from "../types";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface InvestmentProposalModalProps {
   project: IRProject | null;
@@ -16,6 +17,7 @@ export default function InvestmentProposalModal({
   onClose,
   onProposalSent,
 }: InvestmentProposalModalProps) {
+  const toast = useToast();
   const [targetRound, setTargetRound] = React.useState("Seed");
   const [investmentAmount, setInvestmentAmount] = React.useState("3억원");
   const [meetingSchedule, setMeetingSchedule] = React.useState("");
@@ -36,7 +38,7 @@ export default function InvestmentProposalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
-      alert("제안 메시지를 입력해주세요.");
+      toast.warning("메시지 입력 필요", "제안 메시지를 입력해주세요.");
       return;
     }
 
@@ -49,12 +51,12 @@ export default function InvestmentProposalModal({
         message: fullMessage,
       });
 
-      alert(`'${project.teamName}' 팀에 투자 및 미팅 제안이 성공적으로 전달되었습니다.`);
+      toast.success("투자 제안 전달 완료", `'${project.teamName}' 팀에 투자 및 미팅 제안이 성공적으로 전달되었습니다.`);
       onProposalSent(res.proposal);
       onClose();
     } catch (error) {
       console.error("Failed to send proposal", error);
-      alert("투자 제안 발송에 실패했습니다.");
+      toast.error("투자 제안 발송 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setSending(false);
     }

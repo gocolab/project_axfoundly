@@ -3,6 +3,7 @@ import { X, Send, Briefcase, FileText, CheckCircle, ExternalLink, Sparkles } fro
 import type { HiringRoleDetail, IRProject } from "../types";
 import { api } from "../lib/api";
 import { getEmploymentTypeBadgeClass } from "./IRPage";
+import { useToast } from "./common/Toast";
 
 interface JobApplicationModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function JobApplicationModal({
   applicantEmail = "student@mail.com",
   onSuccess,
 }: JobApplicationModalProps) {
+  const toast = useToast();
   const [name, setName] = React.useState(applicantName);
   const [email, setEmail] = React.useState(applicantEmail);
   const [portfolioUrl, setPortfolioUrl] = React.useState("");
@@ -54,10 +56,11 @@ export default function JobApplicationModal({
         coverLetter: coverLetter.trim(),
       });
       setSubmitted(true);
+      toast.success("지원서 제출 완료", `'${project.teamName}' 팀에 지원서가 성공적으로 전달되었습니다.`);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Failed to submit job application:", error);
-      alert("지원서 제출에 실패했습니다.");
+      toast.error("지원서 제출 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsSubmitting(false);
     }

@@ -31,6 +31,7 @@ import Pagination from "./common/Pagination";
 import CourseCreateEditModal from "./CourseCreateEditModal";
 import CourseRequestModal from "./CourseRequestModal";
 import CourseProposalModal from "./CourseProposalModal";
+import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
 
 interface CoursePageProps {
@@ -49,12 +50,13 @@ export default function CoursePage({
   courses,
   onEnroll,
   isLoggedIn,
-  userName,
+  userName = "게스트",
   onLoginClick,
   onSaveCourse,
   initialCourseId,
   onClearSelectedCourse,
 }: CoursePageProps) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = React.useState<"browse" | "requests">("browse");
 
   const [selectedCourse, setSelectedCourse] = React.useState<Course | null>(() => {
@@ -141,18 +143,29 @@ export default function CoursePage({
   };
 
   const handleAcceptProposal = async (reqId: string, propId: string) => {
-    if (!confirm("이 제안서를 채택하여 정식 강의로 개설하시겠습니까?")) return;
+    const confirmed = await toast.confirm({
+      title: "강의 개설 확정",
+      message: "이 강사님의 제안서를 채택하여 정식 강의로 개설하시겠습니까?\n채택 시 플랫폼에 정식 강의가 즉시 오픈됩니다.",
+      confirmText: "채택 및 개설하기",
+      cancelText: "취소",
+      type: "success",
+    });
+    if (!confirmed) return;
+
     try {
       const res = await api.acceptCourseProposal(reqId, propId);
-      alert("🎉 축하합니다! 개강 제안이 채택되어 정식 강의가 개설되었습니다.");
-      if (onSaveCourse) {
+      toast.success(
+        "🎉 축하합니다! 정식 강의가 개설되었습니다.",
+        "강의 탐색 탭에서 개설된 강의를 바로 확인하실 수 있습니다."
+      );
+      if (onSaveCourse && res?.course) {
         onSaveCourse(res.course);
       }
       fetchRequests();
       setSelectedRequest(null);
     } catch (err) {
       console.error("Accept proposal failed", err);
-      alert("제안 채택에 실패했습니다.");
+      toast.error("제안 채택 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
   };
 

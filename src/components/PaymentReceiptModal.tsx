@@ -2,6 +2,7 @@ import React from "react";
 import { X, CreditCard, CheckCircle, AlertTriangle, FileText, Download, RotateCcw } from "lucide-react";
 import type { PaymentRecord } from "../types";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface PaymentReceiptModalProps {
   key?: React.Key;
@@ -17,6 +18,7 @@ export default function PaymentReceiptModal({
   onRefundCompleted,
   inline = false,
 }: PaymentReceiptModalProps) {
+  const toast = useToast();
   const [receipt, setReceipt] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
   const [showRefundForm, setShowRefundForm] = React.useState(false);
@@ -35,7 +37,7 @@ export default function PaymentReceiptModal({
   }, [payment, onClose]);
 
   React.useEffect(() => {
-    if (!payment) return;
+    if (!payment?.id) return;
     setLoading(true);
     api
       .getReceipt(payment.id)
@@ -50,19 +52,19 @@ export default function PaymentReceiptModal({
 
   const handleRefund = async () => {
     if (!refundReason.trim()) {
-      alert("환불 사유를 입력해주세요.");
+      toast.warning("환불 사유 입력 필요", "환불 사유를 입력해주세요.");
       return;
     }
 
     setRefunding(true);
     try {
       const res = await api.refundPayment(payment.id, refundReason.trim());
-      alert("환불 신청이 정상 완료되었습니다.");
+      toast.success("환불 신청 완료", "환불 신청이 정상적으로 완료되었습니다.");
       onRefundCompleted(res.payment);
       onClose();
     } catch (error) {
       console.error("Failed to refund", error);
-      alert("환불 처리에 실패했습니다.");
+      toast.error("환불 처리 실패", "환불 처리에 실패했습니다. 고객센터로 문의해주세요.");
     } finally {
       setRefunding(false);
     }

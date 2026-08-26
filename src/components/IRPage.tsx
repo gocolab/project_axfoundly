@@ -35,6 +35,7 @@ import JobApplicationModal from "./JobApplicationModal";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import IdeaRequestModal from "./IdeaRequestModal";
 import IdeaProposalModal from "./IdeaProposalModal";
+import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
 
 export const getEmploymentTypeBadgeClass = (type?: string) => {
@@ -92,6 +93,7 @@ export default function IRPage({
   initialProjectId,
   onClearSelectedProject,
 }: IRPageProps) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = React.useState<"browse" | "ideas">("browse");
 
   const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(() => {
@@ -151,7 +153,7 @@ export default function IRPage({
         sort: ideaSort,
         status: ideaStatusFilter === "전체" ? undefined : ideaStatusFilter,
       });
-      setIdeaRequests(res.requests || []);
+      setIdeaRequests(res?.requests || []);
     } catch (e) {
       console.error("Failed to fetch idea requests", e);
     } finally {
@@ -185,18 +187,29 @@ export default function IRPage({
   };
 
   const handleAcceptIdeaProposal = async (reqId: string, propId: string) => {
-    if (!confirm("이 빌더 팀의 제안을 수락하여 정식 스타트업 IR 프로젝트로 승격하시겠습니까?")) return;
+    const confirmed = await toast.confirm({
+      title: "빌더 매칭 및 정식 스타트업 IR 승격",
+      message: "이 빌더 팀의 제안을 수락하시겠습니까?\n수락 시 정식 스타트업 IR 프로젝트로 자동 등록되어 팀빌딩 및 투자 유치 단계로 진입합니다.",
+      confirmText: "매칭 확정 및 IR 등록",
+      cancelText: "취소",
+      type: "success",
+    });
+    if (!confirmed) return;
+
     try {
       const res = await api.acceptIdeaProposal(reqId, propId);
-      alert("🎉 축하합니다! 빌더 팀 매칭이 완료되어 정식 스타트업 IR 프로젝트로 등록되었습니다.");
-      if (onSaveProject) {
+      toast.success(
+        "🎉 축하합니다! 스타트업 IR 프로젝트 등록 완료",
+        "스타트업 탐색 탭에서 새롭게 승격된 프로젝트를 확인하실 수 있습니다."
+      );
+      if (onSaveProject && res?.project) {
         onSaveProject(res.project);
       }
       fetchIdeaRequests();
       setSelectedIdeaRequest(null);
     } catch (err) {
       console.error("Accept idea proposal failed", err);
-      alert("제안 수락에 실패했습니다.");
+      toast.error("제안 수락 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
   };
   const [applicantNote, setApplicantNote] = React.useState("");
@@ -736,7 +749,7 @@ export default function IRPage({
                   onClick={() => {
                     setSelectedProject({ ...selectedProject, demoVideoUrl: videoUrlInput });
                     setShowEditVideoModal(false);
-                    alert("영상 링크가 저장되었습니다.");
+                    toast.success("영상 링크 저장 완료", "데모 영상 링크가 업데이트되었습니다.");
                   }}
                   className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2 rounded-xl text-xs hover:opacity-90 cursor-pointer shadow-md"
                 >

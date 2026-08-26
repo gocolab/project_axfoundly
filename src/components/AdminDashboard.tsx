@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { DashboardStats, AdminMember, AdminBoard, UserRole, Course } from "../types";
 import AdminBoardCreateModal from "./AdminBoardCreateModal";
+import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
 
 interface AdminDashboardProps {
@@ -49,6 +50,7 @@ export default function AdminDashboard({
   onRejectCourse,
   onViewCourse,
 }: AdminDashboardProps) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm" | "payments">("stats");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -232,15 +234,22 @@ export default function AdminDashboard({
   }, [activeTab]);
 
   const handleRefund = async (id: string) => {
-    if (window.confirm(`결제 ${id}를 취소(환불)하시겠습니까?`)) {
-      try {
-        const res = await api.refundPayment(id, "관리자 직권 취소");
-        setPayments(prev => prev.map(p => p.id === id ? res.payment : p));
-        alert(`${id} 결제가 취소되었습니다.`);
-      } catch (err) {
-        console.error(err);
-        alert("결제 취소에 실패했습니다.");
-      }
+    const confirmed = await toast.confirm({
+      title: "결제 직권 취소(환불)",
+      message: `결제 건(${id})을 직권 취소(전액 환불) 처리하시겠습니까?`,
+      confirmText: "환불 처리",
+      cancelText: "닫기",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await api.refundPayment(id, "관리자 직권 취소");
+      setPayments(prev => prev.map(p => p.id === id ? res.payment : p));
+      toast.success("결제 취소 완료", `${id} 결제 건이 성공적으로 취소(환불)되었습니다.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("결제 취소 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -996,7 +1005,7 @@ export default function AdminDashboard({
               onClose={() => setShowCreateBoardModal(false)}
               onSuccess={(newBoard) => {
                 setLocalBoards((prev) => [newBoard, ...prev]);
-                alert(`"${newBoard.name}" 게시판이 생성되었습니다!`);
+                toast.success("게시판 생성 완료", `"${newBoard.name}" 게시판이 성공적으로 생성되었습니다.`);
               }}
             />
 
@@ -1043,7 +1052,10 @@ export default function AdminDashboard({
                         취소
                       </button>
                       <button
-                        onClick={() => { setShowBroadcastModal(false); alert("공지가 발송되었습니다!"); }}
+                        onClick={() => {
+                          setShowBroadcastModal(false);
+                          toast.success("공지 발송 완료", "선택된 대상에게 공지가 성공적으로 발송되었습니다.");
+                        }}
                         className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
                       >
                         발송

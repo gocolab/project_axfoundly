@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { Course, CourseRequest } from "../types";
 import Pagination from "./common/Pagination";
+import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
 
 interface MyCoursesViewProps {
@@ -30,6 +31,7 @@ export default function MyCoursesView({
   onViewCourse,
   onNavigateToCourses,
 }: MyCoursesViewProps) {
+  const toast = useToast();
   const [viewTab, setViewTab] = React.useState<"enrolled" | "requested">("enrolled");
   const [myRequests, setMyRequests] = React.useState<CourseRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = React.useState(false);
@@ -399,7 +401,7 @@ export default function MyCoursesView({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        alert("학습 자료 및 강의 슬라이드가 다운로드되었습니다.");
+                        toast.success("다운로드 시작", "학습 자료 및 강의 슬라이드가 다운로드되었습니다.");
                       }}
                       title="학습 자료 다운로드"
                       className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-2.5 rounded-xl hover:text-white transition-colors cursor-pointer flex items-center gap-1"

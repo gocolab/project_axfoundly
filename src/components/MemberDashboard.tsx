@@ -22,6 +22,7 @@ import {
 import type { Course, TeamBuildingRequest, PaymentRecord, Notification, IRProject } from "../types";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import PaymentReceiptModal from "./PaymentReceiptModal";
+import { useToast } from "./common/Toast";
 
 interface MemberDashboardProps {
   enrolledCourses: Course[];
@@ -48,6 +49,7 @@ export default function MemberDashboard({
   onRefundPayment,
   onUpdateTeamRequest,
 }: MemberDashboardProps) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = React.useState<"courses" | "projects" | "notifications">("courses");
 
   // Modals
@@ -196,7 +198,7 @@ export default function MemberDashboard({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                alert("학습 자료 및 강의 슬라이드가 다운로드되었습니다.");
+                                toast.success("다운로드 시작", "학습 자료 및 강의 슬라이드가 다운로드되었습니다.");
                               }}
                               className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-2.5 rounded-xl hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                             >

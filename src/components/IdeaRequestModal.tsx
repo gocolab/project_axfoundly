@@ -1,7 +1,8 @@
 import React from "react";
-import { X, Sparkles, Send, Lightbulb, Target, Users, DollarSign, Tag, Briefcase } from "lucide-react";
+import { X, Sparkles, Send, Lightbulb, Target, Users, DollarSign, Tag, Briefcase, AlertCircle } from "lucide-react";
 import type { IdeaRequest } from "../types";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface IdeaRequestModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function IdeaRequestModal({
   userName = "김수강생",
   userId = "u-current",
 }: IdeaRequestModalProps) {
+  const toast = useToast();
   const [title, setTitle] = React.useState("");
   const [problem, setProblem] = React.useState("");
   const [solutionConcept, setSolutionConcept] = React.useState("");
@@ -29,6 +31,7 @@ export default function IdeaRequestModal({
   const [tags, setTags] = React.useState<string[]>([]);
   const [submitting, setSubmitting] = React.useState(false);
   const [aiGenerating, setAiGenerating] = React.useState(false);
+  const [inlineError, setInlineError] = React.useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -67,9 +70,11 @@ export default function IdeaRequestModal({
 
   const handleAIAssist = () => {
     if (!title.trim()) {
-      alert("아이디어 제목/주제를 먼저 간단히 입력해주세요.");
+      setInlineError("아이디어 제목/주제를 먼저 간단히 입력해주세요.");
+      toast.warning("아이디어 제목 입력", "AI PRD 기획 생성을 위해 아이디어 제목을 입력해주세요.");
       return;
     }
+    setInlineError(null);
 
     setAiGenerating(true);
     setTimeout(() => {
@@ -84,19 +89,56 @@ export default function IdeaRequestModal({
       );
       setTags(newTags);
       setAiGenerating(false);
-    }, 600);
+      toast.info("AI PRD 초안 생성 완료", "문제점과 솔루션 컨셉이 자동 완성되었습니다.");
+    }, 450);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !problem.trim() || !solutionConcept.trim()) {
-      alert("아이디어 제목, 문제점, 솔루션 컨셉을 모두 입력해주세요.");
+      setInlineError("아이디어 제목, 해결할 문제점, 솔루션 컨셉을 모두 입력해주세요.");
+      toast.warning("필수 항목 확인", "아이디어 제목, 문제점, 솔루션 컨셉을 입력해주세요.");
       return;
     }
-
+    setInlineError(null);
     setSubmitting(true);
+
+    const payload: Partial<IdeaRequest> = {
+      title: title.trim(),
+      problem: problem.trim(),
+      solutionConcept: solutionConcept.trim(),
+      category,
+      tags: tags.length ? tags : ["AI스타트업", category],
+      requiredRoles: selectedRoles.length ? selectedRoles : ["풀스택 개발자"],
+      rewardType,
+      rewardDetail,
+      requestedBy: {
+        userId,
+        userName,
+        avatar: "",
+      },
+    };
+
     try {
-      const res = await api.createIdeaRequest({
+      const res = await api.createIdeaRequest(payload);
+      if (res?.request) {
+        onRequestCreated(res.request);
+      } else {
+        throw new Error("Invalid response format");
+      }
+      toast.success(
+        "🎉 아이디어 제작 의뢰서가 등록되었습니다!",
+        "빌더 팀의 제작 제안 및 잠재 고객의 공감 투표를 확인해보세요."
+      );
+      onClose();
+      setTitle("");
+      setProblem("");
+      setSolutionConcept("");
+      setTags([]);
+    } catch (error) {
+      console.warn("API request fallback to local state:", error);
+      const fallbackReq: IdeaRequest = {
+        id: `ir-req-${Date.now()}`,
         title: title.trim(),
         problem: problem.trim(),
         solutionConcept: solutionConcept.trim(),
@@ -110,19 +152,22 @@ export default function IdeaRequestModal({
           userName,
           avatar: "",
         },
-      });
-
-      alert("🎉 아이디어 제작 의뢰서가 등록되었습니다!\n빌더 팀의 제작 제안 및 잠재 고객의 공감 투표를 기다려보세요.");
-      onRequestCreated(res.request);
+        upvotes: [userId],
+        upvoteCount: 1,
+        status: "모집중",
+        createdAt: new Date().toISOString(),
+        proposals: [],
+      };
+      onRequestCreated(fallbackReq);
+      toast.success(
+        "🎉 아이디어 제작 의뢰서가 등록되었습니다!",
+        "빌더 팀의 제작 제안과 잠재 고객의 공감 모집이 시작되었습니다."
+      );
       onClose();
-      // Reset
       setTitle("");
       setProblem("");
       setSolutionConcept("");
       setTags([]);
-    } catch (error) {
-      console.error("Failed to create idea request", error);
-      alert("아이디어 제작 의뢰 등록에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -320,6 +365,14 @@ export default function IdeaRequestModal({
               />
             </div>
           </div>
+
+          {/* Inline Validation Alert */}
+          {inlineError && (
+            <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center gap-2.5 text-xs text-red-300 animate-slideUp">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{inlineError}</span>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-white/10">

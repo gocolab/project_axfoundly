@@ -29,6 +29,7 @@ import {
 import type { Course, SettlementRecord, CurriculumItem, CourseSchedule, CRMMessage } from "../types";
 import { api } from "../lib/api";
 import Pagination from "./common/Pagination";
+import { useToast } from "./common/Toast";
 
 interface InstructorDashboardProps {
   myCourses: Course[];
@@ -49,6 +50,7 @@ export default function InstructorDashboard({
   isModalOpenExternal,
   onCloseModalExternal,
 }: InstructorDashboardProps) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement">("courses");
   const [selectedCourseForCRM, setSelectedCourseForCRM] = React.useState<string>(myCourses[0]?.id || "c1");
 
@@ -311,14 +313,14 @@ export default function InstructorDashboard({
 
     if (sessions.length > 0) {
       setCurriculumDraft(sessions);
-      alert(`선택한 징검다리 요일(${selectedDays.join(",")})에 맞춰 총 ${sessions.length}회차 일정이 달력에 자동 배정되었습니다.`);
+      toast.info("일정 자동 배정", `선택한 징검다리 요일(${selectedDays.join(",")})에 맞춰 총 ${sessions.length}회차 일정이 달력에 자동 배정되었습니다.`);
     }
   };
 
   // ── CRM Message Send Handler ──
   const handleSendMessage = () => {
     if (!messageTitle.trim() || !messageContent.trim()) {
-      alert("제목과 내용을 입력해주세요.");
+      toast.warning("필수 입력 확인", "제목과 내용을 입력해주세요.");
       return;
     }
 
@@ -353,7 +355,7 @@ export default function InstructorDashboard({
     setMessageTitle("");
     setMessageContent("");
     setSelectedStudentIds([]);
-    alert(`수강 대상자 ${targetCount}명에게 메시지가 성공적으로 발송되었습니다!`);
+    toast.success("메시지 발송 완료", `수강 대상자 ${targetCount}명에게 메시지가 성공적으로 발송되었습니다!`);
   };
 
   return (
@@ -1303,7 +1305,7 @@ export default function InstructorDashboard({
                   <button
                     onClick={() => {
                       if (!courseTitle.trim()) {
-                        alert("강의 제목을 입력하세요.");
+                        toast.warning("강의 제목 입력 필요", "강의 제목을 입력하세요.");
                         return;
                       }
                       const newCourse: Course = {
@@ -1333,7 +1335,7 @@ export default function InstructorDashboard({
                       };
                       if (onSaveCourse) onSaveCourse(newCourse);
                       setShowCreateModal(false);
-                      alert("강의가 성공적으로 등록 및 개설되었습니다!");
+                      toast.success("강의 개설 완료", "강의가 성공적으로 등록 및 개설되었습니다!");
                     }}
                     className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs shadow-md"
                   >

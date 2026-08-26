@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { Course, CurriculumItem } from "../types";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface CourseCreateEditModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function CourseCreateEditModal({
   onSave,
   instructorName = "김소현",
 }: CourseCreateEditModalProps) {
+  const toast = useToast();
   const [createStep, setCreateStep] = React.useState<"ai_chat" | "detail_edit">(
     initialCourse ? "detail_edit" : "ai_chat"
   );
@@ -191,7 +193,7 @@ export default function CourseCreateEditModal({
 
   const handleSubmit = () => {
     if (!courseTitle.trim()) {
-      alert("강의 제목을 입력하세요.");
+      toast.warning("강의 제목 입력 필요", "강의 제목을 입력해주세요.");
       return;
     }
     const coursePayload: Course = {
