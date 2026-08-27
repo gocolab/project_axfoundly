@@ -5,15 +5,15 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
     await page.goto('/');
   });
 
-  test('메인 히어로 배너 및 통계 지표가 정상 렌더링된다', async ({ page }) => {
+  test('메인 히어로 배너 및 주요 진입점 CTA가 정상 렌더링된다', async ({ page }) => {
     // 히어로 텍스트 확인
     await expect(page.locator('text=AI로 빠르게 창업하라')).toBeVisible();
     await expect(page.locator('text=아이디어부터 투자까지')).toBeVisible();
+    await expect(page.locator('text=AI 기반 창업 올인원 파이프라인')).toBeVisible();
 
-    // 통계 지표 확인
-    await expect(page.getByText('누적 수강생', { exact: true })).toBeVisible();
-    await expect(page.getByText('창업 성공 팀', { exact: true })).toBeVisible();
-    await expect(page.getByText('매칭 투자금', { exact: true })).toBeVisible();
+    // 주요 CTA 버튼 확인
+    await expect(page.getByRole('button', { name: '강의 둘러보기' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '스타트업 IR 보기' })).toBeVisible();
   });
 
   test('히어로 배너 [강의 둘러보기] 클릭 시 교육/강의 페이지로 이동한다', async ({ page }) => {

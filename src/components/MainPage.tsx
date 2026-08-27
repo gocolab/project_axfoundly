@@ -1,15 +1,12 @@
 import React from "react";
 import {
   ArrowRight,
-  Play,
   Star,
   Users,
-  Clock,
   ChevronRight,
   Sparkles,
   TrendingUp,
   Megaphone,
-  Zap,
   Calendar as CalendarIcon,
 } from "lucide-react";
 import type { Course, IRProject, BoardPost } from "../types";
@@ -41,80 +38,53 @@ export default function MainPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
-      {/* ── 1. Hero Banner ── */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e1b4b] via-[#111827] to-[#0f172a] border border-brand-border/60 p-8 sm:p-12">
-        <div className="absolute -right-20 -top-20 w-96 h-96 rounded-full bg-brand-primary-container/20 blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-brand-secondary/15 blur-3xl pointer-events-none" />
+      {/* ── 1. Hero Banner (중앙 집중형 슬림 카드) ── */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e1b4b] via-[#111827] to-[#0f172a] border border-brand-border/60 py-8 px-6 sm:py-10 sm:px-8 text-center shadow-xl">
+        <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-brand-primary-container/20 blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-72 h-72 rounded-full bg-brand-secondary/15 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          {/* Left Hero Content — 3줄 깔끔한 레이아웃 */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* 줄 1: 배지 라벨 */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-primary-container/20 border border-brand-primary-container/40 text-brand-primary text-xs font-semibold">
-              <Sparkles size={13} className="text-brand-primary" />
-              <span>AI 기반 창업 올인원 파이프라인</span>
-            </div>
-
-            {/* 줄 2: 메인 타이틀 */}
-            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight">
-              아이디어부터 투자까지, <br />
-              <span className="bg-gradient-to-r from-brand-primary via-brand-tertiary to-brand-secondary bg-clip-text text-transparent">
-                AI로 빠르게 창업하라
-              </span>
-            </h1>
-
-            {/* 줄 3: 서브카피 + 핵심 CTA */}
-            <div className="space-y-4">
-              <p className="text-sm sm:text-base text-brand-on-surface-variant leading-relaxed max-w-xl">
-                실시간 징검다리 교육, 자동 팀 매칭, 투자 유치 연계까지 — 창업의 전 과정을 지원합니다.
-              </p>
-              <div className="flex flex-wrap gap-3 pt-1">
-                <button
-                  onClick={() => onNavigate("courses")}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary-container/30"
-                >
-                  강의 둘러보기 <ArrowRight size={16} />
-                </button>
-                {!isLoggedIn && (
-                  <button
-                    onClick={onLoginClick}
-                    className="px-6 py-3 rounded-xl bg-brand-primary text-white font-bold text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary/30"
-                  >
-                    무료 가입하기
-                  </button>
-                )}
-                <button
-                  onClick={() => onNavigate("ir")}
-                  className="px-6 py-3 rounded-xl bg-brand-surface-high border border-brand-border text-white font-semibold text-sm hover:bg-brand-surface-highest transition-all cursor-pointer flex items-center gap-2"
-                >
-                  스타트업 IR 보기
-                </button>
-              </div>
-            </div>
+        <div className="relative z-10 max-w-3xl mx-auto space-y-4 sm:space-y-5">
+          {/* 줄 1: 배지 라벨 */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary-container/20 border border-brand-primary-container/40 text-brand-primary text-xs font-semibold shadow-inner">
+            <Sparkles size={13} className="text-brand-primary" />
+            <span>AI 기반 창업 올인원 파이프라인</span>
           </div>
 
-          {/* Right Hero Stats */}
-          <div className="lg:col-span-5 grid grid-cols-2 gap-3 sm:gap-4">
-            {[
-              { label: "누적 수강생", value: "3,400+", unit: "명", icon: Users, color: "text-brand-primary" },
-              { label: "창업 성공 팀", value: "128", unit: "팀", icon: Zap, color: "text-brand-tertiary" },
-              { label: "매칭 투자금", value: "48.5", unit: "억원", icon: TrendingUp, color: "text-emerald-400" },
-              { label: "강의 만족도", value: "98.4", unit: "%", icon: Star, color: "text-amber-400" },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="bg-brand-surface/70 backdrop-blur-md rounded-2xl border border-brand-border/40 p-4 sm:p-5 flex flex-col justify-between"
+          {/* 줄 2: 메인 타이틀 */}
+          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight tracking-tight [word-break:keep-all]">
+            아이디어부터 투자까지,{" "}
+            <span className="bg-gradient-to-r from-brand-primary via-brand-tertiary to-brand-secondary bg-clip-text text-transparent">
+              AI로 빠르게 창업하라
+            </span>
+          </h1>
+
+          {/* 줄 3: 서브카피 */}
+          <p className="text-xs sm:text-sm text-brand-on-surface-variant leading-relaxed max-w-xl mx-auto [word-break:keep-all]">
+            실시간 징검다리 교육, 자동 팀 매칭, 투자 유치 연계까지 — 창업의 전 과정을 원스톱으로 지원합니다.
+          </p>
+
+          {/* 줄 4: 핵심 CTA 버튼 그룹 */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => onNavigate("courses")}
+              className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold text-xs sm:text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary-container/30"
+            >
+              강의 둘러보기 <ArrowRight size={15} />
+            </button>
+            {!isLoggedIn && (
+              <button
+                onClick={onLoginClick}
+                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-brand-primary text-white font-bold text-xs sm:text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary/30"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-brand-on-surface-variant font-medium">{stat.label}</span>
-                  <stat.icon size={16} className={stat.color} />
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{stat.value}</span>
-                  <span className="text-xs text-brand-on-surface-variant">{stat.unit}</span>
-                </div>
-              </div>
-            ))}
+                무료 가입하기
+              </button>
+            )}
+            <button
+              onClick={() => onNavigate("ir")}
+              className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-brand-surface-high border border-brand-border text-white font-semibold text-xs sm:text-sm hover:bg-brand-surface-highest transition-all cursor-pointer flex items-center gap-2"
+            >
+              스타트업 IR 보기
+            </button>
           </div>
         </div>
       </section>
