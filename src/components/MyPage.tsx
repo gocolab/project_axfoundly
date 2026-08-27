@@ -265,7 +265,6 @@ export default function MyPage({
               courses={courses}
               onViewCourse={handleViewCourse}
               onNavigateToCourses={() => onNavigate("courses")}
-              userName={userName}
             />
           )}
 

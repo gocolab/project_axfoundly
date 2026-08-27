@@ -51,25 +51,17 @@ export default function MyStartupView({
   const [myIdeas, setMyIdeas] = React.useState<IdeaRequest[]>([]);
   const [ideasLoading, setIdeasLoading] = React.useState(false);
 
-  const loadIdeaRequests = React.useCallback(() => {
-    setIdeasLoading(true);
-    api.getIdeaRequests()
-      .then((res) => {
-        setMyIdeas(res.requests || []);
-      })
-      .catch((err) => console.error("Failed to load idea requests", err))
-      .finally(() => setIdeasLoading(false));
-  }, []);
-
-  React.useEffect(() => {
-    loadIdeaRequests();
-  }, [loadIdeaRequests]);
-
   React.useEffect(() => {
     if (activeSubTab === "ideas") {
-      loadIdeaRequests();
+      setIdeasLoading(true);
+      api.getIdeaRequests()
+        .then((res) => {
+          setMyIdeas(res.requests || []);
+        })
+        .catch((err) => console.error("Failed to load idea requests", err))
+        .finally(() => setIdeasLoading(false));
     }
-  }, [activeSubTab, loadIdeaRequests]);
+  }, [activeSubTab]);
 
   // SubTab 1: Projects Search & Pagination
   const [searchProject, setSearchProject] = React.useState("");

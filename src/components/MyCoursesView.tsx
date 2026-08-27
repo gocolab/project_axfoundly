@@ -4,43 +4,32 @@ import {
   Play,
   Calendar as CalendarIcon,
   Download,
-  CheckCircle2,
-  Clock,
   Sparkles,
-  ExternalLink,
-  ChevronRight,
   Search,
   X,
   RotateCcw,
   Lightbulb,
-  ThumbsUp,
 } from "lucide-react";
 import type { Course, CourseRequest } from "../types";
 import Pagination from "./common/Pagination";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
-import CourseRequestModal from "./CourseRequestModal";
 
 interface MyCoursesViewProps {
   courses: Course[];
   onViewCourse: (id: string) => void;
   onNavigateToCourses?: () => void;
-  userName?: string;
 }
 
 export default function MyCoursesView({
   courses,
   onViewCourse,
   onNavigateToCourses,
-  userName = "김수강생",
 }: MyCoursesViewProps) {
   const toast = useToast();
   const [viewTab, setViewTab] = React.useState<"enrolled" | "requested">("enrolled");
   const [myRequests, setMyRequests] = React.useState<CourseRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = React.useState(false);
-  const [showRequestModal, setShowRequestModal] = React.useState(false);
-  const [requestFilter, setRequestFilter] = React.useState<"all" | "모집중" | "강사매칭중" | "개강완료">("all");
-  const [requestSearch, setRequestSearch] = React.useState("");
 
   const enrolledCourses = courses.filter((c) => c.isEnrolled);
   const [filter, setFilter] = React.useState<"all" | "in_progress" | "completed">("all");
@@ -48,27 +37,17 @@ export default function MyCoursesView({
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
 
-  const loadRequests = React.useCallback(() => {
-    setRequestsLoading(true);
-    api.getCourseRequests()
-      .then((res) => {
-        setMyRequests(res.requests || []);
-      })
-      .catch((err) => console.error("Failed to load requests", err))
-      .finally(() => setRequestsLoading(false));
-  }, []);
-
-  // Fetch immediately on mount so tab badge displays actual count (N)
-  React.useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
-
-  // Refetch when switching to requested tab
   React.useEffect(() => {
     if (viewTab === "requested") {
-      loadRequests();
+      setRequestsLoading(true);
+      api.getCourseRequests()
+        .then((res) => {
+          setMyRequests(res.requests || []);
+        })
+        .catch((err) => console.error("Failed to load requests", err))
+        .finally(() => setRequestsLoading(false));
     }
-  }, [viewTab, loadRequests]);
+  }, [viewTab]);
 
   const filteredCourses = enrolledCourses.filter((course) => {
     const matchFilter =
@@ -100,42 +79,6 @@ export default function MyCoursesView({
     setFilter("all");
     setSearchText("");
   };
-
-  const handleUpvote = async (requestId: string) => {
-    try {
-      const res = await api.upvoteCourseRequest(requestId);
-      if (res.request) {
-        setMyRequests((prev) => prev.map((r) => (r.id === requestId ? res.request : r)));
-        toast.success("공감 투표 반영", res.isUpvoted ? "개강 요청에 공감했습니다!" : "공감 투표를 취소했습니다.");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("오류 발생", "공감 투표 처리 중 문제가 발생했습니다.");
-    }
-  };
-
-  const handleAcceptProposal = async (requestId: string, proposalId: string) => {
-    try {
-      await api.acceptCourseProposal(requestId, proposalId);
-      toast.success("강사 제안서 채택 완료", "제안서가 정식 강의로 성공적으로 승격 개설되었습니다!");
-      // Refresh requests list
-      api.getCourseRequests().then((r) => setMyRequests(r.requests || []));
-    } catch (err) {
-      console.error(err);
-      toast.error("채택 실패", "제안서 승격 처리 중 오류가 발생했습니다.");
-    }
-  };
-
-  const filteredRequests = myRequests.filter((req) => {
-    const matchFilter = requestFilter === "all" ? true : req.status === requestFilter;
-    const q = requestSearch.toLowerCase().trim();
-    const matchSearch =
-      q === "" ||
-      req.title.toLowerCase().includes(q) ||
-      req.description.toLowerCase().includes(q) ||
-      req.category.toLowerCase().includes(q);
-    return matchFilter && matchSearch;
-  });
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -169,85 +112,39 @@ export default function MyCoursesView({
                 : "text-white/60 hover:text-white"
             }`}
           >
-            <Lightbulb className="w-3.5 h-3.5" /> 개강 요청 건 ({myRequests.length})
+            <Lightbulb className="w-3.5 h-3.5" /> 개강 요청 건
           </button>
         </div>
       </div>
 
       {viewTab === "requested" ? (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
             <div className="text-xs text-amber-200">
-              💡 내가 등록하거나 참여한 개강 요청 건입니다. 목표 공감 수가 모이면 전문 강사가 맞춤 커리큘럼을 제안하고, 채택 시 정식 강의로 승격됩니다.
+              💡 내가 등록하거나 참여한 개강 요청 건입니다. 목표 공감 수가 모이면 전문 강사가 맞춤 커리큘럼을 제안합니다.
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            {onNavigateToCourses && (
               <button
-                onClick={() => setShowRequestModal(true)}
-                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-xs hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow cursor-pointer"
+                onClick={onNavigateToCourses}
+                className="text-xs font-bold text-amber-400 hover:underline shrink-0 ml-2"
               >
-                <Sparkles size={13} /> 새 개강 요청하기
+                개강 요청소 가기 →
               </button>
-              {onNavigateToCourses && (
-                <button
-                  onClick={onNavigateToCourses}
-                  className="text-xs font-bold text-amber-400 hover:underline shrink-0"
-                >
-                  요청소 둘러보기 →
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Sub Filters & Search Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
-              {(["all", "모집중", "강사매칭중", "개강완료"] as const).map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setRequestFilter(st)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                    requestFilter === st
-                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold shadow-sm"
-                      : "text-brand-on-surface-variant hover:text-white"
-                  }`}
-                >
-                  {st === "all" ? "전체" : st} ({st === "all" ? myRequests.length : myRequests.filter((r) => r.status === st).length})
-                </button>
-              ))}
-            </div>
-
-            <div className="relative w-full sm:w-60">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-              <input
-                type="text"
-                placeholder="요청 주제, 분야 검색..."
-                value={requestSearch}
-                onChange={(e) => setRequestSearch(e.target.value)}
-                className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-amber-500 transition-colors"
-              />
-              {requestSearch && (
-                <button
-                  onClick={() => setRequestSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
           {requestsLoading ? (
             <div className="text-center py-12 text-white/50 text-xs">요청 목록 로딩 중...</div>
-          ) : filteredRequests.length === 0 ? (
+          ) : myRequests.length === 0 ? (
             <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-white/10">
-              <p className="text-xs text-white/50">일치하는 개강 요청이 없습니다.</p>
+              <p className="text-xs text-white/50">등록된 개강 요청이 없습니다.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredRequests.map((req) => (
+              {myRequests.map((req) => (
                 <div
                   key={req.id}
-                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-amber-500/40 transition-all shadow-md"
+                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-purple-500/40 transition-all shadow-md"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -267,15 +164,8 @@ export default function MyCoursesView({
                     <h4 className="text-sm font-bold text-white line-clamp-1">{req.title}</h4>
                     <p className="text-xs text-white/60 mt-1 line-clamp-2">{req.description}</p>
                     <div className="mt-3 flex items-center justify-between text-xs">
-                      <span className="text-brand-on-surface-variant text-[11px]">
-                        희망: {req.preferredSchedule || "평일저녁"} · {req.expectedPriceRange || "협의"}
-                      </span>
-                      <button
-                        onClick={() => handleUpvote(req.id)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <ThumbsUp size={12} /> {req.upvoteCount} / {req.targetCount}명
-                      </button>
+                      <span className="text-white/50">공감 수강생</span>
+                      <span className="text-amber-400 font-bold">{req.upvoteCount} / {req.targetCount}명</span>
                     </div>
                   </div>
 
@@ -296,41 +186,41 @@ export default function MyCoursesView({
 
                     {req.proposals && req.proposals.length > 0 && (
                       <div className="mt-2 space-y-2">
-                        {req.proposals.map((p) => (
-                          <div
-                            key={p.id}
-                            className="p-3 rounded-xl bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-2"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-white">{p.instructorName} 강사</span>
-                              <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded ${
-                                  p.status === "채택됨"
-                                    ? "bg-emerald-500/20 text-emerald-300 font-bold"
-                                    : "bg-slate-700 text-slate-300"
-                                }`}
-                              >
-                                {p.status}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-purple-200/90 font-medium">{p.proposedTitle}</p>
-                            <p className="text-[11px] text-white/70 line-clamp-2">{p.message}</p>
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                              <span>일정: {p.proposedSchedule?.daysOfWeek?.join(", ") || "협의"} ({p.proposedSchedule?.totalSessions || 8}회차)</span>
-                              <span className="font-semibold text-emerald-400">수강료: {p.price.toLocaleString()}원</span>
-                            </div>
+                        {req.proposals.map((p) => {
+                          const formattedPrice = (p.price || (p as any).proposedPrice || 0).toLocaleString();
+                          const scheduleText =
+                            typeof p.proposedSchedule === "string"
+                              ? p.proposedSchedule
+                              : p.proposedSchedule?.daysOfWeek
+                              ? `매주 [${p.proposedSchedule.daysOfWeek.join(", ")}] (${p.proposedSchedule.totalSessions || 8}회차)`
+                              : "일정 협의";
 
-                            {p.status !== "채택됨" && req.status !== "개강완료" && (
-                              <button
-                                onClick={() => handleAcceptProposal(req.id, p.id)}
-                                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-[11px] hover:opacity-90 transition-opacity flex items-center justify-center gap-1 shadow cursor-pointer mt-1"
-                              >
-                                <CheckCircle2 size={12} />
-                                이 제안서 채택하여 정식 개강 승격
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                          return (
+                            <div
+                              key={p.id}
+                              className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-1.5"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-white">{p.instructorName} 강사</span>
+                                <span
+                                  className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                    p.status === "채택됨"
+                                      ? "bg-emerald-500/20 text-emerald-300"
+                                      : "bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  {p.status}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-purple-200/90 font-medium">{p.proposedTitle}</p>
+                              {p.message && <p className="text-[11px] text-white/70 line-clamp-2">{p.message}</p>}
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                                <span>일정: {scheduleText}</span>
+                                <span className="font-semibold text-emerald-400">수강료: {formattedPrice}원</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -567,19 +457,6 @@ export default function MyCoursesView({
       )}
       </>
       )}
-
-      {/* Course Request Modal (AI Auto-Fill) */}
-      <CourseRequestModal
-        isOpen={showRequestModal}
-        onClose={() => setShowRequestModal(false)}
-        onRequestCreated={() => {
-          setShowRequestModal(false);
-          api.getCourseRequests().then((r) => setMyRequests(r.requests || []));
-          toast.success("개강 요청 등록 완료", "새로운 개강 요청이 등록되었습니다. 강사의 커리큘럼 제안을 기다려보세요!");
-        }}
-        userName={userName}
-        userId="u-student-1"
-      />
     </div>
   );
 }
