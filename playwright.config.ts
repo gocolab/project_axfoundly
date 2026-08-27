@@ -13,6 +13,13 @@ export default defineConfig({
     baseURL: 'http://localhost:3005',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    launchOptions: {
+      args: [
+        '--no-sandbox',
+        '--disable-dev-shm-usage', // Docker 컨테이너의 64MB /dev/shm 제한 대응 (메모리 크래시 방지)
+        '--disable-gpu',
+      ],
+    },
   },
   projects: [
     {

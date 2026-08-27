@@ -13,8 +13,6 @@
     "test:anomaly": "playwright test tests/e2e/anomaly_detection_demo.spec.ts",
     "test:e2e:google": "playwright test --project=google-real-user",
     "test:e2e:ui": "xvfb-run --auto-servernum playwright test --ui --host 0.0.0.0",
-    "test:docker:build": "docker build -f Dockerfile.test -t project-launch-bizs-test .",
-    "test:docker:run": "docker compose -f docker-compose.test.yml up --abort-on-container-exit",
     "auth:google": "node scripts/generate-google-auth.mjs",
     "report": "playwright show-report --host 0.0.0.0 --port 9323"
   },
