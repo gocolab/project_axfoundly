@@ -556,6 +556,13 @@ export const api = {
     });
   },
 
+  updateCommonCode: async (id: string, updates: Partial<CommonCode>): Promise<{ code: CommonCode }> => {
+    return fetchJson<{ code: CommonCode }>(`/api/common/codes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  },
+
   deleteCommonCode: async (id: string): Promise<{ success: boolean; message: string }> => {
     return fetchJson<{ success: boolean; message: string }>(`/api/common/codes/${id}`, {
       method: "DELETE",
