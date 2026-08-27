@@ -5,31 +5,27 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
     await page.goto('/');
   });
 
-  test('메인 히어로 배너 및 주요 진입점 CTA가 정상 렌더링된다', async ({ page }) => {
+  test('메인 히어로 배너가 슬림 중앙 집중형으로 정상 렌더링된다', async ({ page }) => {
     // 히어로 텍스트 확인
     await expect(page.locator('text=AI로 빠르게 창업하라')).toBeVisible();
     await expect(page.locator('text=아이디어부터 투자까지')).toBeVisible();
     await expect(page.locator('text=AI 기반 창업 올인원 파이프라인')).toBeVisible();
-
-    // 주요 CTA 버튼 확인
-    await expect(page.getByRole('button', { name: '강의 둘러보기' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '스타트업 IR 보기' })).toBeVisible();
   });
 
-  test('히어로 배너 [강의 둘러보기] 클릭 시 교육/강의 페이지로 이동한다', async ({ page }) => {
-    const exploreBtn = page.getByRole('button', { name: '강의 둘러보기' });
+  test('인기 추천 강의 섹션 [전체 보기] 클릭 시 교육/강의 페이지로 이동한다', async ({ page }) => {
+    const exploreBtn = page.locator('section', { hasText: '인기 추천 강의' }).getByRole('button', { name: '전체 보기' });
     await expect(exploreBtn).toBeVisible();
     await exploreBtn.click();
 
     await expect(page.locator('h1', { hasText: '교육 / 강의' })).toBeVisible();
   });
 
-  test('비로그인 상태에서 히어로 배너 [무료 가입하기] 클릭 시 회원가입 모달이 오픈된다', async ({ page }) => {
-    const signupBtn = page.getByRole('button', { name: '무료 가입하기' });
-    await expect(signupBtn).toBeVisible();
-    await signupBtn.click();
+  test('GNB [로그인] 클릭 시 로그인 모달이 오픈된다', async ({ page }) => {
+    const loginBtn = page.locator('header').getByRole('button', { name: '로그인' });
+    await expect(loginBtn).toBeVisible();
+    await loginBtn.click();
 
-    // 회원가입 모달 오픈 확인
+    // 로그인 모달 오픈 확인
     await expect(page.locator('.glass-panel-heavy h2')).toBeVisible();
   });
 

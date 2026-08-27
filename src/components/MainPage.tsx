@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  ArrowRight,
   Star,
   Users,
   ChevronRight,
@@ -19,8 +18,8 @@ interface MainPageProps {
   onViewCourse: (id: string) => void;
   onViewIR: (id: string) => void;
   onViewPost?: (id: string) => void;
-  isLoggedIn: boolean;
-  onLoginClick: () => void;
+  isLoggedIn?: boolean;
+  onLoginClick?: () => void;
 }
 
 export default function MainPage({
@@ -31,19 +30,17 @@ export default function MainPage({
   onViewCourse,
   onViewIR,
   onViewPost,
-  isLoggedIn,
-  onLoginClick,
 }: MainPageProps) {
   const activeCourses = courses.filter((c) => c.status === "모집중" || c.status === "진행중");
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
       {/* ── 1. Hero Banner (중앙 집중형 슬림 카드) ── */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e1b4b] via-[#111827] to-[#0f172a] border border-brand-border/60 py-8 px-6 sm:py-10 sm:px-8 text-center shadow-xl">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e1b4b] via-[#111827] to-[#0f172a] border border-brand-border/60 py-8 px-6 sm:py-9 sm:px-8 text-center shadow-xl">
         <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-brand-primary-container/20 blur-3xl pointer-events-none" />
         <div className="absolute -left-20 -bottom-20 w-72 h-72 rounded-full bg-brand-secondary/15 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl mx-auto space-y-4 sm:space-y-5">
+        <div className="relative z-10 max-w-3xl mx-auto space-y-3.5 sm:space-y-4">
           {/* 줄 1: 배지 라벨 */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary-container/20 border border-brand-primary-container/40 text-brand-primary text-xs font-semibold shadow-inner">
             <Sparkles size={13} className="text-brand-primary" />
@@ -62,30 +59,6 @@ export default function MainPage({
           <p className="text-xs sm:text-sm text-brand-on-surface-variant leading-relaxed max-w-xl mx-auto [word-break:keep-all]">
             실시간 징검다리 교육, 자동 팀 매칭, 투자 유치 연계까지 — 창업의 전 과정을 원스톱으로 지원합니다.
           </p>
-
-          {/* 줄 4: 핵심 CTA 버튼 그룹 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              onClick={() => onNavigate("courses")}
-              className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold text-xs sm:text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary-container/30"
-            >
-              강의 둘러보기 <ArrowRight size={15} />
-            </button>
-            {!isLoggedIn && (
-              <button
-                onClick={onLoginClick}
-                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-brand-primary text-white font-bold text-xs sm:text-sm hover:opacity-90 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-brand-primary/30"
-              >
-                무료 가입하기
-              </button>
-            )}
-            <button
-              onClick={() => onNavigate("ir")}
-              className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-brand-surface-high border border-brand-border text-white font-semibold text-xs sm:text-sm hover:bg-brand-surface-highest transition-all cursor-pointer flex items-center gap-2"
-            >
-              스타트업 IR 보기
-            </button>
-          </div>
         </div>
       </section>
 
