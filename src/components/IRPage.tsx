@@ -966,49 +966,33 @@ export default function IRPage({
       {/* ────────────────────────────────────────────────────────── */}
       {activeTab === "browse" && (
         <>
-          {/* Filter & Search Bar */}
+          {/* Streamlined Search & Action Bar */}
           <div className="flex flex-col gap-3 mb-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-2 flex-wrap">
-                {dynamicFields.map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveField(f)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                      activeField === f
-                        ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
-                        : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-              {/* 프로젝트 등록 버튼 */}
-              {isLoggedIn && (
-                <button
-                  onClick={() => setShowCreateProjectModal(true)}
-                  className="text-xs font-semibold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md"
-                >
-                  <span className="text-base leading-none">+</span> 프로젝트 등록
-                </button>
-              )}
-            </div>
-
-            {/* Search + Pagination */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
                 <input
                   type="text"
-                  placeholder="스타트업명, 아이템, 태그 검색..."
+                  placeholder="스타트업명, 아이템, 분야, 태그 검색..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full shadow-inner"
                 />
               </div>
-              {totalPages > 1 && (
-                <div className="ml-auto">
+
+              {/* Right Action & Pagination */}
+              <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
+                {isLoggedIn && (
+                  <button
+                    onClick={() => setShowCreateProjectModal(true)}
+                    className="text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-brand-primary/10"
+                  >
+                    <span className="text-base leading-none">+</span> 프로젝트 등록
+                  </button>
+                )}
+
+                {totalPages > 1 && (
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -1016,8 +1000,8 @@ export default function IRPage({
                     totalItems={filtered.length}
                     itemsPerPage={itemsPerPage}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Tag Cloud */}
@@ -1200,35 +1184,19 @@ export default function IRPage({
             </button>
           </div>
 
-          {/* Filter & Search Bar for Ideas */}
+          {/* Streamlined Filter & Search Bar for Ideas */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              {/* Category & Status Filter */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {dynamicFields.map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveField(f)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                      activeField === f
-                        ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300 font-bold"
-                        : "border-brand-border text-brand-on-surface-variant hover:text-white"
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-
-                <span className="text-white/20">|</span>
-
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Status Filter */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {["전체", "모집중", "선발진행중", "협의중", "매칭완료"].map((st) => (
                   <button
                     key={st}
                     onClick={() => setIdeaStatusFilter(st)}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                    className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                       ideaStatusFilter === st
-                        ? "bg-white/15 text-white font-bold"
-                        : "text-white/40 hover:text-white/70"
+                        ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300 font-bold shadow-sm"
+                        : "border-brand-border text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high/50"
                     }`}
                   >
                     {st}
@@ -1237,12 +1205,12 @@ export default function IRPage({
               </div>
 
               {/* Sort Switch */}
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 text-xs">
+              <div className="flex items-center gap-1 bg-brand-surface-low p-1 rounded-xl border border-brand-border text-xs shrink-0 self-start sm:self-auto">
                 <button
                   onClick={() => setIdeaSort("popular")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     ideaSort === "popular"
-                      ? "bg-cyan-500/20 text-cyan-300 font-bold"
+                      ? "bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30"
                       : "text-white/50 hover:text-white"
                   }`}
                 >
@@ -1252,7 +1220,7 @@ export default function IRPage({
                   onClick={() => setIdeaSort("recent")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     ideaSort === "recent"
-                      ? "bg-cyan-500/20 text-cyan-300 font-bold"
+                      ? "bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30"
                       : "text-white/50 hover:text-white"
                   }`}
                 >
@@ -1262,19 +1230,20 @@ export default function IRPage({
             </div>
 
             {/* Search + Pagination */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
                 <input
                   type="text"
-                  placeholder="아이디어, 문제점, 솔루션 검색..."
+                  placeholder="아이디어명, 분야, 문제점, 솔루션 검색..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-cyan-500 transition-colors w-full"
+                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-cyan-500 transition-colors w-full shadow-inner"
                 />
               </div>
+
               {totalIdeaPages > 1 && (
-                <div className="ml-auto">
+                <div className="ml-auto shrink-0">
                   <Pagination
                     currentPage={ideaPage}
                     totalPages={totalIdeaPages}

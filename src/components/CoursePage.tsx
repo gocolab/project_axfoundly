@@ -1077,49 +1077,33 @@ export default function CoursePage({
       {/* ────────────────────────────────────────────────────────── */}
       {activeTab === "browse" && (
         <>
-          {/* Filter & Search Bar */}
+          {/* Streamlined Search & Action Bar */}
           <div className="flex flex-col gap-3 mb-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-2 flex-wrap">
-                {dynamicCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                      activeCategory === cat
-                        ? "bg-brand-primary-container/20 border-brand-primary-container/40 text-brand-primary font-bold shadow-sm"
-                        : "border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-surface-highest"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-              {/* 강의 생성 버튼 */}
-              {isLoggedIn && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="text-xs font-semibold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md"
-                >
-                  <span className="text-base leading-none">+</span> 강의 개설 마법사
-                </button>
-              )}
-            </div>
-
-            {/* Search + Pagination */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
                 <input
                   type="text"
-                  placeholder="강의명, 강사명, 태그 검색..."
+                  placeholder="강의명, 강사명, 분야, 태그 검색..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full"
+                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full shadow-inner"
                 />
               </div>
-              {totalPages > 1 && (
-                <div className="ml-auto">
+
+              {/* Right Action & Pagination */}
+              <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
+                {isLoggedIn && (
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-brand-primary/10"
+                  >
+                    <span className="text-base leading-none">+</span> 강의 개설 마법사
+                  </button>
+                )}
+
+                {totalPages > 1 && (
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -1127,8 +1111,8 @@ export default function CoursePage({
                     totalItems={filtered.length}
                     itemsPerPage={itemsPerPage}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Tag Cloud */}
@@ -1315,35 +1299,19 @@ export default function CoursePage({
             </button>
           </div>
 
-          {/* Filter & Search Bar for Requests */}
+          {/* Streamlined Filter & Search Bar for Requests */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              {/* Category & Status Filter */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {dynamicCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                      activeCategory === cat
-                        ? "bg-amber-500/20 border-amber-500/40 text-amber-300 font-bold"
-                        : "border-brand-border text-brand-on-surface-variant hover:text-white"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-
-                <span className="text-white/20">|</span>
-
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Status Filter */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {["전체", "모집중", "강사매칭중", "개강완료"].map((st) => (
                   <button
                     key={st}
                     onClick={() => setRequestStatusFilter(st)}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                    className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                       requestStatusFilter === st
-                        ? "bg-white/15 text-white font-bold"
-                        : "text-white/40 hover:text-white/70"
+                        ? "bg-amber-500/20 border-amber-500/40 text-amber-300 font-bold shadow-sm"
+                        : "border-brand-border text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high/50"
                     }`}
                   >
                     {st}
@@ -1352,12 +1320,12 @@ export default function CoursePage({
               </div>
 
               {/* Sort Switch */}
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 text-xs">
+              <div className="flex items-center gap-1 bg-brand-surface-low p-1 rounded-xl border border-brand-border text-xs shrink-0 self-start sm:self-auto">
                 <button
                   onClick={() => setRequestSort("popular")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     requestSort === "popular"
-                      ? "bg-amber-500/20 text-amber-300 font-bold"
+                      ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30"
                       : "text-white/50 hover:text-white"
                   }`}
                 >
@@ -1367,7 +1335,7 @@ export default function CoursePage({
                   onClick={() => setRequestSort("recent")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     requestSort === "recent"
-                      ? "bg-amber-500/20 text-amber-300 font-bold"
+                      ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30"
                       : "text-white/50 hover:text-white"
                   }`}
                 >
@@ -1377,19 +1345,20 @@ export default function CoursePage({
             </div>
 
             {/* Search + Pagination */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
                 <input
                   type="text"
-                  placeholder="개강 요청 주제, 발제자, 키워드 검색..."
+                  placeholder="개강 요청 주제, 분야, 발제자, 키워드 검색..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-amber-500 transition-colors w-full"
+                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-amber-500 transition-colors w-full shadow-inner"
                 />
               </div>
+
               {totalRequestPages > 1 && (
-                <div className="ml-auto">
+                <div className="ml-auto shrink-0">
                   <Pagination
                     currentPage={requestPage}
                     totalPages={totalRequestPages}
