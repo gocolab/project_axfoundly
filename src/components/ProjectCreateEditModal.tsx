@@ -1,8 +1,9 @@
 import React from "react";
 import { X, Rocket, Video, Shield, Plus, Trash2, Send, Sparkles } from "lucide-react";
-import type { IRProject, HiringRoleDetail, CommonCode } from "../types";
+import type { IRProject, HiringRoleDetail } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
+import { useCommonCodes } from "../hooks/useCommonCodes";
 
 interface ProjectCreateEditModalProps {
   isOpen: boolean;
@@ -18,8 +19,21 @@ export default function ProjectCreateEditModal({
   onSave,
 }: ProjectCreateEditModalProps) {
   const toast = useToast();
-  const [stageCodes, setStageCodes] = React.useState<CommonCode[]>([]);
-  const [empTypeCodes, setEmpTypeCodes] = React.useState<CommonCode[]>([]);
+  const { getCodesByGroup } = useCommonCodes(["INVESTMENT_STAGE", "EMPLOYMENT_TYPE", "IR_FIELD"]);
+  const stageCodes = getCodesByGroup("INVESTMENT_STAGE");
+  const empTypeCodes = getCodesByGroup("EMPLOYMENT_TYPE");
+  const irFieldCodes = getCodesByGroup("IR_FIELD");
+
+  const recommendedFields = irFieldCodes.length > 0
+    ? irFieldCodes.map((c) => c.displayName || c.codeName)
+    : [
+        "B2B Enterprise AI",
+        "차세대 핀테크 / 결제",
+        "초정밀 헬스케어 AI",
+        "실전 멀티에이전트 SaaS",
+        "모빌리티 / 로보틱스",
+        "스마트 이커머스",
+      ];
 
   const [teamName, setTeamName] = React.useState(initialProject?.teamName || "");
   const [anonymousTeamName, setAnonymousTeamName] = React.useState(
@@ -41,22 +55,15 @@ export default function ProjectCreateEditModal({
   // Hiring section
   const [isHiring, setIsHiring] = React.useState(initialProject?.isHiring || false);
   const [hiringRoleInput, setHiringRoleInput] = React.useState("");
-  const [hiringTypeInput, setHiringTypeInput] = React.useState("풀타임");
+  const [hiringTypeInput, setHiringTypeInput] = React.useState(
+    empTypeCodes[0]?.displayName || empTypeCodes[0]?.codeName || "풀타임"
+  );
   const [hiringRoles, setHiringRoles] = React.useState<string[]>(initialProject?.hiringRoles || []);
   const [hiringDetails, setHiringDetails] = React.useState<HiringRoleDetail[]>(
     initialProject?.hiringDetails || []
   );
   const [saving, setSaving] = React.useState(false);
   const [isAiGenerating, setIsAiGenerating] = React.useState(false);
-
-  const recommendedFields = [
-    "B2B Enterprise AI",
-    "차세대 핀테크 / 결제",
-    "초정밀 헬스케어 AI",
-    "실전 멀티에이전트 SaaS",
-    "모빌리티 / 로보틱스",
-    "스마트 이커머스",
-  ];
 
   const handleAIAssist = async () => {
     const rawInput = (title || teamName || "").trim();
@@ -104,24 +111,6 @@ export default function ProjectCreateEditModal({
       setIsAiGenerating(false);
     }
   };
-
-  // 공통 코드 로드
-  React.useEffect(() => {
-    if (!isOpen) return;
-    api.getCommonCodes(["INVESTMENT_STAGE", "EMPLOYMENT_TYPE"])
-      .then((res) => {
-        if (res.codes) {
-          const stages = res.codes.filter((c) => c.groupCode === "INVESTMENT_STAGE" && c.isActive);
-          const empTypes = res.codes.filter((c) => c.groupCode === "EMPLOYMENT_TYPE" && c.isActive);
-          if (stages.length > 0) setStageCodes(stages);
-          if (empTypes.length > 0) {
-            setEmpTypeCodes(empTypes);
-            setHiringTypeInput(empTypes[0].displayName || empTypes[0].codeName);
-          }
-        }
-      })
-      .catch((err) => console.error("공통 코드 로드 실패:", err));
-  }, [isOpen]);
 
   React.useEffect(() => {
     if (initialProject) {

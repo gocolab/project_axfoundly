@@ -48,6 +48,10 @@
 | API-CODE-02 | GET | `/api/common/groups` | 공통 코드 그룹 목록 조회 | Common | 불필요 | ✅ 완료 |
 | API-CODE-03 | POST | `/api/common/codes` | 신규 공통 코드 등록 | Common | 관리자 | ✅ 완료 |
 | API-CODE-04 | PUT | `/api/common/codes/:id` | 공통 코드 수정 | Common | 관리자 | ✅ 완료 |
+| API-CODE-05 | DELETE | `/api/common/codes/:id` | 공통 코드 삭제 (시스템 코드 보호) | Common | 관리자 | ✅ 완료 |
+| API-CODE-06 | POST | `/api/common/groups` | 신규 코드 그룹 등록 | Common | 관리자 | ✅ 완료 |
+| API-CODE-07 | PUT | `/api/common/groups/:groupCode` | 코드 그룹 수정 | Common | 관리자 | ✅ 완료 |
+| API-CODE-08 | DELETE | `/api/common/groups/:groupCode` | 코드 그룹 삭제 및 소속 코드 연쇄 삭제 | Common | 관리자 | ✅ 완료 |
 
 ## 2. 주요 신규 고도화 API 상세
 

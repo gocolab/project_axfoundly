@@ -556,10 +556,29 @@ export const api = {
     });
   },
 
-  updateCommonCode: async (id: string, updates: Partial<CommonCode>): Promise<{ code: CommonCode }> => {
-    return fetchJson<{ code: CommonCode }>(`/api/common/codes/${id}`, {
+  deleteCommonCode: async (id: string): Promise<{ success: boolean; message: string }> => {
+    return fetchJson<{ success: boolean; message: string }>(`/api/common/codes/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  createCodeGroup: async (groupData: Partial<CodeGroup>): Promise<{ group: CodeGroup }> => {
+    return fetchJson<{ group: CodeGroup }>("/api/common/groups", {
+      method: "POST",
+      body: JSON.stringify(groupData),
+    });
+  },
+
+  updateCodeGroup: async (groupCode: string, updates: Partial<CodeGroup>): Promise<{ group: CodeGroup }> => {
+    return fetchJson<{ group: CodeGroup }>(`/api/common/groups/${groupCode}`, {
       method: "PUT",
       body: JSON.stringify(updates),
+    });
+  },
+
+  deleteCodeGroup: async (groupCode: string): Promise<{ success: boolean; message: string }> => {
+    return fetchJson<{ success: boolean; message: string }>(`/api/common/groups/${groupCode}`, {
+      method: "DELETE",
     });
   },
 };

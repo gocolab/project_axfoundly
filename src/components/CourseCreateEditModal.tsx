@@ -11,6 +11,7 @@ import {
 import type { Course, CurriculumItem } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
+import { useCommonCodes } from "../hooks/useCommonCodes";
 
 interface CourseCreateEditModalProps {
   isOpen: boolean;
@@ -28,6 +29,12 @@ export default function CourseCreateEditModal({
   instructorName = "김소현",
 }: CourseCreateEditModalProps) {
   const toast = useToast();
+  const { getCodesByGroup } = useCommonCodes(["COURSE_CATEGORY"]);
+  const categoryCodes = getCodesByGroup("COURSE_CATEGORY");
+  const recommendedCategories = categoryCodes.length > 0
+    ? categoryCodes.map((c) => c.displayName || c.codeName)
+    : ["AI 모델링 / LLM", "실전 멀티에이전트", "비즈니스 기획", "개발·IT", "그로스 마케팅", "바이오·헬스케어"];
+
   const [createStep, setCreateStep] = React.useState<"ai_chat" | "detail_edit">(
     initialCourse ? "detail_edit" : "ai_chat"
   );
@@ -382,7 +389,7 @@ export default function CourseCreateEditModal({
                 className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
               />
               <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {["AI 모델링 / LLM", "실전 멀티에이전트", "비즈니스 기획", "개발·IT", "그로스 마케팅", "바이오·헬스케어"].map((cat) => (
+                {recommendedCategories.map((cat) => (
                   <button
                     key={cat}
                     type="button"
