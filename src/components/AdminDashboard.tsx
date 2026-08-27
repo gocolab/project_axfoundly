@@ -23,8 +23,11 @@ import {
   DollarSign,
   Zap,
   Eye,
+  Sparkles,
+  Lightbulb,
+  Check,
 } from "lucide-react";
-import type { DashboardStats, AdminMember, AdminBoard, UserRole, Course } from "../types";
+import type { DashboardStats, AdminMember, AdminBoard, UserRole, Course, IRProject, IdeaRequest, IdeaProposal, InvestmentProposal, AdminCategoryInsight } from "../types";
 import AdminBoardCreateModal from "./AdminBoardCreateModal";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
@@ -51,7 +54,9 @@ export default function AdminDashboard({
   onViewCourse,
 }: AdminDashboardProps) {
   const toast = useToast();
-  const [activeTab, setActiveTab] = React.useState<"stats" | "members" | "courses" | "boards" | "crm" | "payments">("stats");
+  const [activeTab, setActiveTab] = React.useState<
+    "stats" | "members" | "courses" | "startup" | "categories" | "boards" | "crm" | "payments"
+  >("stats");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);
@@ -60,9 +65,49 @@ export default function AdminDashboard({
   const [newBoardName, setNewBoardName] = React.useState("");
   const [newBoardTemplate, setNewBoardTemplate] = React.useState<"일반형" | "갤러리형" | "카드형">("일반형");
   const [payments, setPayments] = React.useState<any[]>([]);
-  const [selectedPanelItem, setSelectedPanelItem] = React.useState<{type: 'member', data: AdminMember} | {type: 'course', data: Course} | {type: 'board', data: AdminBoard} | {type: 'payment', data: any} | {type: 'crm', data: any} | null>(null);
+
+  // 신규 데이터 상태: IR 프로젝트, 아이디어 의뢰, 카테고리 인사이트
+  const [adminProjects, setAdminProjects] = React.useState<IRProject[]>([]);
+  const [adminIdeaRequests, setAdminIdeaRequests] = React.useState<IdeaRequest[]>([]);
+  const [adminCategoryInsights, setAdminCategoryInsights] = React.useState<AdminCategoryInsight[]>([]);
+  const [irSubFilter, setIrSubFilter] = React.useState<"all" | "stealth" | "hiring">("all");
+  const [dataLoading, setDataLoading] = React.useState(false);
+
+  const [selectedPanelItem, setSelectedPanelItem] = React.useState<
+    | { type: "member"; data: AdminMember }
+    | { type: "course"; data: Course }
+    | { type: "ir"; data: IRProject }
+    | { type: "idea"; data: IdeaRequest }
+    | { type: "category"; data: AdminCategoryInsight }
+    | { type: "board"; data: AdminBoard }
+    | { type: "payment"; data: any }
+    | { type: "crm"; data: any }
+    | null
+  >(null);
 
   const [isClosing, setIsClosing] = React.useState(false);
+
+  // Load IR projects & Category insights on tab switch
+  React.useEffect(() => {
+    if (activeTab === "startup") {
+      setDataLoading(true);
+      Promise.all([api.getAdminIRProjects(), api.getAdminIdeaRequests()])
+        .then(([irRes, ideaRes]) => {
+          setAdminProjects(irRes.projects || []);
+          setAdminIdeaRequests(ideaRes.ideaRequests || []);
+        })
+        .catch((err) => console.error("Failed to load admin startup data", err))
+        .finally(() => setDataLoading(false));
+    } else if (activeTab === "categories") {
+      setDataLoading(true);
+      api.getAdminCategoryInsights()
+        .then((res) => {
+          setAdminCategoryInsights(res.insights || []);
+        })
+        .catch((err) => console.error("Failed to load category insights", err))
+        .finally(() => setDataLoading(false));
+    }
+  }, [activeTab]);
 
   React.useEffect(() => {
     setLocalBoards(boards);
@@ -116,8 +161,11 @@ export default function AdminDashboard({
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-brand-primary animate-pulse" />
               <h3 className="font-display font-bold text-white text-sm">
-                {selectedPanelItem.type === "member" && "회원 상세 정보"}
+                {selectedPanelItem.type === "member" && "회원 상세 정보 & 활동 이력"}
                 {selectedPanelItem.type === "course" && "강의 검수 & 승인"}
+                {selectedPanelItem.type === "ir" && "스타트업 IR 프로젝트 검수"}
+                {selectedPanelItem.type === "idea" && "아이디어 의뢰 & 제안 검수"}
+                {selectedPanelItem.type === "category" && "자연어 카테고리 인사이트"}
                 {selectedPanelItem.type === "board" && "게시판 상세 관리"}
                 {selectedPanelItem.type === "payment" && "결제 영수증 상세"}
                 {selectedPanelItem.type === "crm" && "CRM 발송 상세"}
@@ -132,6 +180,82 @@ export default function AdminDashboard({
             </button>
           </div>
         <div className="p-5 overflow-y-auto max-h-[calc(100vh-140px)] space-y-4">
+          {selectedPanelItem.type === 'ir' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <h4 className="text-base font-bold text-white">{selectedPanelItem.data.teamName}</h4>
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">프로젝트 타이틀:</span> {selectedPanelItem.data.title}</p>
+                <p><span className="font-semibold text-white">산업 / 분야:</span> <span className="font-mono text-cyan-300 font-bold">{selectedPanelItem.data.field}</span></p>
+                <p><span className="font-semibold text-white">투자 단계:</span> {selectedPanelItem.data.investmentStage}</p>
+                <p><span className="font-semibold text-white">모드:</span> {selectedPanelItem.data.isAnonymous ? "⚡ 비실명(스텔스)" : "공개(실명)"}</p>
+                <p><span className="font-semibold text-white">채용 중:</span> {selectedPanelItem.data.isHiring ? `채용 중 (${selectedPanelItem.data.hiringRoles?.join(", ")})` : "채용 없음"}</p>
+              </div>
+              <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/30 space-y-2">
+                <p className="font-semibold text-white text-xs">한 줄 소개</p>
+                <p className="text-xs text-white/80">{selectedPanelItem.data.oneLiner}</p>
+                <p className="font-semibold text-white text-xs pt-2 border-t border-white/10">문제 & 솔루션</p>
+                <p className="text-xs text-white/70"><strong>Problem:</strong> {selectedPanelItem.data.problem}</p>
+                <p className="text-xs text-white/70"><strong>Solution:</strong> {selectedPanelItem.data.solution}</p>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={async () => {
+                    await api.updateAdminIRProjectStatus(selectedPanelItem.data.id, "활성");
+                    toast.success("IR 프로젝트 검수 완료", "프로젝트가 정상 활성 상태로 유지됩니다.");
+                    setSelectedPanelItem(null);
+                  }}
+                  className="flex-1 py-2 bg-brand-tertiary/20 text-brand-tertiary font-bold rounded-xl border border-brand-tertiary/30 hover:bg-brand-tertiary/30 transition-colors cursor-pointer text-xs"
+                >
+                  정상 승인
+                </button>
+                <button
+                  onClick={async () => {
+                    await api.updateAdminIRProjectStatus(selectedPanelItem.data.id, "숨김");
+                    toast.warning("IR 프로젝트 숨김 처리", "해당 프로젝트가 탐색 목록에서 숨김 처리되었습니다.");
+                    setSelectedPanelItem(null);
+                  }}
+                  className="flex-1 py-2 bg-error/20 text-error font-bold rounded-xl border border-error/30 hover:bg-error/30 transition-colors cursor-pointer text-xs"
+                >
+                  숨김 / 블라인드
+                </button>
+              </div>
+            </div>
+          )}
+          {selectedPanelItem.type === 'idea' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <h4 className="text-base font-bold text-white">{selectedPanelItem.data.title}</h4>
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">발제자:</span> {selectedPanelItem.data.requestedBy?.userName}</p>
+                <p><span className="font-semibold text-white">카테고리:</span> <span className="text-cyan-300 font-mono font-semibold">{selectedPanelItem.data.category}</span></p>
+                <p><span className="font-semibold text-white">공감 수:</span> {selectedPanelItem.data.upvoteCount}명</p>
+                <p><span className="font-semibold text-white">협업 보상:</span> {selectedPanelItem.data.rewardType} ({selectedPanelItem.data.rewardDetail})</p>
+                <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
+              </div>
+              <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/30 space-y-2">
+                <p className="font-semibold text-white text-xs">해결하려는 문제 (Pain Point)</p>
+                <p className="text-xs text-white/70">{selectedPanelItem.data.problem}</p>
+                <p className="font-semibold text-white text-xs pt-2 border-t border-white/10">솔루션 컨셉</p>
+                <p className="text-xs text-white/70">{selectedPanelItem.data.solutionConcept}</p>
+              </div>
+            </div>
+          )}
+          {selectedPanelItem.type === 'category' && (
+            <div className="space-y-4 text-sm text-brand-on-surface-variant">
+              <h4 className="text-base font-bold text-white flex items-center gap-2">
+                <Sparkles size={16} className="text-brand-primary" />
+                {selectedPanelItem.data.category}
+              </h4>
+              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
+                <p><span className="font-semibold text-white">누적 사용 횟수:</span> <strong className="text-brand-primary font-bold">{selectedPanelItem.data.count}회</strong></p>
+                <p><span className="font-semibold text-white">사용 도메인:</span> {selectedPanelItem.data.type === "all" ? "전체 (강의+IR+아이디어)" : selectedPanelItem.data.type}</p>
+                <p><span className="font-semibold text-white">최근 트렌드:</span> {selectedPanelItem.data.recentTrend}</p>
+                <p><span className="font-semibold text-white">추천 칩 등록 여부:</span> {selectedPanelItem.data.isRecommendedChip ? "✅ 등록됨" : "미등록 (자연어 생성)"}</p>
+              </div>
+              <div className="p-4 bg-brand-primary/10 rounded-xl border border-brand-primary/20 text-xs text-brand-on-surface-variant">
+                사용자와 AI가 실시간으로 확장 중인 자연어 카테고리입니다. 빈도가 높은 카테고리는 프론트엔드 모달 추천 칩에 매핑됩니다.
+              </div>
+            </div>
+          )}
           {selectedPanelItem.type === 'member' && (
             <div className="space-y-4 text-sm text-brand-on-surface-variant">
               <div className="w-16 h-16 rounded-full bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-4 border-2 border-brand-primary/30 shadow-inner">
@@ -267,13 +391,12 @@ export default function AdminDashboard({
     { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={16} /> },
     { id: "members" as const, label: "회원 관리", icon: <Users size={16} /> },
     { id: "courses" as const, label: "강의 검수 & 승인", icon: <BookOpen size={16} /> },
+    { id: "startup" as const, label: "스타트업 & IR 관리", icon: <TrendingUp size={16} /> },
+    { id: "categories" as const, label: "자연어 분야 인사이트", icon: <Sparkles size={16} /> },
     { id: "boards" as const, label: "게시판 관리", icon: <MessageSquare size={16} /> },
     { id: "payments" as const, label: "결제 관리", icon: <DollarSign size={16} /> },
     { id: "crm" as const, label: "알림/마케팅 CRM", icon: <Bell size={16} /> },
   ];
-
-
-
 
   // Mock chart data
   const chartBars = [35, 52, 48, 70, 65, 82, 90, 78, 95, 88, 72, 60];
@@ -297,6 +420,18 @@ export default function AdminDashboard({
   const filteredCourses = pendingCourses.filter(c => c.title.toLowerCase().includes(lcSearch) || c.instructor.toLowerCase().includes(lcSearch));
   const totalCoursePages = Math.max(1, Math.ceil(filteredCourses.length / itemsPerPage));
   const paginatedCourses = filteredCourses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const filteredProjects = adminProjects.filter(p => {
+    const matchSearch = p.teamName.toLowerCase().includes(lcSearch) || p.title.toLowerCase().includes(lcSearch) || p.field.toLowerCase().includes(lcSearch);
+    const matchSub = irSubFilter === "all" ? true : irSubFilter === "stealth" ? p.isAnonymous : p.isHiring;
+    return matchSearch && matchSub;
+  });
+  const totalProjectPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
+  const paginatedProjects = filteredProjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const filteredCategories = adminCategoryInsights.filter(c => c.category.toLowerCase().includes(lcSearch));
+  const totalCategoryPages = Math.max(1, Math.ceil(filteredCategories.length / itemsPerPage));
+  const paginatedCategories = filteredCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const filteredBoards = localBoards.filter(b => b.name.toLowerCase().includes(lcSearch));
   const totalBoardPages = Math.max(1, Math.ceil(filteredBoards.length / itemsPerPage));
@@ -391,6 +526,54 @@ export default function AdminDashboard({
                     <p className="text-[9px] text-brand-on-surface-variant mt-1">
                       팀빌딩 {stats.teamMatchCount} + 투자 {stats.investmentMatchCount}
                     </p>
+                  </div>
+                </div>
+
+                {/* AI & Reverse Proposal KPI Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-gradient-to-br from-purple-900/20 to-brand-card border border-purple-500/30 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-purple-300 font-semibold flex items-center gap-1.5">
+                        <BookOpen size={13} /> 수강생 개강 요청 매칭률
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold">
+                        {stats.courseMatchRate || 75}%
+                      </span>
+                    </div>
+                    <p className="text-xl font-bold text-white mt-1">
+                      {stats.courseRequestCount || 8}<span className="text-xs text-brand-on-surface-variant font-normal ml-1">건 요청</span>
+                    </p>
+                    <p className="text-[10px] text-brand-on-surface-variant mt-1">공감 투표 기반 강사 커리큘럼 승격</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-cyan-900/20 to-brand-card border border-cyan-500/30 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-cyan-300 font-semibold flex items-center gap-1.5">
+                        <TrendingUp size={13} /> 아이디어 의뢰 ➔ IR 승격률
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold">
+                        {stats.builderMatchRate || 68}%
+                      </span>
+                    </div>
+                    <p className="text-xl font-bold text-white mt-1">
+                      {stats.ideaRequestCount || 12}<span className="text-xs text-brand-on-surface-variant font-normal ml-1">건 발제</span>
+                    </p>
+                    <p className="text-[10px] text-brand-on-surface-variant mt-1">빌더 팀 MVP 제작 수락 및 IR 전환</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-brand-primary/20 to-brand-card border border-brand-primary/30 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-brand-primary font-semibold flex items-center gap-1.5">
+                        <Sparkles size={13} /> AI 자동 채우기 활용량
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-primary font-bold">
+                        99.8% 성공
+                      </span>
+                    </div>
+                    <p className="text-xl font-bold text-white mt-1">
+                      {stats.aiAutoFillCount || 146}<span className="text-xs text-brand-on-surface-variant font-normal ml-1">회 호출</span>
+                    </p>
+                    <p className="text-[10px] text-brand-on-surface-variant mt-1">자연어 분야 및 스마트 명칭 재조정</p>
                   </div>
                 </div>
 
@@ -661,6 +844,192 @@ export default function AdminDashboard({
                       <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
                         <p className="text-xs text-brand-on-surface-variant">처리 대기 중인 환불 요청이 없습니다</p>
                       </div>
+                    </div>
+                  </div>
+                  {renderDetailPanel()}
+                </div>
+              </div>
+            )}
+
+            {/* ── 스타트업 & IR 관리 ── */}
+            {activeTab === "startup" && (
+              <div className="flex flex-col gap-4 animate-fadeIn">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <TrendingUp size={14} className="text-cyan-400" />
+                      스타트업 IR 프로젝트 & 아이디어 의뢰 통합 검수
+                    </h2>
+                    <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                      등록된 스타트업 프로젝트, 스텔스 모드, 구인 공고 및 아이디어 의뢰 건을 검수하고 관리합니다.
+                    </p>
+                  </div>
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <div className="relative w-full xl:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                      <input
+                        type="text"
+                        placeholder="프로젝트, 팀명, 분야 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      />
+                    </div>
+                    {totalProjectPages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalProjectPages}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredProjects.length}
+                          itemsPerPage={itemsPerPage}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub Filter */}
+                <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start">
+                  <button
+                    onClick={() => setIrSubFilter("all")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      irSubFilter === "all" ? "bg-brand-primary-container text-white shadow-sm" : "text-brand-on-surface-variant hover:text-white"
+                    }`}
+                  >
+                    전체 프로젝트 ({adminProjects.length})
+                  </button>
+                  <button
+                    onClick={() => setIrSubFilter("stealth")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      irSubFilter === "stealth" ? "bg-brand-primary-container text-white shadow-sm" : "text-brand-on-surface-variant hover:text-white"
+                    }`}
+                  >
+                    ⚡ 스텔스 모드 ({adminProjects.filter((p) => p.isAnonymous).length})
+                  </button>
+                  <button
+                    onClick={() => setIrSubFilter("hiring")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      irSubFilter === "hiring" ? "bg-brand-primary-container text-white shadow-sm" : "text-brand-on-surface-variant hover:text-white"
+                    }`}
+                  >
+                    채용 중 ({adminProjects.filter((p) => p.isHiring).length})
+                  </button>
+                </div>
+
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
+                    {dataLoading ? (
+                      <div className="text-center py-12 text-white/50 text-xs">스타트업 데이터 로딩 중...</div>
+                    ) : filteredProjects.length === 0 ? (
+                      <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center shadow-md">
+                        <CheckCircle size={32} className="text-brand-tertiary mx-auto mb-3" />
+                        <p className="text-sm text-brand-on-surface-variant">일치하는 스타트업 프로젝트가 없습니다</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {paginatedProjects.map((project) => (
+                          <div
+                            key={project.id}
+                            onClick={() => setSelectedPanelItem({ type: 'ir', data: project })}
+                            className={`bg-brand-card border rounded-xl p-4 transition-all duration-200 cursor-pointer shadow-sm ${
+                              selectedPanelItem?.type === 'ir' && selectedPanelItem.data.id === project.id
+                                ? "border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500/40 shadow-md"
+                                : "border-brand-border/60 hover:bg-brand-surface-low"
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-bold text-white truncate">{project.teamName}</span>
+                                  {project.isAnonymous && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                                      ⚡ 스텔스
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono font-semibold">
+                                    {project.field}
+                                  </span>
+                                </div>
+                                <h3 className="text-xs font-semibold text-white/90 truncate">{project.title}</h3>
+                                <p className="text-[10px] text-brand-on-surface-variant mt-0.5 truncate">{project.oneLiner}</p>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-brand-surface-low text-brand-on-surface-variant border border-brand-border/30 font-mono">
+                                  {project.investmentStage}
+                                </span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelectedPanelItem({ type: 'ir', data: project }); }}
+                                  className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <Eye size={11} /> 검수
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {renderDetailPanel()}
+                </div>
+              </div>
+            )}
+
+            {/* ── 자연어 분야 & 카테고리 인사이트 ── */}
+            {activeTab === "categories" && (
+              <div className="flex flex-col gap-4 animate-fadeIn">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Sparkles size={14} className="text-brand-primary" />
+                      자연어 산업 분야 & AI 생성 카테고리 인사이트
+                    </h2>
+                    <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                      플랫폼 내에서 AI와 사용자가 자율 생성한 자연어 카테고리 빈도수를 분석하고 프론트엔드 추천 칩에 매핑합니다.
+                    </p>
+                  </div>
+                  <div className="relative w-full xl:w-60">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                    <input
+                      type="text"
+                      placeholder="카테고리명 검색..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                  <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {paginatedCategories.map((cat, idx) => (
+                        <div
+                          key={cat.category}
+                          onClick={() => setSelectedPanelItem({ type: 'category', data: cat })}
+                          className={`p-4 rounded-xl border transition-all cursor-pointer bg-brand-card shadow-sm ${
+                            selectedPanelItem?.type === 'category' && selectedPanelItem.data.category === cat.category
+                              ? "border-brand-primary bg-brand-primary-container/15 ring-1 ring-brand-primary/40 shadow-md"
+                              : "border-brand-border/60 hover:bg-brand-surface-low"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span className="text-[10px] text-brand-primary font-mono">#{idx + 1}</span>
+                              {cat.category}
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-primary font-bold">
+                              {cat.count}건
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-brand-on-surface-variant pt-2 border-t border-brand-border/30">
+                            <span>도메인: {cat.type}</span>
+                            <span className="font-semibold text-amber-300">{cat.recentTrend}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   {renderDetailPanel()}

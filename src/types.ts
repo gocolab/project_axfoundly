@@ -331,6 +331,20 @@ export interface DashboardStats {
   activeCourses: number;
   teamMatchCount: number;
   investmentMatchCount: number;
+  courseRequestCount?: number;
+  courseMatchRate?: number;
+  ideaRequestCount?: number;
+  builderMatchRate?: number;
+  aiAutoFillCount?: number;
+}
+
+// ── Admin Category Insight ──
+export interface AdminCategoryInsight {
+  category: string;
+  count: number;
+  type: "course" | "ir" | "idea" | "all";
+  recentTrend: string;
+  isRecommendedChip?: boolean;
 }
 
 // ── Instructor CRM & Settlement ──

@@ -723,7 +723,7 @@ export default function MyStartupView({
               {myIdeas.map((idea) => (
                 <div
                   key={idea.id}
-                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between"
+                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all shadow-md"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -731,14 +731,14 @@ export default function MyStartupView({
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           idea.status === "모집중"
                             ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-                            : idea.status === "빌더제안중"
+                            : idea.status === "빌더제안중" || idea.status === "협의중" || idea.status === "선발진행중"
                             ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
                             : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
                         }`}
                       >
                         {idea.status}
                       </span>
-                      <span className="text-[10px] text-white/50">{idea.category}</span>
+                      <span className="text-[10px] text-white/50 font-mono">{idea.category}</span>
                     </div>
                     <h4 className="text-sm font-bold text-white line-clamp-1">{idea.title}</h4>
                     <p className="text-xs text-white/60 mt-1 line-clamp-2">{idea.problem}</p>
@@ -747,8 +747,49 @@ export default function MyStartupView({
                       <span className="text-cyan-400 font-bold">{idea.upvoteCount}명 공감</span>
                     </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-cyan-300 font-medium">빌더 제안 {idea.proposals?.length || 0}건</span>
+
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-cyan-300 font-medium">
+                        접수된 빌더 제안: <strong className="text-white font-bold">{idea.proposals?.length || 0}건</strong>
+                      </span>
+                      {idea.status !== "매칭완료" && (
+                        <span className="text-[10px] text-brand-on-surface-variant font-mono">
+                          마감: {idea.deadline || "상시접수"}
+                        </span>
+                      )}
+                    </div>
+
+                    {idea.proposals && idea.proposals.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {idea.proposals.map((p) => (
+                          <div
+                            key={p.id}
+                            className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-1.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-white">{p.proposerName} 빌더팀</span>
+                              <span
+                                className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                  p.status === "채택됨"
+                                    ? "bg-emerald-500/20 text-emerald-300"
+                                    : p.status === "선발(협의중)"
+                                    ? "bg-amber-500/20 text-amber-300"
+                                    : "bg-slate-700 text-slate-300"
+                                }`}
+                              >
+                                {p.status}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-white/70 line-clamp-2">{p.planSummary}</p>
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                              <span>스택: {Array.isArray(p.techStack) ? p.techStack.slice(0, 3).join(", ") : p.techStack}</span>
+                              <span className="font-semibold text-cyan-300">{p.estimatedWeeks}주 완성</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

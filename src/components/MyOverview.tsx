@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Flame,
   Layers,
+  Lightbulb,
 } from "lucide-react";
 import type {
   Course,
@@ -43,6 +44,7 @@ interface MyOverviewProps {
   onViewIR: (id: string) => void;
   onOpenProjectModal: () => void;
   onOpenCreateCourseModal: () => void;
+  onOpenIdeaModal?: () => void;
 }
 
 export default function MyOverview({
@@ -61,6 +63,7 @@ export default function MyOverview({
   onViewIR,
   onOpenProjectModal,
   onOpenCreateCourseModal,
+  onOpenIdeaModal,
 }: MyOverviewProps) {
   const enrolledCourses = courses.filter((c) => c.isEnrolled);
   const avgProgress =
@@ -108,8 +111,16 @@ export default function MyOverview({
               onClick={onOpenProjectModal}
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white text-xs font-bold hover:opacity-95 transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus size={14} /> 새 IR 프로젝트 등록
+              <Plus size={14} /> 새 IR 프로젝트
             </button>
+            {onOpenIdeaModal && (
+              <button
+                onClick={onOpenIdeaModal}
+                className="px-4 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-bold hover:bg-cyan-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Lightbulb size={14} className="text-cyan-400" /> 아이디어 의뢰 (AI PRD)
+              </button>
+            )}
             <button
               onClick={onOpenCreateCourseModal}
               className="px-4 py-2.5 rounded-xl bg-brand-surface-high border border-brand-border/60 text-white text-xs font-bold hover:bg-brand-surface-highest transition-all flex items-center gap-1.5 cursor-pointer"

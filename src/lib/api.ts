@@ -20,6 +20,7 @@ import type {
   CourseProposal,
   IdeaRequest,
   IdeaProposal,
+  AdminCategoryInsight,
 } from "../types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -462,6 +463,40 @@ export const api = {
     return fetchJson<{ success: boolean }>(`/api/admin/boards/${id}`, {
       method: "DELETE",
     });
+  },
+
+  getAdminIRProjects: async () => {
+    return fetchJson<{ projects: IRProject[] }>("/api/admin/ir-projects");
+  },
+
+  updateAdminIRProjectStatus: async (id: string, status?: string, isAnonymous?: boolean) => {
+    return fetchJson<{ project: IRProject }>(`/api/admin/ir-projects/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, isAnonymous }),
+    });
+  },
+
+  getAdminIdeaRequests: async () => {
+    return fetchJson<{ ideaRequests: IdeaRequest[]; ideaProposals: IdeaProposal[] }>("/api/admin/idea-requests");
+  },
+
+  updateAdminIdeaRequestStatus: async (id: string, status: string) => {
+    return fetchJson<{ ideaRequest: IdeaRequest }>(`/api/admin/idea-requests/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  getAdminCategoryInsights: async () => {
+    return fetchJson<{ insights: AdminCategoryInsight[] }>("/api/admin/category-insights");
+  },
+
+  getAdminProposals: async () => {
+    return fetchJson<{
+      investmentProposals: InvestmentProposal[];
+      ideaProposals: IdeaProposal[];
+      courseProposals: CourseProposal[];
+    }>("/api/admin/proposals");
   },
 
   // ── AI Services ──

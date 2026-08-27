@@ -29,6 +29,7 @@ import type {
   AIRecommendation,
   IRProject,
   CRMMessage,
+  IdeaRequest,
 } from "../types";
 import MyOverview from "./MyOverview";
 import MyCoursesView from "./MyCoursesView";
@@ -36,6 +37,7 @@ import MyStartupView from "./MyStartupView";
 import InstructorDashboard from "./InstructorDashboard";
 import InvestorDashboard from "./InvestorDashboard";
 import AccountSettingsView from "./AccountSettingsView";
+import IdeaRequestModal from "./IdeaRequestModal";
 
 export type MyPageTabId =
   | "overview"
@@ -97,6 +99,7 @@ export default function MyPage({
   const [activeTab, setActiveTab] = React.useState<MyPageTabId>("overview");
   const [isProjectModalOpenExternal, setIsProjectModalOpenExternal] = React.useState(false);
   const [isCourseModalOpenExternal, setIsCourseModalOpenExternal] = React.useState(false);
+  const [showIdeaRequestModal, setShowIdeaRequestModal] = React.useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -252,6 +255,7 @@ export default function MyPage({
               onViewIR={handleViewIR}
               onOpenProjectModal={handleOpenProjectModal}
               onOpenCreateCourseModal={handleOpenCreateCourseModal}
+              onOpenIdeaModal={() => setShowIdeaRequestModal(true)}
             />
           )}
 
@@ -318,6 +322,18 @@ export default function MyPage({
           )}
         </main>
       </div>
+
+      {/* ── Idea Request Modal (AI PRD) ── */}
+      <IdeaRequestModal
+        isOpen={showIdeaRequestModal}
+        onClose={() => setShowIdeaRequestModal(false)}
+        onRequestCreated={() => {
+          setShowIdeaRequestModal(false);
+          setActiveTab("startup");
+        }}
+        userName={userName}
+        userId="u-current"
+      />
     </div>
   );
 }

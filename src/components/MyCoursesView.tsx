@@ -149,7 +149,7 @@ export default function MyCoursesView({
               {myRequests.map((req) => (
                 <div
                   key={req.id}
-                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between"
+                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-purple-500/40 transition-all shadow-md"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -164,7 +164,7 @@ export default function MyCoursesView({
                       >
                         {req.status}
                       </span>
-                      <span className="text-[10px] text-white/50">{req.category}</span>
+                      <span className="text-[10px] text-white/50 font-mono">{req.category}</span>
                     </div>
                     <h4 className="text-sm font-bold text-white line-clamp-1">{req.title}</h4>
                     <p className="text-xs text-white/60 mt-1 line-clamp-2">{req.description}</p>
@@ -173,15 +173,50 @@ export default function MyCoursesView({
                       <span className="text-amber-400 font-bold">{req.upvoteCount} / {req.targetCount}명</span>
                     </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-purple-300 font-medium">강사 제안 {req.proposals?.length || 0}건</span>
-                    {onNavigateToCourses && (
-                      <button
-                        onClick={onNavigateToCourses}
-                        className="text-xs text-brand-primary hover:underline font-semibold"
-                      >
-                        제안서 보기 →
-                      </button>
+
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-purple-300 font-medium">
+                        접수된 강사 제안: <strong className="text-white font-bold">{req.proposals?.length || 0}건</strong>
+                      </span>
+                      {onNavigateToCourses && (
+                        <button
+                          onClick={onNavigateToCourses}
+                          className="text-xs text-brand-primary hover:underline font-semibold cursor-pointer"
+                        >
+                          교육 메뉴로 이동 →
+                        </button>
+                      )}
+                    </div>
+
+                    {req.proposals && req.proposals.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {req.proposals.map((p) => (
+                          <div
+                            key={p.id}
+                            className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-1.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-white">{p.instructorName} 강사</span>
+                              <span
+                                className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                  p.status === "채택됨"
+                                    ? "bg-emerald-500/20 text-emerald-300"
+                                    : "bg-slate-700 text-slate-300"
+                                }`}
+                              >
+                                {p.status}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-purple-200/90 font-medium">{p.proposedTitle}</p>
+                            <p className="text-[11px] text-white/70 line-clamp-2">{p.message}</p>
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                              <span>일정: {p.proposedSchedule?.daysOfWeek?.join(", ") || "협의"} ({p.proposedSchedule?.totalSessions || 8}회차)</span>
+                              <span className="font-semibold text-emerald-400">수강료: {p.price.toLocaleString()}원</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
