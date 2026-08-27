@@ -7,6 +7,7 @@ import IRPage from "./components/IRPage";
 import CommunityPage from "./components/CommunityPage";
 import MyPage from "./components/MyPage";
 import AdminDashboard from "./components/AdminDashboard";
+import Footer from "./components/Footer";
 import AITutorWidget from "./components/common/AITutorWidget";
 import { useToast } from "./components/common/Toast";
 import { api } from "./lib/api";
@@ -581,25 +582,27 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-on-surface font-sans selection:bg-brand-primary-container selection:text-white">
+    <div className="min-h-screen flex flex-col bg-brand-bg text-brand-on-surface font-sans selection:bg-brand-primary-container selection:text-white">
       <GNB
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          isLoggedIn={isLoggedIn}
-          userRoles={userRoles}
-          userName={userName}
-          onLoginClick={() => setShowAuthModal(true)}
-          onLogout={handleLogout}
-          notifications={notifications}
-          onMarkNotificationRead={handleMarkNotificationRead}
-        />
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        isLoggedIn={isLoggedIn}
+        userRoles={userRoles}
+        userName={userName}
+        onLoginClick={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+        notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
+      />
 
-        <main className="pb-16">{renderPage()}</main>
+      <main className="flex-1 pb-16">{renderPage()}</main>
 
-        <AITutorWidget
-          currentPage={currentPage}
-          onNavigate={(page) => setCurrentPage(page)}
-        />
+      <Footer />
+
+      <AITutorWidget
+        currentPage={currentPage}
+        onNavigate={(page) => setCurrentPage(page)}
+      />
 
       <AuthModal
         isOpen={showAuthModal}

@@ -78,3 +78,12 @@ flowchart LR
 - **게시판 관리 (`/admin?tab=boards`)**: 멀티 게시판 생성/수정/삭제.
 - **결제 관리 (`/admin?tab=payments`)**: 실시간 결제 영수증 2단 스플릿 뷰 및 결제 취소/환불.
 - **알림/마케팅 CRM (`/admin?tab=crm`)**: 전체 공지 및 타깃 CRM 메시지 발송.
+
+### 3.8. 공통 하단 푸터 (Common Footer)
+- **한 줄 레이아웃**: 전사 화면 하단에 일관된 1줄 형태의 다크 테마 바(`bg-[#05111f]/95`)로 배치.
+- **사업자 정보**: 상호명(렉토메이트 LectoMate), 대표자(오상훈), 사업자등록번호(634-62-00683), 문의 이메일(`mahau.master@gmail.com`).
+- **정책 참조 링크**:
+  - 회사소개: `https://www.lectomate.com/policy/company`
+  - 이용약관: `https://www.lectomate.com/policy/terms`
+  - 개인정보처리방침: `https://www.lectomate.com/policy/privacy`
+

@@ -49,4 +49,29 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
     await expect(page.locator('h1', { hasText: /스타트업/ })).toBeVisible();
   });
 
+  test('하단 푸터(Footer)가 렌더링되고 회사소개, 이용약관, 개인정보처리방침 링크가 올바르게 존재한다', async ({ page }) => {
+    const footer = page.locator('footer');
+    await expect(footer).toBeVisible();
+
+    // 상호명 및 사업자 정보 확인
+    await expect(footer).toContainText('렉토메이트 (LectoMate)');
+    await expect(footer).toContainText('634-62-00683');
+    await expect(footer).toContainText('오상훈');
+
+    // 회사소개 링크
+    const companyLink = footer.getByRole('link', { name: '회사소개' });
+    await expect(companyLink).toBeVisible();
+    await expect(companyLink).toHaveAttribute('href', 'https://www.lectomate.com/policy/company');
+
+    // 이용약관 링크
+    const termsLink = footer.getByRole('link', { name: '이용약관' });
+    await expect(termsLink).toBeVisible();
+    await expect(termsLink).toHaveAttribute('href', 'https://www.lectomate.com/policy/terms');
+
+    // 개인정보처리방침 링크
+    const privacyLink = footer.getByRole('link', { name: '개인정보처리방침' });
+    await expect(privacyLink).toBeVisible();
+    await expect(privacyLink).toHaveAttribute('href', 'https://www.lectomate.com/policy/privacy');
+  });
 });
+
