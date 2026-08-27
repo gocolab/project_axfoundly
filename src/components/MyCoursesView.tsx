@@ -48,17 +48,27 @@ export default function MyCoursesView({
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
 
+  const loadRequests = React.useCallback(() => {
+    setRequestsLoading(true);
+    api.getCourseRequests()
+      .then((res) => {
+        setMyRequests(res.requests || []);
+      })
+      .catch((err) => console.error("Failed to load requests", err))
+      .finally(() => setRequestsLoading(false));
+  }, []);
+
+  // Fetch immediately on mount so tab badge displays actual count (N)
+  React.useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  // Refetch when switching to requested tab
   React.useEffect(() => {
     if (viewTab === "requested") {
-      setRequestsLoading(true);
-      api.getCourseRequests()
-        .then((res) => {
-          setMyRequests(res.requests || []);
-        })
-        .catch((err) => console.error("Failed to load requests", err))
-        .finally(() => setRequestsLoading(false));
+      loadRequests();
     }
-  }, [viewTab]);
+  }, [viewTab, loadRequests]);
 
   const filteredCourses = enrolledCourses.filter((course) => {
     const matchFilter =
