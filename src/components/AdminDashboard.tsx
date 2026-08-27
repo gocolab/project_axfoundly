@@ -54,9 +54,33 @@ export default function AdminDashboard({
   onViewCourse,
 }: AdminDashboardProps) {
   const toast = useToast();
-  const [activeTab, setActiveTab] = React.useState<
-    "stats" | "members" | "courses" | "startup" | "categories" | "boards" | "crm" | "payments"
-  >("stats");
+  type AdminTab = "stats" | "members" | "courses" | "startup" | "categories" | "boards" | "crm" | "payments";
+
+  const getInitialTab = (): AdminTab => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam && ["stats", "members", "courses", "startup", "categories", "boards", "crm", "payments"].includes(tabParam)) {
+      return tabParam as AdminTab;
+    }
+    return "stats";
+  };
+
+  const [activeTab, setActiveTabRaw] = React.useState<AdminTab>(getInitialTab);
+
+  const setActiveTab = React.useCallback((tab: AdminTab) => {
+    setActiveTabRaw(tab);
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", currentUrl.toString());
+  }, []);
+
+  React.useEffect(() => {
+    const handleLocationChange = () => {
+      setActiveTabRaw(getInitialTab());
+    };
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);

@@ -96,8 +96,33 @@ export default function MyPage({
   handleSendCRMMessage,
   handleToggleBookmark,
 }: MyPageProps) {
-  const [activeTab, setActiveTab] = React.useState<MyPageTabId>("overview");
+  const getInitialTab = (): MyPageTabId => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam && ["overview", "courses", "startup", "instructor", "investor", "settings"].includes(tabParam)) {
+      return tabParam as MyPageTabId;
+    }
+    return "overview";
+  };
+
+  const [activeTab, setActiveTabRaw] = React.useState<MyPageTabId>(getInitialTab);
   const [isProjectModalOpenExternal, setIsProjectModalOpenExternal] = React.useState(false);
+
+  const setActiveTab = React.useCallback((tab: MyPageTabId) => {
+    setActiveTabRaw(tab);
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", currentUrl.toString());
+  }, []);
+
+  React.useEffect(() => {
+    const handleLocationChange = () => {
+      const tab = getInitialTab();
+      setActiveTabRaw(tab);
+    };
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
   const [isCourseModalOpenExternal, setIsCourseModalOpenExternal] = React.useState(false);
   const [showIdeaRequestModal, setShowIdeaRequestModal] = React.useState(false);
 

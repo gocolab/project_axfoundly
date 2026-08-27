@@ -55,12 +55,66 @@ export default function App() {
     localStorage.removeItem("user_roles");
   }, []);
 
-  // Navigation & Selection
-  const [currentPage, setCurrentPage] = React.useState("home");
+  // Navigation & Selection (URL 동기화)
+  const getInitialRoute = () => {
+    const path = window.location.pathname;
+    if (path.startsWith("/courses")) {
+      const match = path.match(/^\/courses\/([^/]+)/);
+      return { page: "courses", courseId: match ? match[1] : null, projectId: null, postId: null };
+    }
+    if (path.startsWith("/ir")) {
+      const match = path.match(/^\/ir\/([^/]+)/);
+      return { page: "ir", courseId: null, projectId: match ? match[1] : null, postId: null };
+    }
+    if (path.startsWith("/community")) {
+      return { page: "community", courseId: null, projectId: null, postId: null };
+    }
+    if (path.startsWith("/mypage") || path.startsWith("/dashboard")) {
+      return { page: "dashboard", courseId: null, projectId: null, postId: null };
+    }
+    if (path.startsWith("/admin")) {
+      return { page: "admin", courseId: null, projectId: null, postId: null };
+    }
+    return { page: "home", courseId: null, projectId: null, postId: null };
+  };
+
+  const initialRoute = getInitialRoute();
+  const [currentPage, setCurrentPageRaw] = React.useState<string>(initialRoute.page);
   const [dashboardTab, setDashboardTab] = React.useState<"member" | "instructor" | "investor">("member");
-  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
-  const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(initialRoute.courseId);
+  const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(initialRoute.projectId);
+  const [selectedPostId, setSelectedPostId] = React.useState<string | null>(initialRoute.postId);
+
+  const setCurrentPage = React.useCallback((page: string, pushHistory = true) => {
+    setCurrentPageRaw(page);
+    if (pushHistory) {
+      const pathMap: Record<string, string> = {
+        home: "/",
+        courses: "/courses",
+        ir: "/ir",
+        community: "/community",
+        dashboard: "/mypage",
+        admin: "/admin",
+      };
+      const newPath = pathMap[page] || "/";
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({ page }, "", newPath);
+      }
+    }
+  }, []);
+
+  // Popstate listener for back/forward browser buttons
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const route = getInitialRoute();
+      setCurrentPageRaw(route.page);
+      if (route.courseId) setSelectedCourseId(route.courseId);
+      if (route.projectId) setSelectedProjectId(route.projectId);
+      if (route.postId) setSelectedPostId(route.postId);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Data state
   const [courses, setCourses] = React.useState<Course[]>([]);

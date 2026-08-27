@@ -67,7 +67,12 @@ export default function CoursePage({
   });
 
   React.useEffect(() => {
-    if (initialCourseId) {
+    if (selectedCourse) {
+      const match = courses.find((c) => c.id === selectedCourse.id);
+      if (match && match !== selectedCourse) {
+        setSelectedCourse(match);
+      }
+    } else if (initialCourseId) {
       const match = courses.find((c) => c.id === initialCourseId);
       if (match) {
         setSelectedCourse(match);

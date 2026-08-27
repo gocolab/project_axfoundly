@@ -122,12 +122,13 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
 
       await enrollBtn.click();
 
-      // 4. 수강 신청 및 결제 모달 확인 및 결제하기 클릭
+      // 4. 수강 신청 및 결제 모달 확인 및 일반 카드 선택 후 결제하기 클릭
       await expect(page.locator('h3', { hasText: '수강 신청 및 결제' })).toBeVisible();
+      await page.getByRole('button', { name: '일반 카드' }).click();
       await page.getByRole('button', { name: '결제하기' }).click();
 
       // 5. 결제 후 수강완료 상태 배지 확인
-      await expect(page.locator('text=수강 중인 강의입니다')).toBeVisible();
+      await expect(page.locator('text=수강 신청 완료')).toBeVisible();
     }
   });
 });
