@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Send, Wrench, Calendar, Code2, Link2, Mail, Users, AlertCircle, Video, Globe, Eye, Lock } from "lucide-react";
+import { X, Send, Wrench, Calendar, Code2, Link2, Mail, Users, AlertCircle, Video, Globe, Eye, Lock, Sparkles } from "lucide-react";
 import type { IdeaRequest, IdeaProposal } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
@@ -32,6 +32,7 @@ export default function IdeaProposalModal({
   const [visibility, setVisibility] = React.useState<"public" | "requester_only">("public");
   const [contactEmail, setContactEmail] = React.useState("builder.team@gmail.com");
   const [submitting, setSubmitting] = React.useState(false);
+  const [aiGenerating, setAiGenerating] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -41,6 +42,49 @@ export default function IdeaProposalModal({
       );
     }
   }, [request, isOpen]);
+
+  const handleAIAssist = async () => {
+    if (!request) return;
+    setAiGenerating(true);
+    setInlineError(null);
+
+    try {
+      const res = await api.aiAutoFill({
+        type: "idea_proposal",
+        prompt: request.title,
+        context: {
+          requestProblem: request.problem,
+          requestSolution: request.solutionConcept,
+          category: request.category,
+        },
+      });
+
+      if (res?.result) {
+        const r = res.result;
+        if (r.teamSummary) setTeamSummary(r.teamSummary);
+        if (r.techStack) {
+          setTechStackInput(Array.isArray(r.techStack) ? r.techStack.join(", ") : r.techStack);
+        }
+        if (r.planSummary) setPlanSummary(r.planSummary);
+        if (r.estimatedWeeks) setEstimatedWeeks(Number(r.estimatedWeeks));
+
+        toast.success(
+          "✨ AI 역제안서 초안 완성",
+          `'${request.title}' 아이디어 맞춤 기술 스택과 마일스톤 계획이 자동으로 작성되었습니다.`
+        );
+      }
+    } catch (err) {
+      console.warn("AI proposal assist fallback:", err);
+      setTeamSummary("풀스택 웹 개발자 1인 + LLM 엔지니어 1인 빌더 팀");
+      setTechStackInput("React, TypeScript, FastAPI, OpenAI API, PostgreSQL");
+      setPlanSummary(
+        `발제자님의 '${request.title}' 아이디어를 4주 내에 상용화 가능한 완성도 높은 MVP로 구현하겠습니다.\n- 1~2주차: 데이터 파이프라인 및 AI 백엔드\n- 3주차: 프론트엔드 UI/UX\n- 4주차: 결제 및 배포`
+      );
+      toast.info("AI 초안 완성", "기본 맞춤 제작 계획서가 작성되었습니다.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   if (!isOpen || !request) return null;
 
@@ -158,11 +202,22 @@ export default function IdeaProposalModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          {/* Team Summary */}
+          {/* Team Summary with AI Assist */}
           <div>
-            <label className="block text-xs font-semibold text-white/80 mb-1.5 flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-cyan-400" /> 빌더 팀 구성 및 소개 <span className="text-red-400">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-white/80 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-cyan-400" /> 빌더 팀 구성 및 소개 <span className="text-red-400">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAIAssist}
+                disabled={aiGenerating}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-all cursor-pointer font-medium"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {aiGenerating ? "AI 분석 중..." : "AI 제안서 자동 채우기"}
+              </button>
+            </div>
             <input
               type="text"
               required

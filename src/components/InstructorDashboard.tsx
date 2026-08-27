@@ -221,24 +221,24 @@ export default function InstructorDashboard({
     setIsAiGenerating(true);
 
     try {
-      const res = await api.generateCourseDraft({
-        topic: userText,
-        totalSessions: 12,
+      const res = await api.aiAutoFill({
+        type: "course",
+        prompt: userText,
       });
 
-      const draft = res.draft;
+      const draft = res?.result || {};
       const generatedDraft: Partial<Course> = {
-        title: draft.title || `실전 ${userText.slice(0, 15)} 완성반`,
-        category: (draft.category as Course["category"]) || "AI 모델링",
+        title: draft.refinedTitle || `[실전] ${userText.slice(0, 15)} 완성반`,
+        category: draft.naturalCategory || "실전 AI 모델링 / LLM",
         description: draft.description || `${userText} 실전 마스터 코스`,
-        price: draft.price || 690000,
-        discountedPrice: draft.discountedPrice || 490000,
+        price: draft.price || 590000,
+        discountedPrice: draft.discountedPrice || 390000,
         schedule: {
           startDate: "2025-09-02",
           endDate: "2025-10-14",
           daysOfWeek: ["화", "목"],
           timeSlot: "19:30 ~ 21:30",
-          totalSessions: draft.curriculum?.length || 12,
+          totalSessions: draft.curriculum?.length || 8,
           scheduleType: "stepping_stone",
         },
         curriculum: draft.curriculum || [
@@ -251,7 +251,7 @@ export default function InstructorDashboard({
         ...prev,
         {
           sender: "ai",
-          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** 강의 초안과 징검다리 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 달력 연계 및 회차 일정을 자유롭게 추가 조정할 수 있습니다.`,
+          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** (분야: ${generatedDraft.category}) 강의 초안과 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 달력 연계 및 회차 일정을 자유롭게 추가 조정할 수 있습니다.`,
           generatedDraft,
         },
       ]);
@@ -1149,18 +1149,32 @@ export default function InstructorDashboard({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">카테고리</label>
-                    <select
+                    <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">
+                      교육 분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 추천)
+                    </label>
+                    <input
+                      type="text"
                       value={courseCategory}
-                      onChange={(e) => setCourseCategory(e.target.value as any)}
-                      className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors"
-                    >
-                      <option value="AI 모델링">AI 모델링</option>
-                      <option value="비즈니스 기획">비즈니스 기획</option>
-                      <option value="마케팅">마케팅</option>
-                      <option value="개발">개발</option>
-                      <option value="디자인">디자인</option>
-                    </select>
+                      onChange={(e) => setCourseCategory(e.target.value)}
+                      placeholder="예: AI 모델링 / LLM, 멀티에이전트 시스템, B2B SaaS"
+                      className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {["AI 모델링 / LLM", "실전 멀티에이전트", "비즈니스 기획", "개발·IT", "그로스 마케팅", "바이오·헬스케어"].map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setCourseCategory(cat)}
+                          className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
+                            courseCategory === cat
+                              ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
+                              : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

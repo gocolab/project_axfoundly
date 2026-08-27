@@ -493,6 +493,17 @@ export const api = {
     });
   },
 
+  aiAutoFill: async (data: {
+    type: "course_request" | "course" | "course_proposal" | "idea_request" | "ir_project" | "idea_proposal" | "investment_proposal" | string;
+    prompt: string;
+    context?: any;
+  }) => {
+    return fetchJson<{ result: any }>("/api/ai/auto-fill", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   // ── Common Codes ──
   getCommonCodes: async (groups?: string[]): Promise<{ codes: CommonCode[] }> => {
     const query = groups && groups.length > 0 ? `?groups=${encodeURIComponent(groups.join(","))}` : "";

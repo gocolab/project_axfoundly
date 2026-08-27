@@ -34,6 +34,7 @@
 | API-AI-02 | POST | `/api/ai/diagnosis` | 빌더 AI 아키텍트 페르소나 진단 | AI | 전체 | ✅ 완료 |
 | API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |
 | API-AI-04 | POST | `/api/ai/tutor` | 실시간 AI 창업 튜터 Q&A | AI | 전체 | ✅ 완료 |
+| API-AI-05 | POST | `/api/ai/auto-fill` | 제목 재조정 & 자연어 분야 범용 AI 자동 채우기 | AI | 전체 | ✅ 완료 |
 | API-COM-01 | GET | `/api/community/posts` | 멀티 게시판 글 목록 | Community | 불필요 | ✅ 완료 |
 | API-COM-02 | POST | `/api/community/posts` | 게시글 작성 | Community | 회원 | ✅ 완료 |
 | API-COM-03 | GET | `/api/community/posts/:id` | 게시글 상세 및 댓글 조회 | Community | 불필요 | ✅ 완료 |
@@ -49,6 +50,22 @@
 | API-CODE-04 | PUT | `/api/common/codes/:id` | 공통 코드 수정 | Common | 관리자 | ✅ 완료 |
 
 ## 2. 주요 신규 고도화 API 상세
+
+### API-AI-05. 제목 재조정 & 자연어 분야 범용 AI 자동 채우기 (`POST /api/ai/auto-fill`)
+- **설명**: 사용자의 거친 입력 문장을 분석하여 매력적인 공식 제목(`refinedTitle`)으로 재조정하고, 선택형이 아닌 자연어 산업/분야(`naturalCategory`) 및 모달별 맞춤 세부 항목(커리큘럼, 문제점, 솔루션, 팀소개 등)을 100% 자동 생성합니다.
+- **요청 Body**: `{ "type": "course_request" | "course" | "course_proposal" | "idea_request" | "ir_project" | "idea_proposal" | "investment_proposal", "prompt": "입력 문장", "context": { ... } }`
+- **응답 (200)**:
+  ```json
+  {
+    "result": {
+      "refinedTitle": "[실전] 파이썬 기반 비즈니스 LLM 챗봇 & RAG 시스템 구축",
+      "naturalCategory": "실전 멀티에이전트 & RAG 시스템",
+      "description": "...",
+      "tags": ["AI실전", "RAG", "MVP"],
+      "targetLevel": "중급"
+    }
+  }
+  ```
 
 ### API-CODE-01. 공통 코드 목록 조회 (`GET /api/common/codes`)
 - **설명**: 프론트엔드 드롭다운/필터/뱃지 렌더링에 필요한 공통 코드 목록을 그룹별로 조회합니다.
@@ -76,4 +93,5 @@
 - **설명**: 사용자의 창업/강의/IR 질의에 대해 Gemini 2.5 Flash 기반으로 실시간 액션 아이템 및 맞춤 제안 키워드를 반환합니다.
 - **요청 Body**: `{ "question": "...", "context": "현재 페이지" }`
 - **응답 (200)**: `{ "answer": "...", "suggestions": ["..."] }`
+
 

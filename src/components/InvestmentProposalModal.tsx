@@ -23,6 +23,7 @@ export default function InvestmentProposalModal({
   const [meetingSchedule, setMeetingSchedule] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [sending, setSending] = React.useState(false);
+  const [isAiGenerating, setIsAiGenerating] = React.useState(false);
 
   React.useEffect(() => {
     if (project) {
@@ -32,6 +33,44 @@ export default function InvestmentProposalModal({
       );
     }
   }, [project, isOpen]);
+
+  const handleAIAssist = async () => {
+    if (!project) return;
+    setIsAiGenerating(true);
+
+    try {
+      const res = await api.aiAutoFill({
+        type: "investment_proposal",
+        prompt: project.title,
+        context: {
+          projectName: project.teamName,
+          field: project.field,
+          stage: project.investmentStage,
+          oneLiner: project.oneLiner,
+        },
+      });
+
+      if (res?.result) {
+        const r = res.result;
+        if (r.message) setMessage(r.message);
+        if (r.targetRound) setTargetRound(r.targetRound);
+        if (r.investmentAmount) setInvestmentAmount(r.investmentAmount);
+
+        toast.success(
+          "✨ AI 투자 제안 메시지 완성",
+          `'${project.teamName}' 팀에 맞춤화된 전문 투자 검토 제안 메시지가 생성되었습니다.`
+        );
+      }
+    } catch (err) {
+      console.warn("AI investment assist fallback:", err);
+      setMessage(
+        `안녕하세요, ${project.teamName} 대표님.\n\n귀사에서 개발 중인 '${project.title}' (${project.field}) 프로젝트의 핵심 경쟁력과 시장성에 깊은 관심을 갖고 있습니다.\n\n당사는 초기 스타트업의 밸류업 및 후속 스케일업을 지원하고 있으며, ${targetRound} 단계 투자 검토 및 온/오프라인 피칭 미팅을 제안드리고자 합니다.`
+      );
+      toast.info("AI 제안 메시지 완성", "맞춤 제안서 초안이 작성되었습니다.");
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   if (!isOpen || !project) return null;
 
@@ -131,15 +170,26 @@ export default function InvestmentProposalModal({
             />
           </div>
 
-          {/* Message Content */}
+          {/* Message Content with AI Assist */}
           <div>
-            <label className="font-semibold text-white block mb-1">제안 메시지 *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-semibold text-white">제안 메시지 *</label>
+              <button
+                type="button"
+                onClick={handleAIAssist}
+                disabled={isAiGenerating}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-brand-secondary/20 text-brand-secondary border border-brand-secondary/30 hover:bg-brand-secondary/30 transition-all cursor-pointer font-medium"
+              >
+                <Sparkles size={12} />
+                {isAiGenerating ? "AI 메시지 작성 중..." : "AI 제안 메시지 자동 완성"}
+              </button>
+            </div>
             <textarea
               required
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="스타트업 대표 및 팀에 전할 투자 제안 상세 메시지를 작성하세요."
-              className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-white focus:outline-none focus:border-brand-primary h-28 resize-none"
+              className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-white focus:outline-none focus:border-brand-primary h-28 resize-none leading-relaxed"
             />
           </div>
 

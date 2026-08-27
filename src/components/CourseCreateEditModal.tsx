@@ -95,29 +95,31 @@ export default function CourseCreateEditModal({
     setIsAiGenerating(true);
 
     try {
-      const res = await api.generateCourseDraft({
-        topic: userText,
-        totalSessions: 12,
+      const res = await api.aiAutoFill({
+        type: "course",
+        prompt: userText,
       });
 
-      const draft = res.draft;
+      const draft = res?.result || {};
       const generatedDraft: Partial<Course> = {
-        title: draft.title || `실전 ${userText.slice(0, 15)} 완성반`,
-        category: (draft.category as Course["category"]) || "AI 모델링",
+        title: draft.refinedTitle || `[실전] ${userText.slice(0, 15)} 마스터클래스`,
+        category: draft.naturalCategory || "실전 AI 모델링 / LLM",
         description: draft.description || `${userText} 실전 마스터 코스`,
-        price: draft.price || 690000,
-        discountedPrice: draft.discountedPrice || 490000,
+        price: draft.price || 590000,
+        discountedPrice: draft.discountedPrice || 390000,
         schedule: {
           startDate: "2025-09-02",
           endDate: "2025-10-14",
           daysOfWeek: ["화", "목"],
           timeSlot: "19:30 ~ 21:30",
-          totalSessions: draft.curriculum?.length || 12,
+          totalSessions: draft.curriculum?.length || 8,
           scheduleType: "stepping_stone",
         },
         curriculum: draft.curriculum || [
-          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 세팅", description: "시장 가설 수립 및 개발 환경 구성", duration: "2시간" },
+          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 환경 설정", description: "시장 가설 수립 및 개발 환경 구성", duration: "2시간" },
           { week: 1, sessionNumber: 2, title: "프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 구현", duration: "2시간" },
+          { week: 2, sessionNumber: 3, title: "멀티에이전트 오케스트레이션", description: "LangGraph 기반 에이전트 협업 실습", duration: "2시간" },
+          { week: 2, sessionNumber: 4, title: "상용 배포 및 비즈니스 연동", description: "클라우드 인프라 & 모니터링", duration: "2시간" },
         ],
       };
 
@@ -125,7 +127,7 @@ export default function CourseCreateEditModal({
         ...prev,
         {
           sender: "ai",
-          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** 강의 초안과 징검다리 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 달력 연계 및 회차 일정을 자유롭게 추가 조정할 수 있습니다.`,
+          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** (분야: ${generatedDraft.category}) 강의 초안과 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 세부 내용을 자유롭게 추가 조정할 수 있습니다.`,
           generatedDraft,
         },
       ]);
@@ -139,7 +141,7 @@ export default function CourseCreateEditModal({
   // Apply draft to form
   const handleApplyDraft = (draft: Partial<Course>) => {
     if (draft.title) setCourseTitle(draft.title);
-    if (draft.category) setCourseCategory(draft.category as Course["category"]);
+    if (draft.category) setCourseCategory(draft.category);
     if (draft.description) setCourseDesc(draft.description);
     if (draft.price) setCoursePrice(draft.price);
     if (draft.schedule?.startDate) setStartDate(draft.schedule.startDate);
@@ -368,11 +370,40 @@ export default function CourseCreateEditModal({
               />
             </div>
 
+            <div>
+              <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">
+                교육 분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 추천)
+              </label>
+              <input
+                type="text"
+                value={courseCategory}
+                onChange={(e) => setCourseCategory(e.target.value)}
+                placeholder="예: 실전 AI 모델링 / LLM, 멀티에이전트 시스템, B2B SaaS 기획"
+                className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
+              />
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {["AI 모델링 / LLM", "실전 멀티에이전트", "비즈니스 기획", "개발·IT", "그로스 마케팅", "바이오·헬스케어"].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCourseCategory(cat)}
+                    className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
+                      courseCategory === cat
+                        ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
+                        : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* AI Auto-Classification Info Banner */}
             <div className="p-3 bg-gradient-to-r from-purple-500/10 via-brand-primary/10 to-transparent border border-purple-500/20 rounded-xl flex items-center gap-2.5">
               <Sparkles size={16} className="text-purple-400 shrink-0" />
               <p className="text-[11px] text-brand-on-surface-variant leading-relaxed">
-                <strong className="text-purple-300 font-semibold">🤖 100% AI 자율 분류 & 태깅:</strong> 강의 제목과 커리큘럼 내용을 분석하여 적합한 교육 분야와 핵심 스킬 태그가 백엔드에서 100% 자동 생성됩니다.
+                <strong className="text-purple-300 font-semibold">🤖 AI 자율 채우기 & 태깅:</strong> AI가 생성한 자연어 분야와 커리큘럼을 바로 사용할 수 있으며, 필요 시 자유롭게 수정 가능합니다.
               </p>
             </div>
 

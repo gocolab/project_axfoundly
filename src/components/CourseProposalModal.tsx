@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Send, Award, Plus, Trash2, Calendar, DollarSign, BookOpen, AlertCircle } from "lucide-react";
+import { X, Send, Award, Plus, Trash2, Calendar, DollarSign, BookOpen, AlertCircle, Sparkles } from "lucide-react";
 import type { CourseRequest, CourseProposal } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
@@ -34,6 +34,7 @@ export default function CourseProposalModal({
   const [newCurriculum, setNewCurriculum] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [aiGenerating, setAiGenerating] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -44,6 +45,52 @@ export default function CourseProposalModal({
       );
     }
   }, [request, isOpen]);
+
+  const handleAIAssist = async () => {
+    if (!request) return;
+    setAiGenerating(true);
+    setInlineError(null);
+
+    try {
+      const res = await api.aiAutoFill({
+        type: "course_proposal",
+        prompt: proposedTitle || request.title,
+        context: {
+          requestTitle: request.title,
+          requestCategory: request.category,
+          requestDescription: request.description,
+        },
+      });
+
+      if (res?.result) {
+        const r = res.result;
+        if (r.proposedTitle) setProposedTitle(r.proposedTitle);
+        if (r.curriculumDraft && Array.isArray(r.curriculumDraft)) {
+          setCurriculumItems(r.curriculumDraft);
+        }
+        if (r.proposedPrice) setProposedPrice(Number(r.proposedPrice));
+        if (r.proposedSchedule) setProposedSchedule(r.proposedSchedule);
+        if (r.message) setMessage(r.message);
+
+        toast.success(
+          "✨ AI 제안서 자동 완성",
+          `수강생 요청에 맞춘 공식 강의명("${r.proposedTitle || proposedTitle}") 및 커리큘럼이 작성되었습니다.`
+        );
+      }
+    } catch (err) {
+      console.warn("AI proposal assist fallback:", err);
+      setProposedTitle(`[실전 완성] ${request.title} 프로젝트 부트캠프`);
+      setCurriculumItems([
+        "1회차: 기본 환경 구성 및 핵심 요구사항 분석",
+        "2회차: 핵심 아키텍처 및 파이프라인 실습",
+        "3회차: 실전 상용화 연동 및 고급 최적화 기법",
+        "4회차: 프로덕트 완성 및 1:1 포트폴리오 피드백",
+      ]);
+      toast.info("AI 초안 완성", "기본 맞춤 제안서 초안이 작성되었습니다.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   if (!isOpen || !request) return null;
 
@@ -149,11 +196,22 @@ export default function CourseProposalModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          {/* Proposed Title */}
+          {/* Proposed Title with AI Assist */}
           <div>
-            <label className="block text-xs font-semibold text-white/80 mb-1.5">
-              제안 강의 공식 명칭 <span className="text-red-400">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-white/80">
+                제안 강의 공식 명칭 <span className="text-red-400">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAIAssist}
+                disabled={aiGenerating}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-all cursor-pointer font-medium"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {aiGenerating ? "AI 제안서 생성 중..." : "AI 제안서 자동 채우기"}
+              </button>
+            </div>
             <input
               type="text"
               required

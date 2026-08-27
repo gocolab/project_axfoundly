@@ -76,29 +76,66 @@ export default function IdeaRequestModal({
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleAIAssist = () => {
+  const recommendedCategories = [
+    "B2B LegalTech SaaS",
+    "차세대 핀테크 / 결제",
+    "초개인화 헬스케어 AI",
+    "실전 멀티에이전트 시스템",
+    "스마트 이커머스 / 유통",
+    "생성형 AI 에듀테크",
+  ];
+
+  const handleAIAssist = async () => {
     if (!title.trim()) {
       setInlineError("아이디어 제목/주제를 먼저 간단히 입력해주세요.");
       toast.warning("아이디어 제목 입력", "AI PRD 기획 생성을 위해 아이디어 제목을 입력해주세요.");
       return;
     }
     setInlineError(null);
-
     setAiGenerating(true);
-    setTimeout(() => {
+
+    try {
+      const res = await api.aiAutoFill({
+        type: "idea_request",
+        prompt: title.trim(),
+        context: { category },
+      });
+
+      if (res?.result) {
+        const r = res.result;
+        if (r.refinedTitle) setTitle(r.refinedTitle);
+        if (r.naturalCategory) setCategory(r.naturalCategory);
+        if (r.problem) setProblem(r.problem);
+        if (r.solutionConcept) setSolutionConcept(r.solutionConcept);
+        if (r.tags && Array.isArray(r.tags)) {
+          setTags(Array.from(new Set([...tags, ...r.tags])));
+        }
+        if (r.requiredRoles && Array.isArray(r.requiredRoles)) {
+          setSelectedRoles(Array.from(new Set([...selectedRoles, ...r.requiredRoles])));
+        }
+        if (r.rewardDetail) setRewardDetail(r.rewardDetail);
+
+        toast.success(
+          "✨ AI PRD 초안 생성 완료",
+          `프로젝트명("${r.refinedTitle || title}") 및 산업 분야("${r.naturalCategory || category}")가 맞춤 재조정되었습니다.`
+        );
+      }
+    } catch (err) {
+      console.warn("AI Auto-fill fallback:", err);
+      const prefix = title.split(" ")[0] || "AI";
+      setTitle(`${prefix}Mind: ${title} 전문 플랫폼`);
+      setCategory(title.includes("법률") ? "B2B LegalTech SaaS" : "AI / SaaS 플랫폼");
       setProblem(
         `현재 시장에서는 ${title} 관련 업무에서 많은 수작업과 높은 비용이 발생하며, 실무자들이 실시간으로 적절한 솔루션을 찾지 못해 비효율을 겪고 있습니다.`
       );
       setSolutionConcept(
         `AI 에이전트와 자동화 워크플로우를 결합하여 사용자가 손쉽게 처리할 수 있는 웹 기반 SaaS/앱 MVP를 구축하고자 합니다.`
       );
-      const newTags = Array.from(
-        new Set([...tags, "MVP제작", category.replace("/", ""), "AI에이전트"])
-      );
-      setTags(newTags);
-      setAiGenerating(false);
+      setTags(Array.from(new Set([...tags, "MVP제작", "AI에이전트", "스타트업"])));
       toast.info("AI PRD 초안 생성 완료", "문제점과 솔루션 컨셉이 자동 완성되었습니다.");
-    }, 450);
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -243,21 +280,34 @@ export default function IdeaRequestModal({
           {/* Grid: Category & Reward Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-white/70 mb-1.5">
-                산업 / 카테고리
-              </label>
-              <select
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-white/70">
+                  산업 / 카테고리 (자연어 직접 입력 또는 AI 자동 채우기)
+                </label>
+              </div>
+              <input
+                type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500"
-              >
-                <option value="AI/SaaS" className="bg-gray-900 text-white">AI / SaaS 플랫폼</option>
-                <option value="핀테크" className="bg-gray-900 text-white">핀테크 / 금융</option>
-                <option value="커머스" className="bg-gray-900 text-white">커머스 / 로컬 비즈니스</option>
-                <option value="헬스케어" className="bg-gray-900 text-white">디지털 헬스케어</option>
-                <option value="에듀테크" className="bg-gray-900 text-white">에듀테크 / 교육</option>
-                <option value="기타" className="bg-gray-900 text-white">기타 신산업</option>
-              </select>
+                placeholder="예: B2B LegalTech SaaS, 차세대 핀테크 / 결제 등"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500 placeholder:text-white/30"
+              />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {recommendedCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
+                      category === cat
+                        ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-semibold"
+                        : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>

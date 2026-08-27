@@ -46,8 +46,64 @@ export default function ProjectCreateEditModal({
   const [hiringDetails, setHiringDetails] = React.useState<HiringRoleDetail[]>(
     initialProject?.hiringDetails || []
   );
-
   const [saving, setSaving] = React.useState(false);
+  const [isAiGenerating, setIsAiGenerating] = React.useState(false);
+
+  const recommendedFields = [
+    "B2B Enterprise AI",
+    "차세대 핀테크 / 결제",
+    "초정밀 헬스케어 AI",
+    "실전 멀티에이전트 SaaS",
+    "모빌리티 / 로보틱스",
+    "스마트 이커머스",
+  ];
+
+  const handleAIAssist = async () => {
+    const rawInput = (title || teamName || "").trim();
+    if (!rawInput) {
+      toast.warning("프로젝트명 또는 팀명을 입력해주세요", "AI가 IR 프로젝트 초안을 생성하기 위한 기본 키워드가 필요합니다.");
+      return;
+    }
+
+    setIsAiGenerating(true);
+    try {
+      const res = await api.aiAutoFill({
+        type: "ir_project",
+        prompt: rawInput,
+        context: { teamName, currentField: field },
+      });
+
+      if (res?.result) {
+        const r = res.result;
+        if (r.refinedTitle) setTitle(r.refinedTitle);
+        if (r.teamName && !teamName.trim()) setTeamName(r.teamName);
+        if (r.naturalCategory) setField(r.naturalCategory);
+        if (r.oneLiner) setOneLiner(r.oneLiner);
+        if (r.description) setDescription(r.description);
+        if (r.problem) setProblem(r.problem);
+        if (r.solution) setSolution(r.solution);
+        if (r.businessModel) setBusinessModel(r.businessModel);
+
+        toast.success(
+          "✨ AI 프로젝트 초안 자동 채우기 완료",
+          `타이틀("${r.refinedTitle || title}") 및 산업 분야("${r.naturalCategory || field}")가 맞춤 재조정되었습니다.`
+        );
+      }
+    } catch (err) {
+      console.warn("AI project auto-fill fallback:", err);
+      const prefix = teamName || title.split(" ")[0] || "AI";
+      setTitle(`${prefix}Mind : ${title || "차세대 기업용 AI 솔루션"}`);
+      setField(title.includes("의료") ? "초정밀 헬스케어 AI" : "B2B Enterprise AI");
+      setOneLiner(`${rawInput} 분야의 비효율을 혁신하는 고성능 AI 플랫폼`);
+      setDescription(`${rawInput} 시장의 페인포인트를 해결하기 위해 자체 AI 엔진을 적용한 솔루션입니다.`);
+      setProblem("기존 시장의 높은 수작업 운영 비용과 실시간 대응 한계");
+      setSolution("자체 최적화 AI 파이프라인을 통한 업무 시간 90% 단축");
+      setBusinessModel("B2B SaaS 구독 및 사용량 기반 API 과금");
+      toast.info("AI 초안 완성", "프로젝트 타이틀 및 One-Liner, 핵심 내용이 작성되었습니다.");
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   // 공통 코드 로드
   React.useEffect(() => {
@@ -233,24 +289,65 @@ export default function ProjectCreateEditModal({
             </div>
           </div>
 
-          {/* Title */}
+          {/* Title with AI Assist */}
           <div>
-            <label className="font-semibold text-white block mb-1">프로젝트 타이틀 *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-semibold text-white">프로젝트 타이틀 *</label>
+              <button
+                type="button"
+                onClick={handleAIAssist}
+                disabled={isAiGenerating}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-brand-primary/20 text-brand-primary border border-brand-primary/30 hover:bg-brand-primary/30 transition-all cursor-pointer font-medium"
+              >
+                <Sparkles size={13} />
+                {isAiGenerating ? "AI 초안 생성 중..." : "AI 프로젝트 초안 자동 채우기"}
+              </button>
+            </div>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 법률 문서를 위한 초정밀 RAG 분석 엔진"
-              className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary"
+              className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary text-xs"
             />
+          </div>
+
+          {/* Natural Language Industry Field */}
+          <div>
+            <label className="font-semibold text-white block mb-1">
+              산업 / 분야 (자연어 직접 입력 또는 AI 자동 추천)
+            </label>
+            <input
+              type="text"
+              value={field}
+              onChange={(e) => setField(e.target.value)}
+              placeholder="예: B2B Enterprise AI, 차세대 핀테크 / 결제, 초정밀 헬스케어 AI"
+              className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary text-xs placeholder:text-white/30"
+            />
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {recommendedFields.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setField(f)}
+                  className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
+                    field === f
+                      ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
+                      : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* AI Auto-Classification Info Banner */}
           <div className="p-3 bg-gradient-to-r from-brand-primary/10 via-brand-secondary/10 to-transparent border border-brand-primary/20 rounded-xl flex items-center gap-2.5">
             <Sparkles size={16} className="text-brand-primary shrink-0" />
             <p className="text-[11px] text-brand-on-surface-variant leading-relaxed">
-              <strong className="text-brand-primary font-semibold">🤖 100% AI 자율 분류 & 태깅:</strong> 본문 내용을 분석하여 적합한 산업 분야(Category)와 검색 키워드 태그가 백엔드에서 자동 생성됩니다.
+              <strong className="text-brand-primary font-semibold">🤖 AI 자율 채우기 & 태깅:</strong> AI가 생성한 자연어 산업 분야와 핵심 가치 제안을 즉시 사용할 수 있으며, 자유롭게 수정할 수 있습니다.
             </p>
           </div>
 

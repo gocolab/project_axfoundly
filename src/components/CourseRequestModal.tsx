@@ -49,31 +49,63 @@ export default function CourseRequestModal({
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleAIAssist = () => {
+  const recommendedCategories = [
+    "AI 모델링 / LLM",
+    "실전 멀티에이전트",
+    "비즈니스 기획",
+    "개발·IT",
+    "그로스 마케팅",
+    "바이오·헬스케어",
+  ];
+
+  const handleAIAssist = async () => {
     if (!title.trim()) {
       setInlineError("강의 주제/제목을 먼저 간단히 입력해주세요.");
       toast.warning("강의 주제를 입력해주세요", "AI 커리큘럼 초안 생성을 위한 주제가 필요합니다.");
       return;
     }
     setInlineError(null);
-
     setAiGenerating(true);
-    setTimeout(() => {
-      const generatedDesc = `[학습 목표]\n- ${title}의 핵심 원리와 최신 실무 파이프라인 습득\n- 실제 상용화 가능한 수준의 프로젝트 결과물(포트폴리오) 완성\n\n[희망 커리큘럼 구성]\n1. 기초 개념 및 실무 환경 셋업\n2. 핵심 알고리즘/도구 활용 및 자동화 실습\n3. 실전 프로덕트 연계 케이스 스터디 및 배포\n4. 1:1 코드 리뷰 및 질의응답 피드백`;
-      setDescription(generatedDesc);
 
-      const newTags = Array.from(
-        new Set([
-          ...tags,
-          "실전프로젝트",
-          category.replace(/\s+/g, ""),
-          title.split(" ")[0] || "AI실습",
-        ])
+    try {
+      const res = await api.aiAutoFill({
+        type: "course_request",
+        prompt: title.trim(),
+        context: { category },
+      });
+
+      if (res?.result) {
+        const r = res.result;
+        if (r.refinedTitle) setTitle(r.refinedTitle);
+        if (r.naturalCategory) setCategory(r.naturalCategory);
+        if (r.description) setDescription(r.description);
+        if (r.tags && Array.isArray(r.tags)) {
+          setTags(Array.from(new Set([...tags, ...r.tags])));
+        }
+        if (r.targetLevel) setTargetLevel(r.targetLevel);
+        if (r.preferredSchedule) setPreferredSchedule(r.preferredSchedule);
+        if (r.expectedPriceRange) setExpectedPriceRange(r.expectedPriceRange);
+
+        toast.success(
+          "✨ AI 요구서 자동 채우기 완료",
+          `제목이 "${r.refinedTitle || title}"으로 전문화되고, 분야가 "${r.naturalCategory || category}"(자연어)로 세팅되었습니다.`
+        );
+      }
+    } catch (err) {
+      console.warn("AI Auto-fill failed, applying local smart fallback:", err);
+      // Fallback
+      const refined = title.startsWith("[") ? title : `[실전] ${title} 마스터클래스`;
+      setTitle(refined);
+      const natCat = title.includes("의료") || title.includes("바이오") ? "바이오·헬스케어 AI" : "AI 모델링 / LLM";
+      setCategory(natCat);
+      setDescription(
+        `[학습 목표]\n- ${title}의 핵심 원리와 최신 실무 파이프라인 습득\n- 실제 상용화 가능한 수준의 프로젝트 결과물(포트폴리오) 완성\n\n[희망 커리큘럼 구성]\n1. 기초 개념 및 실무 환경 셋업\n2. 핵심 알고리즘/도구 활용 및 자동화 실습\n3. 실전 프로덕트 연계 케이스 스터디 및 배포\n4. 1:1 코드 리뷰 및 질의응답 피드백`
       );
-      setTags(newTags);
+      setTags(Array.from(new Set([...tags, "실전프로젝트", "AI실습", title.split(" ")[0] || "LLM"])));
+      toast.info("AI 초안 완성", "강의 제목 및 자연어 분야, 커리큘럼이 자동으로 작성되었습니다.");
+    } finally {
       setAiGenerating(false);
-      toast.info("AI 초안 완성", "커리큘럼과 추천 태그가 자동으로 작성되었습니다.");
-    }, 450);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -211,21 +243,34 @@ export default function CourseRequestModal({
           {/* Grid: Category & Target Level */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-white/70 mb-1.5">
-                분야 / 카테고리
-              </label>
-              <select
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-white/70">
+                  분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 채우기)
+                </label>
+              </div>
+              <input
+                type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-primary"
-              >
-                <option value="AI 모델링" className="bg-gray-900 text-white">AI 모델링 / LLM</option>
-                <option value="비즈니스 기획" className="bg-gray-900 text-white">비즈니스 기획</option>
-                <option value="마케팅" className="bg-gray-900 text-white">마케팅 / 그로스</option>
-                <option value="개발" className="bg-gray-900 text-white">개발 / 엔지니어링</option>
-                <option value="디자인" className="bg-gray-900 text-white">UI/UX 디자인</option>
-                <option value="바이오헬스" className="bg-gray-900 text-white">바이오·헬스케어</option>
-              </select>
+                placeholder="예: AI 모델링 / LLM, 실전 멀티에이전트, B2B SaaS"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-primary placeholder:text-white/30"
+              />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {recommendedCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
+                      category === cat
+                        ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
+                        : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>

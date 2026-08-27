@@ -296,5 +296,274 @@ router.post("/tutor", async (req, res) => {
   }
 });
 
+// POST /api/ai/auto-fill (General Smart Auto-Fill for Education & IR)
+router.post("/auto-fill", async (req, res) => {
+  try {
+    const { type, prompt: userPrompt, context = {} } = req.body;
+    if (!type || !userPrompt) {
+      return res.status(400).json({ error: "type and prompt are required." });
+    }
+
+    const rawInput = userPrompt.trim();
+
+    try {
+      const client = getGoogleAI();
+      const systemInstruction = `당신은 AI 스타트업 창업 및 교육 플랫폼의 최고 AI 디렉터입니다.
+사용자가 입력한 거칠거나 짧은 문장을 심층 분석하여,
+1) 'refinedTitle': 입력 문장의 핵심 의도를 살려 매우 전문적이고 직관적인 공식 제목/명칭으로 재조정하세요. (단순 복사가 아닌 매력적이고 전문적인 네이밍)
+2) 'naturalCategory': 사전 정의된 고정 선택지가 아닌, 문맥에 딱 맞는 풍부하고 직관적인 '자연어' 산업/교육/기술 분야명 (예: 'B2B LegalTech SaaS', '실전 멀티에이전트 LLM', '초개인화 헬스케어 AI', '차세대 핀테크/결제' 등)을 추출하세요.
+3) 요청 타입('${type}')에 맞는 세부 필드들을 완성도 높은 한국어로 채워주세요.
+
+반드시 마크다운 백틱 없이 유효한 순수 JSON 문자열만 출력하세요.`;
+
+      let promptBody = `[요청 유형]: ${type}\n[사용자 입력/아이디어]: ${rawInput}\n`;
+      if (context && Object.keys(context).length > 0) {
+        promptBody += `[컨텍스트 정보]: ${JSON.stringify(context)}\n`;
+      }
+
+      if (type === "course_request") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "refinedTitle": "정제된 매력적인 강의 개강 요청 제목",
+  "naturalCategory": "자연어 분야/카테고리",
+  "description": "[학습 목표]\\n- ...\\n\\n[희망 커리큘럼 구성]\\n1. ...\\n2. ...\\n3. ...\\n4. ...",
+  "tags": ["키워드1", "키워드2", "키워드3"],
+  "targetLevel": "입문" | "초급" | "중급" | "고급",
+  "preferredSchedule": "평일 저녁 (19:30~21:30)" | "주말 오전",
+  "expectedPriceRange": "30~50만원대" | "20~40만원대"
+}`;
+      } else if (type === "course") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "refinedTitle": "공식 강의 마스터클래스 제목",
+  "naturalCategory": "자연어 교육 분야",
+  "description": "2~3문장의 핵심 강의 소개 및 학습 효과",
+  "price": 590000,
+  "discountedPrice": 390000,
+  "tags": ["키워드1", "키워드2", "키워드3"],
+  "curriculum": [
+    { "week": 1, "sessionNumber": 1, "title": "1회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
+    { "week": 1, "sessionNumber": 2, "title": "2회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
+    { "week": 2, "sessionNumber": 3, "title": "3회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
+    { "week": 2, "sessionNumber": 4, "title": "4회차 주제", "description": "상세 실습 내용", "duration": "2시간" }
+  ]
+}`;
+      } else if (type === "course_proposal") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "proposedTitle": "강사가 제안하는 공식 강의명",
+  "curriculumDraft": ["1회차: ...", "2회차: ...", "3회차: ...", "4회차: ..."],
+  "proposedPrice": 390000,
+  "proposedSchedule": "매주 화/목 19:30~21:30 (총 8회차 / 4주)",
+  "message": "수강생들에게 전하는 전문적이고 신뢰감 있는 제안 메시지"
+}`;
+      } else if (type === "idea_request") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "refinedTitle": "매력적인 스타트업 아이디어/프로젝트 명칭 (예: DocuCheck AI: ...)",
+  "naturalCategory": "자연어 산업/카테고리",
+  "problem": "고객/시장이 겪는 구체적 페인포인트 (2~3문장)",
+  "solutionConcept": "제안하는 AI 기술/MVP 솔루션 컨셉 (2~3문장)",
+  "tags": ["태그1", "태그2", "태그3"],
+  "requiredRoles": ["풀스택 개발자", "AI 엔지니어"],
+  "rewardDetail": "지분 15~20% 협의 + MVP 런칭 인센티브"
+}`;
+      } else if (type === "ir_project") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "refinedTitle": "투자자 대상 매력적인 IR 프로젝트 타이틀",
+  "teamName": "임팩트 있는 스타트업 팀명 (예: Nexus AI)",
+  "naturalCategory": "자연어 산업 분야 (예: B2B Enterprise AI)",
+  "oneLiner": "한 줄 핵심 가치 제안 문구",
+  "description": "프로젝트의 상세 배경 및 차별점",
+  "problem": "시장 페인포인트",
+  "solution": "자체 기술 기반 해결책",
+  "businessModel": "수익화 모델 (B2B SaaS, 수수료 등)",
+  "tags": ["태그1", "태그2", "태그3"]
+}`;
+      } else if (type === "idea_proposal") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "teamSummary": "빌더 팀 전문 역량 및 구성 소개",
+  "techStack": ["React", "FastAPI", "OpenAI", "PostgreSQL"],
+  "planSummary": "발제자에게 전하는 4주 MVP 제작 마일스톤 및 제안 계획",
+  "estimatedWeeks": 4
+}`;
+      } else if (type === "investment_proposal") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "message": "투자 검토 및 온/오프라인 미팅 제안 전문 메시지",
+  "targetRound": "Seed" | "Pre-A",
+  "investmentAmount": "3억원 ~ 5억원"
+}`;
+      }
+
+      const response = await withTimeout(
+        client.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: promptBody,
+          config: {
+            systemInstruction,
+            temperature: 0.7,
+          },
+        })
+      );
+
+      const text = response.text || "";
+      const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+
+      return res.json({ result: parsed });
+    } catch (llmError) {
+      console.warn("Auto-fill LLM fallback triggered:", llmError);
+      // High-quality smart fallback
+      const fallbackResult = generateAutoFillFallback(type, rawInput, context);
+      return res.json({ result: fallbackResult });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to auto-fill" });
+  }
+});
+
+// Smart Rule-based Fallback Generator
+function generateAutoFillFallback(type: string, input: string, context: any) {
+  const clean = input.trim();
+  const shortName = clean.length > 25 ? `${clean.slice(0, 22)}...` : clean;
+
+  // Derive Natural Category
+  let naturalCategory = "AI/딥테크 SaaS";
+  const lower = clean.toLowerCase();
+  if (lower.includes("법률") || lower.includes("계약") || lower.includes("규제")) {
+    naturalCategory = "B2B LegalTech SaaS";
+  } else if (lower.includes("의료") || lower.includes("바이오") || lower.includes("헬스") || lower.includes("진료")) {
+    naturalCategory = "디지털 헬스케어 & AI 진단";
+  } else if (lower.includes("금융") || lower.includes("결제") || lower.includes("투자") || lower.includes("핀테크")) {
+    naturalCategory = "차세대 핀테크 / 자산관리 AI";
+  } else if (lower.includes("에이전트") || lower.includes("agent") || lower.includes("langchain") || lower.includes("rag")) {
+    naturalCategory = "실전 멀티에이전트 & RAG 시스템";
+  } else if (lower.includes("교육") || lower.includes("학습") || lower.includes("튜터")) {
+    naturalCategory = "생성형 AI 에듀테크";
+  } else if (lower.includes("마케팅") || lower.includes("광고") || lower.includes("그로스")) {
+    naturalCategory = "AI 그로스 마케팅 & 자동화";
+  } else if (lower.includes("커머스") || lower.includes("쇼핑") || lower.includes("물류")) {
+    naturalCategory = "스마트 이커머스 & 물류 최적화";
+  } else if (type.startsWith("course")) {
+    naturalCategory = "실전 AI 모델링 / 엔지니어링";
+  }
+
+  // Derive Refined Title
+  let refinedTitle = clean;
+  if (!clean.startsWith("[") && !clean.includes(":")) {
+    if (type.startsWith("course")) {
+      refinedTitle = `[실전] ${shortName} 핵심 마스터클래스`;
+    } else if (type === "idea_request" || type === "ir_project") {
+      const prefix = clean.split(" ")[0] || "AI";
+      refinedTitle = `${prefix}Mind: ${clean} 전문 플랫폼`;
+    }
+  }
+
+  if (type === "course_request") {
+    return {
+      refinedTitle,
+      naturalCategory,
+      description: `[학습 목표]\n- ${clean}의 핵심 파이프라인 이해 및 실전 개발 환경 셋업\n- 비즈니스 상용화 수준의 MVP 완성 및 코드 레벨 최적화\n\n[희망 커리큘럼 구성]\n1. 기초 개념 및 도메인 데이터 파이프라인 구축\n2. 핵심 알고리즘/에이전트 구현 및 실무 연동 실습\n3. 실전 프로덕트 배포 및 성능 최적화\n4. 1:1 코드 리뷰 및 질의응답 피드백`,
+      tags: ["실전프로젝트", naturalCategory.split(" ")[0] || "AI", "MVP개발"],
+      targetLevel: "중급",
+      preferredSchedule: "평일 저녁 (19:30~21:30)",
+      expectedPriceRange: "30~50만원대",
+    };
+  }
+
+  if (type === "course") {
+    return {
+      refinedTitle,
+      naturalCategory,
+      description: `${clean}의 원리부터 실전 MVP 런칭까지 체계적으로 학습하는 집중 실습 마스터클래스입니다.`,
+      price: 590000,
+      discountedPrice: 390000,
+      tags: ["AI실전", naturalCategory.split(" ")[0] || "AI모델링", "MVP"],
+      curriculum: [
+        { week: 1, sessionNumber: 1, title: `${shortName} 기초 환경 및 가설 수립`, description: "핵심 라이브러리 셋업 및 기본 아키텍처 실습", duration: "2시간" },
+        { week: 1, sessionNumber: 2, title: `${shortName} 파이프라인 설계`, description: "데이터 연동 및 모델 인퍼런스 파이프라인 구축", duration: "2시간" },
+        { week: 2, sessionNumber: 3, title: "실전 에이전트 연계 프로토타이핑", description: "상용 연동 API 및 예외 처리 로직 구현", duration: "2시간" },
+        { week: 2, sessionNumber: 4, title: "클라우드 배포 및 최종 포트폴리오 완성", description: "배포 최적화 및 1:1 피드백", duration: "2시간" },
+      ],
+    };
+  }
+
+  if (type === "course_proposal") {
+    const reqTitle = context?.requestTitle || clean;
+    return {
+      proposedTitle: `[실전 완성] ${reqTitle} 프로젝트 부트캠프`,
+      curriculumDraft: [
+        "1회차: 기본 환경 구성 및 핵심 요구사항 분석",
+        "2회차: 핵심 아키텍처 및 도메인 파이프라인 실습",
+        "3회차: 실전 상용화 연동 및 고급 최적화 기법",
+        "4회차: 프로덕트 완성 및 1:1 포트폴리오 피드백",
+      ],
+      proposedPrice: 390000,
+      proposedSchedule: "매주 화/목 19:30~21:30 (총 8회차 / 4주)",
+      message: `안녕하세요! 요청해주신 '${reqTitle}' 주제에 맞춰, 현업에서 즉시 활용할 수 있는 핵심 실습 위주의 커리큘럼을 준비했습니다.`,
+    };
+  }
+
+  if (type === "idea_request") {
+    return {
+      refinedTitle,
+      naturalCategory,
+      problem: `현재 시장에서는 ${clean} 관련 분야에서 높은 수작업 비용과 비효율이 지속되고 있으며, 기존 솔루션들의 복잡성과 높은 도입 장벽으로 인해 실무자들의 만족도가 낮습니다.`,
+      solutionConcept: `최신 AI 자동화 엔진과 사용자 친화적인 웹/앱 UI를 결합하여 10배 빠른 처리 속도와 직관적인 인터페이스를 제공하는 경량 SaaS MVP를 구축하고자 합니다.`,
+      tags: ["AI스타트업", naturalCategory.split(" ")[0] || "SaaS", "MVP제작"],
+      requiredRoles: ["풀스택 개발자", "AI 엔지니어"],
+      rewardDetail: "지분 15~25% 협의 + MVP 런칭 인센티브",
+    };
+  }
+
+  if (type === "ir_project") {
+    return {
+      refinedTitle,
+      teamName: context?.teamName || "DocuMind AI",
+      naturalCategory,
+      oneLiner: `${clean} 문제를 해결하는 차세대 B2B AI 솔루션`,
+      description: `${clean} 분야의 비효율을 혁신하기 위해 자체 개발한 고성능 AI 엔진과 특화 워크플로우를 제공합니다.`,
+      problem: `기존 시장의 복잡한 수작업 프로세스와 높은 운영 비용, 실시간 대응 부재`,
+      solution: `자체 최적화 AI 파이프라인을 통한 90% 이상 시간 단축 및 자동화`,
+      businessModel: "월간/연간 B2B SaaS 구독 및 사용량 기반 API 과금",
+      tags: ["AI", naturalCategory.split(" ")[0] || "SaaS", "B2B"],
+    };
+  }
+
+  if (type === "idea_proposal") {
+    return {
+      teamSummary: "풀스택 웹 개발자 1인 + LLM 에이전트 전문 엔지니어 1인 팀",
+      techStack: ["React", "TypeScript", "FastAPI", "OpenAI API", "MongoDB"],
+      planSummary: `발제자님의 '${clean}' 아이디어를 4주 내에 상용화 가능한 완성도 높은 MVP로 구현하겠습니다.\n- 1~2주차: 데이터 파이프라인 및 백엔드 API\n- 3주차: 프론트엔드 UI/UX 연동\n- 4주차: 결제/인증 및 클라우드 배포`,
+      estimatedWeeks: 4,
+    };
+  }
+
+  if (type === "investment_proposal") {
+    return {
+      message: `안녕하세요, 대표님. 귀사의 '${clean}' 프로젝트를 깊이 검토하였으며, 탁월한 BM과 기술적 잠재력에 공감하여 후속 투자 및 심층 피칭 미팅을 제안드립니다.`,
+      targetRound: "Seed",
+      investmentAmount: "3억원 ~ 5억원",
+    };
+  }
+
+  return {
+    refinedTitle,
+    naturalCategory,
+    summary: `${clean} 자동 분석 초안`,
+  };
+}
+
 export default router;
+
 
