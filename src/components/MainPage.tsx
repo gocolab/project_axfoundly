@@ -40,14 +40,8 @@ export default function MainPage({
         <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-brand-primary-container/20 blur-3xl pointer-events-none" />
         <div className="absolute -left-20 -bottom-20 w-72 h-72 rounded-full bg-brand-secondary/15 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl mx-auto space-y-3.5 sm:space-y-4">
-          {/* 줄 1: 배지 라벨 */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary-container/20 border border-brand-primary-container/40 text-brand-primary text-xs font-semibold shadow-inner">
-            <Sparkles size={13} className="text-brand-primary" />
-            <span>AI 기반 창업 올인원 파이프라인</span>
-          </div>
-
-          {/* 줄 2: 메인 타이틀 */}
+        <div className="relative z-10 max-w-3xl mx-auto space-y-2.5 sm:space-y-3">
+          {/* 메인 타이틀 */}
           <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight tracking-tight [word-break:keep-all]">
             아이디어부터 투자까지,{" "}
             <span className="bg-gradient-to-r from-brand-primary via-brand-tertiary to-brand-secondary bg-clip-text text-transparent">
@@ -55,7 +49,7 @@ export default function MainPage({
             </span>
           </h1>
 
-          {/* 줄 3: 서브카피 */}
+          {/* 서브카피 */}
           <p className="text-xs sm:text-sm text-brand-on-surface-variant leading-relaxed max-w-xl mx-auto [word-break:keep-all]">
             실시간 징검다리 교육, 자동 팀 매칭, 투자 유치 연계까지 — 창업의 전 과정을 원스톱으로 지원합니다.
           </p>

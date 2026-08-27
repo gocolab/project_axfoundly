@@ -9,7 +9,6 @@ test.describe('TC-02: 메인 페이지 & 비즈니스 진입점 E2E 테스트', 
     // 히어로 텍스트 확인
     await expect(page.locator('text=AI로 빠르게 창업하라')).toBeVisible();
     await expect(page.locator('text=아이디어부터 투자까지')).toBeVisible();
-    await expect(page.locator('text=AI 기반 창업 올인원 파이프라인')).toBeVisible();
   });
 
   test('인기 추천 강의 섹션 [전체 보기] 클릭 시 교육/강의 페이지로 이동한다', async ({ page }) => {
