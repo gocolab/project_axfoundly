@@ -56,6 +56,11 @@ export default function CourseCreateEditModal({
   );
   const [courseDesc, setCourseDesc] = React.useState(initialCourse?.description || "");
   const [coursePrice, setCoursePrice] = React.useState(initialCourse?.price || 590000);
+  const [deliveryType, setDeliveryType] = React.useState<"online" | "offline" | "vod" | "hybrid">(
+    initialCourse?.deliveryType || "online"
+  );
+  const [courseLocation, setCourseLocation] = React.useState(initialCourse?.location || "");
+  const [liveMeetingUrl, setLiveMeetingUrl] = React.useState(initialCourse?.liveMeetingUrl || "");
   const [startDate, setStartDate] = React.useState(initialCourse?.schedule?.startDate || "2025-09-01");
   const [endDate, setEndDate] = React.useState(initialCourse?.schedule?.endDate || "2025-10-15");
   const [selectedDays, setSelectedDays] = React.useState<string[]>(
@@ -64,10 +69,10 @@ export default function CourseCreateEditModal({
   const [timeSlot, setTimeSlot] = React.useState(initialCourse?.schedule?.timeSlot || "19:30 ~ 21:30");
   const [curriculumDraft, setCurriculumDraft] = React.useState<CurriculumItem[]>(
     initialCourse?.curriculum || [
-      { week: 1, sessionNumber: 1, title: "오리엔테이션 & 기초 이해", description: "강의 개요 및 환경 설정", duration: "2시간" },
-      { week: 1, sessionNumber: 2, title: "실전 프레임워크 설계", description: "기본 모델 아키텍처 실습", duration: "2시간" },
-      { week: 2, sessionNumber: 3, title: "고급 에이전트 구축 실습", description: "멀티 에이전트 오케스트레이션", duration: "2시간" },
-      { week: 2, sessionNumber: 4, title: "비즈니스 배포 및 운영", description: "클라우드 인프라 & 모니터링", duration: "2시간" },
+      { week: 1, sessionNumber: 1, title: "오리엔테이션 & 기초 이해", description: "강의 개요 및 환경 설정", duration: "2시간", date: "2025-09-02", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+      { week: 1, sessionNumber: 2, title: "실전 프레임워크 설계", description: "기본 모델 아키텍처 실습", duration: "2시간", date: "2025-09-04", dayOfWeek: "목", time: "19:30 ~ 21:30" },
+      { week: 2, sessionNumber: 3, title: "고급 에이전트 구축 실습", description: "멀티 에이전트 오케스트레이션", duration: "2시간", date: "2025-09-09", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+      { week: 2, sessionNumber: 4, title: "비즈니스 배포 및 운영", description: "클라우드 인프라 & 모니터링", duration: "2시간", date: "2025-09-11", dayOfWeek: "목", time: "19:30 ~ 21:30" },
     ]
   );
 
@@ -77,6 +82,9 @@ export default function CourseCreateEditModal({
       setCourseCategory(initialCourse.category);
       setCourseDesc(initialCourse.description);
       setCoursePrice(initialCourse.price);
+      setDeliveryType(initialCourse.deliveryType || "online");
+      setCourseLocation(initialCourse.location || "");
+      setLiveMeetingUrl(initialCourse.liveMeetingUrl || "");
       if (initialCourse.schedule) {
         setStartDate(initialCourse.schedule.startDate);
         setEndDate(initialCourse.schedule.endDate);
@@ -114,6 +122,9 @@ export default function CourseCreateEditModal({
         description: draft.description || `${userText} 실전 마스터 코스`,
         price: draft.price || 590000,
         discountedPrice: draft.discountedPrice || 390000,
+        deliveryType: draft.deliveryType || "online",
+        location: draft.location || "",
+        liveMeetingUrl: draft.liveMeetingUrl || "",
         schedule: {
           startDate: "2025-09-02",
           endDate: "2025-10-14",
@@ -123,10 +134,10 @@ export default function CourseCreateEditModal({
           scheduleType: "stepping_stone",
         },
         curriculum: draft.curriculum || [
-          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 환경 설정", description: "시장 가설 수립 및 개발 환경 구성", duration: "2시간" },
-          { week: 1, sessionNumber: 2, title: "프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 구현", duration: "2시간" },
-          { week: 2, sessionNumber: 3, title: "멀티에이전트 오케스트레이션", description: "LangGraph 기반 에이전트 협업 실습", duration: "2시간" },
-          { week: 2, sessionNumber: 4, title: "상용 배포 및 비즈니스 연동", description: "클라우드 인프라 & 모니터링", duration: "2시간" },
+          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 환경 설정", description: "시장 가설 수립 및 개발 환경 구성", duration: "2시간", date: "2025-09-02", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+          { week: 1, sessionNumber: 2, title: "프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 구현", duration: "2시간", date: "2025-09-04", dayOfWeek: "목", time: "19:30 ~ 21:30" },
+          { week: 2, sessionNumber: 3, title: "멀티에이전트 오케스트레이션", description: "LangGraph 기반 에이전트 협업 실습", duration: "2시간", date: "2025-09-09", dayOfWeek: "화", time: "19:30 ~ 21:30" },
+          { week: 2, sessionNumber: 4, title: "상용 배포 및 비즈니스 연동", description: "클라우드 인프라 & 모니터링", duration: "2시간", date: "2025-09-11", dayOfWeek: "목", time: "19:30 ~ 21:30" },
         ],
       };
 
@@ -134,7 +145,7 @@ export default function CourseCreateEditModal({
         ...prev,
         {
           sender: "ai",
-          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** (분야: ${generatedDraft.category}) 강의 초안과 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 세부 내용을 자유롭게 추가 조정할 수 있습니다.`,
+          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** (분야: ${generatedDraft.category}) 강의 초안과 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 진행 방식(VOD/온라인/오프라인)과 회차별 날짜를 자유롭게 조정할 수 있습니다.`,
           generatedDraft,
         },
       ]);
@@ -151,6 +162,9 @@ export default function CourseCreateEditModal({
     if (draft.category) setCourseCategory(draft.category);
     if (draft.description) setCourseDesc(draft.description);
     if (draft.price) setCoursePrice(draft.price);
+    if (draft.deliveryType) setDeliveryType(draft.deliveryType);
+    if (draft.location) setCourseLocation(draft.location);
+    if (draft.liveMeetingUrl) setLiveMeetingUrl(draft.liveMeetingUrl);
     if (draft.schedule?.startDate) setStartDate(draft.schedule.startDate);
     if (draft.schedule?.endDate) setEndDate(draft.schedule.endDate);
     if (draft.schedule?.daysOfWeek) setSelectedDays(draft.schedule.daysOfWeek);
@@ -158,6 +172,22 @@ export default function CourseCreateEditModal({
     if (draft.curriculum) setCurriculumDraft(draft.curriculum as CurriculumItem[]);
 
     setCreateStep("detail_edit");
+  };
+
+  // Helper: Get Day of Week from Date string (YYYY-MM-DD)
+  const getDayNameFromDateStr = (dateStr: string): string => {
+    if (!dateStr) return "화";
+    try {
+      const parts = dateStr.split("-");
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+        return dayNames[d.getDay()] || "화";
+      }
+    } catch {
+      // fallback
+    }
+    return "화";
   };
 
   // Auto Generate Stepping Stone Schedule Dates
@@ -194,10 +224,54 @@ export default function CourseCreateEditModal({
         sessionNumber: idx + 1,
         date: dateStr,
         dayOfWeek,
+        time: item.time || timeSlot,
       };
     });
 
     setCurriculumDraft(updated);
+    toast.success("달력 일정 자동 재배정", `선택한 요일(${selectedDays.join(",")})에 맞춰 ${updated.length}개 회차의 일정이 자동 배정되었습니다. 날짜를 개별 수정하실 수도 있습니다.`);
+  };
+
+  // Curriculum Item Management Handlers
+  const handleAddSession = () => {
+    const nextSessionNum = curriculumDraft.length + 1;
+    const newSession: CurriculumItem = {
+      week: Math.ceil(nextSessionNum / (selectedDays.length || 2)),
+      sessionNumber: nextSessionNum,
+      title: `신규 실전 세션 ${nextSessionNum}`,
+      description: "세부 실습 및 질의응답",
+      duration: "2시간",
+      date: startDate,
+      dayOfWeek: getDayNameFromDateStr(startDate),
+      time: timeSlot,
+      deliveryType,
+    };
+    setCurriculumDraft((prev) => [...prev, newSession]);
+    toast.info("회차 추가", `${nextSessionNum}회차 커리큘럼이 추가되었습니다.`);
+  };
+
+  const handleRemoveSession = (idx: number) => {
+    if (curriculumDraft.length <= 1) {
+      toast.warning("최소 1회차 필요", "강의 커리큘럼은 최소 1개 이상이어야 합니다.");
+      return;
+    }
+    const updated = curriculumDraft.filter((_, i) => i !== idx).map((item, i) => ({
+      ...item,
+      sessionNumber: i + 1,
+      week: Math.ceil((i + 1) / (selectedDays.length || 2)),
+    }));
+    setCurriculumDraft(updated);
+  };
+
+  const handleMoveSession = (idx: number, direction: "up" | "down") => {
+    if ((direction === "up" && idx === 0) || (direction === "down" && idx === curriculumDraft.length - 1)) return;
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    const updated = [...curriculumDraft];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    // Re-index sessionNumber
+    setCurriculumDraft(updated.map((item, i) => ({ ...item, sessionNumber: i + 1 })));
   };
 
   const handleSubmit = () => {
@@ -210,6 +284,9 @@ export default function CourseCreateEditModal({
       title: courseTitle,
       description: courseDesc || "실전 AI 창업 집중 코스",
       category: courseCategory,
+      deliveryType,
+      location: (deliveryType === "offline" || deliveryType === "hybrid") ? courseLocation : undefined,
+      liveMeetingUrl: (deliveryType === "online" || deliveryType === "vod" || deliveryType === "hybrid") ? liveMeetingUrl : undefined,
       instructor: initialCourse?.instructor || instructorName,
       instructorAvatar: initialCourse?.instructorAvatar || "",
       price: coursePrice,
@@ -414,6 +491,69 @@ export default function CourseCreateEditModal({
               </p>
             </div>
 
+            {/* 강의 진행 방식 선택 (VOD / 실시간 온라인 / 현장 오프라인 / 온·오프라인 혼합) */}
+            <div>
+              <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">
+                강의 진행 방식 선택 *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { type: "online" as const, label: "실시간 온라인", desc: "Zoom / Meet 라이브", icon: "💻" },
+                  { type: "offline" as const, label: "현장 오프라인", desc: "오프라인 강의장 참석", icon: "🏢" },
+                  { type: "vod" as const, label: "VOD 동영상", desc: "언제든 자유 수강", icon: "🎥" },
+                  { type: "hybrid" as const, label: "온·오프라인 혼합", desc: "현장 + 온라인 병행", icon: "🔄" },
+                ].map((item) => (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => setDeliveryType(item.type)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                      deliveryType === item.type
+                        ? "bg-brand-primary-container/20 border-brand-primary text-white shadow-md shadow-brand-primary/10 ring-1 ring-brand-primary"
+                        : "bg-brand-surface-low border-brand-border text-brand-on-surface-variant hover:text-white hover:border-brand-border/80"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    <span className="text-[10px] text-brand-on-surface-variant/80">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 진행 방식에 따른 세부 정보 (오프라인 주소 or 온라인 접속 링크) */}
+            {(deliveryType === "offline" || deliveryType === "hybrid") && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-fadeIn">
+                <label className="text-[11px] font-bold text-amber-300 block mb-1">
+                  🏢 오프라인 강의장 주소 / 장소 안내 *
+                </label>
+                <input
+                  type="text"
+                  value={courseLocation}
+                  onChange={(e) => setCourseLocation(e.target.value)}
+                  placeholder="예: 서울시 강남구 테헤란로 152 강남파이낸스센터 18층 아카데미룸"
+                  className="w-full bg-brand-card border border-amber-500/40 rounded-lg py-1.5 px-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            )}
+
+            {(deliveryType === "online" || deliveryType === "vod" || deliveryType === "hybrid") && (
+              <div className="p-3 bg-brand-primary/10 border border-brand-primary/30 rounded-xl animate-fadeIn">
+                <label className="text-[11px] font-bold text-brand-primary block mb-1">
+                  💻 실시간 화상 회의(Zoom/Meet) 또는 VOD 플레이어 링크
+                </label>
+                <input
+                  type="text"
+                  value={liveMeetingUrl}
+                  onChange={(e) => setLiveMeetingUrl(e.target.value)}
+                  placeholder="예: https://zoom.us/j/123456789 (수강생 결제 후 강의실에서 공개)"
+                  className="w-full bg-brand-card border border-brand-primary/40 rounded-lg py-1.5 px-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-primary"
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">수강료 (원)</label>
@@ -447,46 +587,52 @@ export default function CourseCreateEditModal({
 
             {/* Stepping-Stone Calendar Settings Section */}
             <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-primary/30">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <CalendarIcon size={14} className="text-brand-tertiary" />
-                  커리큘럼 달력 연계 설정 (기간 & 징검다리 방식 날짜·시간)
-                </h4>
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <CalendarIcon size={14} className="text-brand-tertiary" />
+                    커리큘럼 달력 연계 설정 & 회차별 강의일 자유 수정
+                  </h4>
+                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5">
+                    징검다리 일괄 자동 배정 후에도 각 회차별 날짜를 캘린더 피커로 자유롭게 개별 조정할 수 있습니다.
+                  </p>
+                </div>
                 <button
+                  type="button"
                   onClick={handleAutoGenerateSchedule}
                   className="text-[11px] bg-brand-primary-container/20 text-brand-primary border border-brand-primary/40 font-bold px-2.5 py-1 rounded-lg hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                 >
-                  <RefreshCw size={11} /> 달력 일정 자동 재배정
+                  <RefreshCw size={11} /> 징검다리 일정 자동 재배정
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="text-[11px] text-brand-on-surface-variant block mb-1">시작일</label>
+                  <label className="text-[11px] text-brand-on-surface-variant block mb-1">개강 시작일</label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none"
+                    className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none focus:border-brand-primary"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-brand-on-surface-variant block mb-1">종료일</label>
+                  <label className="text-[11px] text-brand-on-surface-variant block mb-1">종강 종료일</label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none"
+                    className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none focus:border-brand-primary"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-brand-on-surface-variant block mb-1">진행 시간대</label>
+                  <label className="text-[11px] text-brand-on-surface-variant block mb-1">기본 진행 시간대</label>
                   <input
                     type="text"
                     value={timeSlot}
                     onChange={(e) => setTimeSlot(e.target.value)}
                     placeholder="19:30 ~ 21:30"
-                    className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none"
+                    className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none focus:border-brand-primary"
                   />
                 </div>
               </div>
@@ -494,7 +640,7 @@ export default function CourseCreateEditModal({
               {/* Days of week selector (Stepping Stone) */}
               <div className="mb-4">
                 <label className="text-[11px] text-brand-on-surface-variant block mb-1.5">
-                  징검다리 요일 지정 (선택한 요일에 순차적으로 세션이 배정됩니다)
+                  징검다리 기본 요일 지정 (선택한 요일에 순차적으로 세션이 배정됩니다)
                 </label>
                 <div className="flex gap-1.5">
                   {["월", "화", "수", "목", "금", "토", "일"].map((day) => {
@@ -502,6 +648,7 @@ export default function CourseCreateEditModal({
                     return (
                       <button
                         key={day}
+                        type="button"
                         onClick={() => {
                           setSelectedDays((prev) =>
                             isSelected ? prev.filter((d) => d !== day) : [...prev, day]
@@ -522,43 +669,138 @@ export default function CourseCreateEditModal({
 
               {/* Curriculum Session Items List */}
               <div>
-                <label className="text-[11px] font-bold text-white block mb-2">
-                  회차별 세부 커리큘럼 & 배정된 일정 ({curriculumDraft.length}회차)
-                </label>
-                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-bold text-white block">
+                    회차별 커리큘럼 & 개별 강의일 설정 ({curriculumDraft.length}개 회차)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddSession}
+                    className="text-[10px] bg-brand-surface-high border border-brand-border/60 text-brand-primary hover:text-white px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-semibold"
+                  >
+                    + 회차 추가
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-2.5 max-h-64 overflow-y-auto pr-1">
                   {curriculumDraft.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 p-2.5 bg-brand-card rounded-lg border border-brand-border/30 text-xs"
+                      className="p-3 bg-brand-card rounded-xl border border-brand-border/50 text-xs flex flex-col gap-2 hover:border-brand-primary/40 transition-colors shadow-sm"
                     >
-                      <span className="w-6 h-6 rounded-md bg-brand-primary-container/20 text-brand-primary flex items-center justify-center font-bold text-[10px] flex-shrink-0">
-                        {item.sessionNumber || idx + 1}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-md bg-brand-primary-container/20 text-brand-primary flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                          {item.sessionNumber || idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={item.title}
+                          onChange={(e) => {
+                            const updated = [...curriculumDraft];
+                            updated[idx].title = e.target.value;
+                            setCurriculumDraft(updated);
+                          }}
+                          placeholder="회차 제목 (예: 프롬프트 엔지니어링 실전)"
+                          className="flex-1 bg-transparent border-b border-brand-border/40 py-1 text-xs text-white font-semibold focus:outline-none focus:border-brand-primary"
+                        />
+
+                        {/* Order controls & Delete */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveSession(idx, "up")}
+                            title="위로 이동"
+                            className="p-1 text-brand-on-surface-variant hover:text-white disabled:opacity-30 cursor-pointer"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === curriculumDraft.length - 1}
+                            onClick={() => handleMoveSession(idx, "down")}
+                            title="아래로 이동"
+                            className="p-1 text-brand-on-surface-variant hover:text-white disabled:opacity-30 cursor-pointer"
+                          >
+                            ▼
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSession(idx)}
+                            title="회차 삭제"
+                            className="p-1 text-red-400/70 hover:text-red-400 cursor-pointer text-[11px] ml-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-brand-border/20 text-[11px]">
+                        {/* Date Picker */}
+                        <div className="flex items-center gap-1 bg-brand-surface-low px-2 py-1 rounded-lg border border-brand-border/30">
+                          <span className="text-[10px] text-brand-on-surface-variant shrink-0">강의일:</span>
+                          <input
+                            type="date"
+                            value={item.date || ""}
+                            onChange={(e) => {
+                              const newDate = e.target.value;
+                              const updated = [...curriculumDraft];
+                              updated[idx].date = newDate;
+                              updated[idx].dayOfWeek = getDayNameFromDateStr(newDate);
+                              setCurriculumDraft(updated);
+                            }}
+                            className="bg-transparent text-xs text-brand-primary font-mono focus:outline-none w-full cursor-pointer"
+                          />
+                          <span className="text-[10px] text-brand-on-surface-variant font-mono shrink-0">
+                            ({item.dayOfWeek || "화"})
+                          </span>
+                        </div>
+
+                        {/* Time Slot */}
+                        <div className="flex items-center gap-1 bg-brand-surface-low px-2 py-1 rounded-lg border border-brand-border/30">
+                          <span className="text-[10px] text-brand-on-surface-variant shrink-0">시간:</span>
+                          <input
+                            type="text"
+                            value={item.time || timeSlot}
+                            onChange={(e) => {
+                              const updated = [...curriculumDraft];
+                              updated[idx].time = e.target.value;
+                              setCurriculumDraft(updated);
+                            }}
+                            placeholder="19:30 ~ 21:30"
+                            className="bg-transparent text-xs text-white focus:outline-none w-full"
+                          />
+                        </div>
+
+                        {/* Duration or Subtitle */}
+                        <div className="flex items-center gap-1 bg-brand-surface-low px-2 py-1 rounded-lg border border-brand-border/30">
+                          <span className="text-[10px] text-brand-on-surface-variant shrink-0">소요:</span>
+                          <input
+                            type="text"
+                            value={item.duration || "2시간"}
+                            onChange={(e) => {
+                              const updated = [...curriculumDraft];
+                              updated[idx].duration = e.target.value;
+                              setCurriculumDraft(updated);
+                            }}
+                            placeholder="2시간"
+                            className="bg-transparent text-xs text-white focus:outline-none w-full"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Session Description */}
                       <input
                         type="text"
-                        value={item.title}
+                        value={item.description}
                         onChange={(e) => {
                           const updated = [...curriculumDraft];
-                          updated[idx].title = e.target.value;
+                          updated[idx].description = e.target.value;
                           setCurriculumDraft(updated);
                         }}
-                        placeholder="회차 제목"
-                        className="flex-1 bg-transparent border-b border-brand-border/40 text-xs text-white focus:outline-none focus:border-brand-primary"
+                        placeholder="회차 세부 실습 및 다루는 내용 요약"
+                        className="bg-transparent border-b border-brand-border/20 py-0.5 text-[11px] text-brand-on-surface-variant focus:outline-none focus:text-white"
                       />
-                      <input
-                        type="text"
-                        value={item.date || ""}
-                        onChange={(e) => {
-                          const updated = [...curriculumDraft];
-                          updated[idx].date = e.target.value;
-                          setCurriculumDraft(updated);
-                        }}
-                        placeholder="2025-09-02"
-                        className="w-24 bg-transparent border-b border-brand-border/40 text-[10px] text-brand-primary font-mono focus:outline-none"
-                      />
-                      <span className="text-[10px] text-brand-on-surface-variant font-mono">
-                        {item.dayOfWeek || "화"}
-                      </span>
                     </div>
                   ))}
                 </div>
@@ -568,14 +810,16 @@ export default function CourseCreateEditModal({
             {/* Final Submit Buttons */}
             <div className="flex gap-2 mt-2">
               <button
+                type="button"
                 onClick={() => setCreateStep("ai_chat")}
                 className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
               >
                 ← AI 채팅으로 돌아가기
               </button>
               <button
+                type="button"
                 onClick={handleSubmit}
-                className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-brand-primary/20"
               >
                 <BookOpen size={14} />
                 {initialCourse ? "강의 수정 완료" : "강의 개설 및 일정 등록 완료"}

@@ -285,6 +285,23 @@ export default function CoursePage({
                   }`}>
                     {selectedCourse.status}
                   </span>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                    selectedCourse.deliveryType === "vod"
+                      ? "bg-purple-500/30 border-purple-500/50 text-purple-200"
+                      : selectedCourse.deliveryType === "offline"
+                      ? "bg-amber-500/30 border-amber-500/50 text-amber-200"
+                      : selectedCourse.deliveryType === "hybrid"
+                      ? "bg-emerald-500/30 border-emerald-500/50 text-emerald-200"
+                      : "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
+                  }`}>
+                    {selectedCourse.deliveryType === "vod"
+                      ? "🎥 VOD 동영상"
+                      : selectedCourse.deliveryType === "offline"
+                      ? "🏢 현장 오프라인"
+                      : selectedCourse.deliveryType === "hybrid"
+                      ? "🔄 온·오프라인 혼합"
+                      : "💻 실시간 온라인"}
+                  </span>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
                     {schedule.totalSessions}회차 완강
                   </span>
@@ -295,7 +312,7 @@ export default function CoursePage({
               </div>
 
               <div className="p-6">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono font-bold text-brand-primary px-2.5 py-1 rounded-lg bg-brand-primary/10 border border-brand-primary/20">
                     {selectedCourse.category}
                   </span>
@@ -303,6 +320,11 @@ export default function CoursePage({
                     <CalendarIcon size={14} className="text-[#34d399]" />
                     {schedule.startDate} ~ {schedule.endDate}
                   </span>
+                  {selectedCourse.location && (
+                    <span className="text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-lg">
+                      🏢 {selectedCourse.location}
+                    </span>
+                  )}
                 </div>
 
                 <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mt-2.5 leading-tight">
@@ -329,12 +351,20 @@ export default function CoursePage({
                 {/* Course Metadata Banner */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 p-4 bg-[#0b1329]/90 rounded-xl border border-slate-800/80">
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-mono">강의 일정</span>
-                    <span className="text-xs font-semibold text-white">매주 {schedule.daysOfWeek.join("·")}</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">진행 방식</span>
+                    <span className="text-xs font-semibold text-brand-primary">
+                      {selectedCourse.deliveryType === "vod"
+                        ? "VOD 동영상"
+                        : selectedCourse.deliveryType === "offline"
+                        ? "현장 오프라인"
+                        : selectedCourse.deliveryType === "hybrid"
+                        ? "온·오프라인 혼합"
+                        : "실시간 온라인"}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-mono">진행 시간</span>
-                    <span className="text-xs font-semibold text-white">{schedule.timeSlot}</span>
+                    <span className="text-[10px] text-slate-400 block font-mono">강의 일정 / 시간</span>
+                    <span className="text-xs font-semibold text-white">매주 {schedule.daysOfWeek.join("·")} ({schedule.timeSlot})</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block font-mono">총 회차</span>
@@ -1176,6 +1206,25 @@ export default function CoursePage({
                           }`}
                         >
                           {course.status}
+                        </span>
+                        <span
+                          className={`text-xs font-semibold px-2 py-1 rounded-lg backdrop-blur-md border ${
+                            course.deliveryType === "vod"
+                              ? "bg-purple-500/30 border-purple-500/50 text-purple-200"
+                              : course.deliveryType === "offline"
+                              ? "bg-amber-500/30 border-amber-500/50 text-amber-200"
+                              : course.deliveryType === "hybrid"
+                              ? "bg-emerald-500/30 border-emerald-500/50 text-emerald-200"
+                              : "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
+                          }`}
+                        >
+                          {course.deliveryType === "vod"
+                            ? "🎥 VOD"
+                            : course.deliveryType === "offline"
+                            ? "🏢 오프라인"
+                            : course.deliveryType === "hybrid"
+                            ? "🔄 혼합"
+                            : "💻 온라인"}
                         </span>
                         <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
                           {schedule.totalSessions}회차

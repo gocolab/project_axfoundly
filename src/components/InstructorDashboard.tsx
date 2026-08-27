@@ -17,21 +17,26 @@ import {
   CheckCircle,
   X,
   RefreshCw,
-  Sliders,
-  Filter,
-  CheckSquare,
-  Square,
-  AlertCircle,
-  ChevronRight,
   Search,
   RotateCcw,
+  GraduationCap,
+  Undo2,
+  AlertTriangle,
+  CheckSquare,
+  Square,
 } from "lucide-react";
-import type { Course, SettlementRecord, CurriculumItem, CourseSchedule, CRMMessage, CourseRequest, CourseProposal } from "../types";
+import type {
+  Course,
+  SettlementRecord,
+  CRMMessage,
+  CourseRequest,
+  CourseStudent,
+} from "../types";
 import { api } from "../lib/api";
 import Pagination from "./common/Pagination";
 import { useToast } from "./common/Toast";
 import CourseProposalModal from "./CourseProposalModal";
-import { useCommonCodes } from "../hooks/useCommonCodes";
+import CourseCreateEditModal from "./CourseCreateEditModal";
 
 interface InstructorDashboardProps {
   myCourses: Course[];
@@ -53,11 +58,6 @@ export default function InstructorDashboard({
   onCloseModalExternal,
 }: InstructorDashboardProps) {
   const toast = useToast();
-  const { getCodesByGroup } = useCommonCodes(["COURSE_CATEGORY"]);
-  const categoryCodes = getCodesByGroup("COURSE_CATEGORY");
-  const recommendedCategories = categoryCodes.length > 0
-    ? categoryCodes.map((c) => c.displayName || c.codeName)
-    : ["AI 모델링 / LLM", "실전 멀티에이전트", "비즈니스 기획", "개발·IT", "그로스 마케팅", "바이오·헬스케어"];
 
   const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement">("courses");
   const [selectedCourseForCRM, setSelectedCourseForCRM] = React.useState<string>(myCourses[0]?.id || "c1");
@@ -68,8 +68,12 @@ export default function InstructorDashboard({
   const [coursePage, setCoursePage] = React.useState(1);
   const courseItemsPerPage = 5;
 
-  // SubTab 2: Students Search, Filter & Pagination
-  const [studentFilter, setStudentFilter] = React.useState<"all" | "behind" | "high">("all");
+  // SubTab 2: Students Real Data, Filter & Pagination
+  const [students, setStudents] = React.useState<CourseStudent[]>([]);
+  const [studentsLoading, setStudentsLoading] = React.useState(false);
+  const [studentFilter, setStudentFilter] = React.useState<
+    "all" | "in_progress" | "behind" | "high" | "completed" | "refunded"
+  >("all");
   const [searchStudent, setSearchStudent] = React.useState("");
   const [studentPage, setStudentPage] = React.useState(1);
   const studentItemsPerPage = 6;
@@ -80,39 +84,22 @@ export default function InstructorDashboard({
   const [settlementPage, setSettlementPage] = React.useState(1);
   const settlementItemsPerPage = 5;
 
-  // Course Creation Modal States
-  const [showCreateModal, setShowCreateModal] = React.useState(false);
+  // Course Creation / Edit Modal State
+  const [showCourseModal, setShowCourseModal] = React.useState(false);
+  const [editingCourse, setEditingCourse] = React.useState<Course | null>(null);
 
   React.useEffect(() => {
     if (isModalOpenExternal) {
-      setShowCreateModal(true);
+      setEditingCourse(null);
+      setShowCourseModal(true);
     }
   }, [isModalOpenExternal]);
-  const [createStep, setCreateStep] = React.useState<"ai_chat" | "detail_edit">("ai_chat");
-  const [aiPrompt, setAiPrompt] = React.useState("");
-  const [aiChatMessages, setAiChatMessages] = React.useState<
-    { sender: "user" | "ai"; text: string; generatedDraft?: Partial<Course> }[]
-  >([
-    {
-      sender: "ai",
-      text: "안녕하세요! 어떤 주제의 강의를 개설하고 싶으신가요? 핵심 타깃, 목표 회차, 전달하고 싶은 가치를 편하게 말씀해 주시면 맞춤형 강의 커리큘럼과 일정을 초벌 생성해 드립니다.",
-    },
-  ]);
-  const [isAiGenerating, setIsAiGenerating] = React.useState(false);
 
-  // Detail Form States
-  const [courseTitle, setCourseTitle] = React.useState("");
-  const [courseCategory, setCourseCategory] = React.useState<Course["category"]>("AI 모델링");
-  const [courseDesc, setCourseDesc] = React.useState("");
-  const [coursePrice, setCoursePrice] = React.useState(590000);
-  const [startDate, setStartDate] = React.useState("2025-09-01");
-  const [endDate, setEndDate] = React.useState("2025-10-15");
-  const [selectedDays, setSelectedDays] = React.useState<string[]>(["화", "목"]);
-  const [timeSlot, setTimeSlot] = React.useState("19:30 ~ 21:30");
-  const [curriculumDraft, setCurriculumDraft] = React.useState<CurriculumItem[]>([
-    { week: 1, sessionNumber: 1, title: "오리엔테이션 & 기초 이해", description: "강의 개요 및 환경 설정", duration: "2시간" },
-    { week: 1, sessionNumber: 2, title: "실전 프레임워크 설계", description: "기본 모델 아키텍처 실습", duration: "2시간" },
-  ]);
+  // Refund Modal State
+  const [showRefundModal, setShowRefundModal] = React.useState(false);
+  const [refundTargetStudent, setRefundTargetStudent] = React.useState<CourseStudent | null>(null);
+  const [refundReason, setRefundReason] = React.useState("수강생 요청에 따른 직권 환불");
+  const [isProcessingRefund, setIsProcessingRefund] = React.useState(false);
 
   // CRM Messaging States
   const [showMessageModal, setShowMessageModal] = React.useState(false);
@@ -141,19 +128,28 @@ export default function InstructorDashboard({
   const tabs = [
     { id: "courses" as const, label: "내 강의 목록", icon: <BookOpen size={14} /> },
     { id: "requests" as const, label: "수요 있는 개강 요청 탐색", icon: <Sparkles size={14} /> },
-    { id: "students" as const, label: "수강생 관리 (CRM)", icon: <Users size={14} /> },
+    { id: "students" as const, label: "수강생 관리 (수료·환불 권한)", icon: <Users size={14} /> },
     { id: "settlement" as const, label: "정산 관리", icon: <DollarSign size={14} /> },
   ];
 
-  // Mock student data
-  const mockStudents = [
-    { id: "s1", name: "김현우", email: "hw.kim@mail.com", progress: 85, lastActive: "2시간 전" },
-    { id: "s2", name: "이서연", email: "sy.lee@mail.com", progress: 42, lastActive: "1일 전" },
-    { id: "s3", name: "박민재", email: "mj.park@mail.com", progress: 35, lastActive: "3일 전" },
-    { id: "s4", name: "정유진", email: "yj.jung@mail.com", progress: 95, lastActive: "방금 전" },
-    { id: "s5", name: "최도윤", email: "dy.choi@mail.com", progress: 28, lastActive: "4일 전" },
-    { id: "s6", name: "한지우", email: "jw.han@mail.com", progress: 78, lastActive: "5시간 전" },
-  ];
+  // ── Load Real Students Data from API ──
+  const fetchStudents = React.useCallback(async (courseId?: string) => {
+    try {
+      setStudentsLoading(true);
+      const res = await api.getInstructorStudents(courseId);
+      setStudents(res.students || []);
+    } catch (err) {
+      console.error("Failed to load instructor students", err);
+    } finally {
+      setStudentsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (activeTab === "students") {
+      fetchStudents(selectedCourseForCRM);
+    }
+  }, [activeTab, selectedCourseForCRM, fetchStudents]);
 
   // 1. Filtered Courses
   const filteredCourses = myCourses.filter((course) => {
@@ -176,19 +172,26 @@ export default function InstructorDashboard({
   }, [courseStatusFilter, searchCourse]);
 
   // 2. Filtered Students
-  const filteredStudents = mockStudents.filter((s) => {
-    const matchProgress =
+  const filteredStudents = students.filter((s) => {
+    const matchFilter =
       studentFilter === "behind"
-        ? s.progress < 50
+        ? (s.progress || 0) < 50 && !s.completed && s.paymentStatus !== "환불"
         : studentFilter === "high"
-        ? s.progress >= 80
+        ? (s.progress || 0) >= 80 && !s.completed && s.paymentStatus !== "환불"
+        : studentFilter === "completed"
+        ? s.completed
+        : studentFilter === "refunded"
+        ? s.paymentStatus === "환불"
+        : studentFilter === "in_progress"
+        ? !s.completed && s.paymentStatus !== "환불"
         : true;
+
     const query = searchStudent.toLowerCase().trim();
     const matchSearch =
       query === "" ||
       s.name.toLowerCase().includes(query) ||
       s.email.toLowerCase().includes(query);
-    return matchProgress && matchSearch;
+    return matchFilter && matchSearch;
   });
   const studentTotalPages = Math.ceil(filteredStudents.length / studentItemsPerPage);
   const paginatedStudents = filteredStudents.slice(
@@ -238,109 +241,53 @@ export default function InstructorDashboard({
 
   const totalRevenue = settlements.reduce((sum, s) => sum + s.netAmount, 0);
 
-  // ── AI Chat Draft Generation Handler ──
-  const handleGenerateFromAi = async () => {
-    if (!aiPrompt.trim()) return;
-
-    const userText = aiPrompt;
-    setAiPrompt("");
-    setAiChatMessages((prev) => [...prev, { sender: "user", text: userText }]);
-    setIsAiGenerating(true);
-
+  // ── 강사 권한 1: 수료 완료 처리 핸들러 ──
+  const handleCompleteStudent = async (student: CourseStudent) => {
     try {
-      const res = await api.aiAutoFill({
-        type: "course",
-        prompt: userText,
-      });
-
-      const draft = res?.result || {};
-      const generatedDraft: Partial<Course> = {
-        title: draft.refinedTitle || `[실전] ${userText.slice(0, 15)} 완성반`,
-        category: draft.naturalCategory || "실전 AI 모델링 / LLM",
-        description: draft.description || `${userText} 실전 마스터 코스`,
-        price: draft.price || 590000,
-        discountedPrice: draft.discountedPrice || 390000,
-        schedule: {
-          startDate: "2025-09-02",
-          endDate: "2025-10-14",
-          daysOfWeek: ["화", "목"],
-          timeSlot: "19:30 ~ 21:30",
-          totalSessions: draft.curriculum?.length || 8,
-          scheduleType: "stepping_stone",
-        },
-        curriculum: draft.curriculum || [
-          { week: 1, sessionNumber: 1, title: "AI 창업 아이디어 검증 및 세팅", description: "시장 가설 수립 및 개발 환경 구성", duration: "2시간" },
-          { week: 1, sessionNumber: 2, title: "프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 구현", duration: "2시간" },
-        ],
-      };
-
-      setAiChatMessages((prev) => [
-        ...prev,
-        {
-          sender: "ai",
-          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.title}"** (분야: ${generatedDraft.category}) 강의 초안과 커리큘럼을 생성했습니다!\n\n아래 '상세 편집기로 적용' 버튼을 클릭하면 달력 연계 및 회차 일정을 자유롭게 추가 조정할 수 있습니다.`,
-          generatedDraft,
-        },
-      ]);
+      const res = await api.completeStudentCourse(student.courseId, student.id);
+      toast.success(
+        "수료 완료 처리 완료",
+        `'${student.name}' 수강생의 수료 완료 승인이 정상 처리되었습니다. 수료증 발급 및 축하 알림이 발송되었습니다.`
+      );
+      setStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? res.student : s))
+      );
     } catch (err) {
-      console.error("AI Generation failed", err);
+      console.error("Complete student failed", err);
+      toast.error("수료 처리 실패", "수료 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ── 강사 권한 2: 직권 환불 처리 핸들러 ──
+  const handleOpenRefundModal = (student: CourseStudent) => {
+    setRefundTargetStudent(student);
+    setRefundReason("수강생 요청에 따른 직권 환불 및 수강 취소");
+    setShowRefundModal(true);
+  };
+
+  const handleConfirmRefund = async () => {
+    if (!refundTargetStudent) return;
+    try {
+      setIsProcessingRefund(true);
+      const res = await api.refundStudentCourse(
+        refundTargetStudent.courseId,
+        refundTargetStudent.id,
+        refundReason
+      );
+      toast.success(
+        "환불 처리 완료",
+        `'${refundTargetStudent.name}' 수강생의 결제 취소 및 수강 환불 처리가 완료되었습니다.`
+      );
+      setStudents((prev) =>
+        prev.map((s) => (s.id === refundTargetStudent.id ? res.student : s))
+      );
+      setShowRefundModal(false);
+      setRefundTargetStudent(null);
+    } catch (err) {
+      console.error("Refund student failed", err);
+      toast.error("환불 처리 실패", "환불 처리 중 오류가 발생했습니다.");
     } finally {
-      setIsAiGenerating(false);
-    }
-  };
-
-
-  // Apply draft to form
-  const handleApplyDraft = (draft: Partial<Course>) => {
-    if (draft.title) setCourseTitle(draft.title);
-    if (draft.category) setCourseCategory(draft.category);
-    if (draft.description) setCourseDesc(draft.description);
-    if (draft.price) setCoursePrice(draft.price);
-    if (draft.schedule) {
-      setStartDate(draft.schedule.startDate);
-      setEndDate(draft.schedule.endDate);
-      setSelectedDays(draft.schedule.daysOfWeek);
-      setTimeSlot(draft.schedule.timeSlot);
-    }
-    if (draft.curriculum) {
-      setCurriculumDraft(draft.curriculum);
-    }
-    setCreateStep("detail_edit");
-  };
-
-  // Auto generate stepping-stone dates for curriculum
-  const handleAutoGenerateSchedule = () => {
-    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-    const targetDayIndices = selectedDays.map((d) => dayNames.indexOf(d));
-
-    const sessions: CurriculumItem[] = [];
-    const current = new Date(startDate);
-    const end = new Date(endDate);
-    let sessionCount = 0;
-
-    while (current <= end && sessionCount < curriculumDraft.length) {
-      const dayIdx = current.getDay();
-      if (targetDayIndices.includes(dayIdx)) {
-        sessionCount++;
-        const dateStr = current.toISOString().slice(0, 10);
-        const prevItem = curriculumDraft[sessionCount - 1];
-        sessions.push({
-          week: Math.ceil(sessionCount / selectedDays.length),
-          sessionNumber: sessionCount,
-          title: prevItem ? prevItem.title : `${sessionCount}회차 실전 강의`,
-          description: prevItem ? prevItem.description : "강의 세부 실습 및 질의응답",
-          duration: "2시간",
-          date: dateStr,
-          dayOfWeek: dayNames[dayIdx],
-          time: timeSlot,
-        });
-      }
-      current.setDate(current.getDate() + 1);
-    }
-
-    if (sessions.length > 0) {
-      setCurriculumDraft(sessions);
-      toast.info("일정 자동 배정", `선택한 징검다리 요일(${selectedDays.join(",")})에 맞춰 총 ${sessions.length}회차 일정이 달력에 자동 배정되었습니다.`);
+      setIsProcessingRefund(false);
     }
   };
 
@@ -365,7 +312,7 @@ export default function InstructorDashboard({
       id: `crm-${Date.now()}`,
       courseId: selectedCourseForCRM,
       courseTitle: myCourses.find((c) => c.id === selectedCourseForCRM)?.title || "선택 강의",
-      targetType: selectedStudentIds.length > 0 ? "selected" : studentFilter,
+      targetType: selectedStudentIds.length > 0 ? "selected" : studentFilter === "behind" ? "behind" : "all",
       targetCount,
       title: messageTitle,
       content: messageContent,
@@ -391,13 +338,13 @@ export default function InstructorDashboard({
         <div>
           <h1 className="font-display text-2xl font-bold text-white">강사 대시보드</h1>
           <p className="text-sm text-brand-on-surface-variant mt-1">
-            AI 채팅 초벌 개설, 징검다리 일정 관리 및 수강생 타깃 CRM
+            강의 생성/수정(방식·일정 자유 조정), 수강생 수료 승인 및 직권 환불 관리
           </p>
         </div>
         <button
           onClick={() => {
-            setCreateStep("ai_chat");
-            setShowCreateModal(true);
+            setEditingCourse(null);
+            setShowCourseModal(true);
           }}
           className="bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center gap-2 shadow-lg shadow-brand-primary/20"
         >
@@ -409,13 +356,13 @@ export default function InstructorDashboard({
       {/* Quick Stat Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="bg-brand-card border border-brand-border/60 rounded-xl p-4 stat-shimmer">
-          <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">내 강의</p>
+          <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">내 개설 강의</p>
           <p className="text-2xl font-bold text-white font-display mt-1">{myCourses.length}</p>
         </div>
         <div className="bg-brand-card border border-brand-border/60 rounded-xl p-4 stat-shimmer">
           <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">총 수강생</p>
           <p className="text-2xl font-bold text-white font-display mt-1">
-            {myCourses.reduce((s, c) => s + c.studentCount, 0)}
+            {myCourses.reduce((s, c) => s + (c.studentCount || 0), 0)}
           </p>
         </div>
         <div className="bg-brand-card border border-brand-border/60 rounded-xl p-4 stat-shimmer">
@@ -425,7 +372,7 @@ export default function InstructorDashboard({
           </p>
         </div>
         <div className="bg-brand-card border border-brand-border/60 rounded-xl p-4 stat-shimmer">
-          <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">총 수익</p>
+          <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">총 정산액</p>
           <p className="text-2xl font-bold text-brand-primary font-display mt-1">
             ₩{(totalRevenue / 10000).toFixed(0)}만
           </p>
@@ -457,16 +404,16 @@ export default function InstructorDashboard({
             <div>
               <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Sparkles size={14} className="text-brand-primary" />
-                AI 초벌 생성 및 징검다리 달력 연동 지원
+                강의 진행 방식(VOD/온·오프라인) & 커리큘럼 일정 자유 수정 지원
               </h3>
               <p className="text-[11px] text-brand-on-surface-variant mt-0.5">
-                채팅창 대화로 강의를 자동 생성하고, 요일별 징검다리 일정을 간편하게 등록하세요.
+                AI 채팅 초벌 생성 후 회차별 강의일 캘린더 피커와 진행 방식을 자유롭게 구성하세요.
               </p>
             </div>
             <button
               onClick={() => {
-                setCreateStep("ai_chat");
-                setShowCreateModal(true);
+                setEditingCourse(null);
+                setShowCourseModal(true);
               }}
               className="text-xs bg-brand-primary-container/20 text-brand-primary border border-brand-primary/40 font-bold px-3 py-2 rounded-xl hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
             >
@@ -474,7 +421,7 @@ export default function InstructorDashboard({
             </button>
           </div>
 
-          {/* Filter Pills & Search Bar (Community Style) */}
+          {/* Filter Pills & Search Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
               <button
@@ -568,69 +515,88 @@ export default function InstructorDashboard({
               </button>
             </div>
           ) : (
-            paginatedCourses.map((course) => (
-              <div
-                key={course.id}
-                className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md"
-              >
-                <div className="flex items-start sm:items-center gap-4 min-w-0">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0 text-white font-bold">
-                    <BookOpen size={24} className="text-white/60" />
+            paginatedCourses.map((course) => {
+              const deliveryBadge =
+                course.deliveryType === "vod"
+                  ? { label: "🎥 VOD", color: "bg-purple-500/20 text-purple-300 border-purple-500/30" }
+                  : course.deliveryType === "offline"
+                  ? { label: "🏢 오프라인", color: "bg-amber-500/20 text-amber-300 border-amber-500/30" }
+                  : course.deliveryType === "hybrid"
+                  ? { label: "🔄 온·오프라인 혼합", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" }
+                  : { label: "💻 실시간 온라인", color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" };
+
+              return (
+                <div
+                  key={course.id}
+                  className="bg-brand-card border border-brand-border/60 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md"
+                >
+                  <div className="flex items-start sm:items-center gap-4 min-w-0">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 flex items-center justify-center flex-shrink-0 text-white font-bold">
+                      <BookOpen size={24} className="text-white/60" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-bold text-white">{course.title}</h3>
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            course.status === "모집중"
+                              ? "badge-recruiting"
+                              : course.status === "진행중"
+                              ? "badge-progress"
+                              : "badge-closed"
+                          }`}
+                        >
+                          {course.status}
+                        </span>
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${deliveryBadge.color}`}>
+                          {deliveryBadge.label}
+                        </span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-surface-high text-brand-tertiary">
+                          {course.schedule?.scheduleType === "stepping_stone" ? "징검다리 일정" : "정기 일정"}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-brand-on-surface-variant mt-1">
+                        {course.category} · {course.studentCount}명 수강 · 총 {course.curriculum?.length || 0}회차 과정
+                        {course.location && ` · 장소: ${course.location}`}
+                      </p>
+
+                      {course.schedule && (
+                        <div className="flex items-center gap-3 mt-2 text-[10px] text-brand-on-surface-variant font-mono">
+                          <span className="flex items-center gap-1">
+                            <CalendarIcon size={11} className="text-brand-primary" />
+                            {course.schedule.startDate} ~ {course.schedule.endDate}
+                          </span>
+                          <span>
+                            ({course.schedule.daysOfWeek?.join("·")} {course.schedule.timeSlot})
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-white">{course.title}</h3>
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          course.status === "모집중"
-                            ? "badge-recruiting"
-                            : course.status === "진행중"
-                            ? "badge-progress"
-                            : "badge-closed"
-                        }`}
+
+                  <div className="flex gap-2 flex-shrink-0 self-end md:self-center">
+                    {onViewCourse && (
+                      <button
+                        onClick={() => onViewCourse(course.id)}
+                        className="text-xs bg-brand-surface-high text-white py-2 px-3 rounded-lg border border-brand-border/40 hover:bg-brand-surface-highest transition-colors cursor-pointer flex items-center gap-1"
                       >
-                        {course.status}
-                      </span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-surface-high text-brand-tertiary">
-                        {course.schedule.scheduleType === "stepping_stone" ? "징검다리 일정" : "정기 일정"}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-brand-on-surface-variant mt-1">
-                      {course.category} · {course.studentCount}명 수강 · 총 {course.curriculum.length}회차 과정
-                    </p>
-
-                    <div className="flex items-center gap-3 mt-2 text-[10px] text-brand-on-surface-variant font-mono">
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon size={11} className="text-brand-primary" />
-                        {course.schedule.startDate} ~ {course.schedule.endDate}
-                      </span>
-                      <span>({course.schedule.daysOfWeek.join("·")} {course.schedule.timeSlot})</span>
-                    </div>
+                        <Eye size={12} /> 강의 보기
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEditingCourse(course);
+                        setShowCourseModal(true);
+                      }}
+                      className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-2 px-3 rounded-lg border border-brand-border/30 hover:text-white hover:border-brand-primary/40 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Edit size={12} /> 수정 / 달력 설정
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex gap-2 flex-shrink-0 self-end md:self-center">
-                  {onViewCourse && (
-                    <button
-                      onClick={() => onViewCourse(course.id)}
-                      className="text-xs bg-brand-surface-high text-white py-2 px-3 rounded-lg border border-brand-border/40 hover:bg-brand-surface-highest transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <Eye size={12} /> 강의 보기
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      handleApplyDraft(course);
-                      setShowCreateModal(true);
-                    }}
-                    className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-2 px-3 rounded-lg border border-brand-border/30 hover:text-white hover:border-brand-primary/40 transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <Edit size={12} /> 수정 / 달력 설정
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -708,12 +674,25 @@ export default function InstructorDashboard({
         </div>
       )}
 
-      {/* ──────────────── 2. 수강생 관리 (CRM) 탭 ──────────────── */}
+      {/* ──────────────── 2. 수강생 관리 (수료·환불 권한 강화) 탭 ──────────────── */}
       {activeTab === "students" && (
         <div className="flex flex-col gap-5 animate-fadeIn">
-          <div>
-            <h2 className="text-sm font-bold text-white">수강생 명단 및 진도 관리</h2>
-            <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 수강생들의 학습 현황을 확인하고 맞춤 CRM 메시지를 발송하세요.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+                <Users size={16} className="text-brand-primary" />
+                수강생 명단 및 강사 권한 관리 (수료 승인 · 직권 환불 · CRM)
+              </h2>
+              <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                강의별 수강생들의 진도 현황을 확인하고, <strong>[수료 완료]</strong> 승인(수료증 발급) 및 <strong>[직권 환불]</strong> 처리를 직접 수행할 수 있습니다.
+              </p>
+            </div>
+            <button
+              onClick={() => fetchStudents(selectedCourseForCRM)}
+              className="text-xs bg-brand-surface-high border border-brand-border/60 text-white hover:bg-brand-surface-highest px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <RefreshCw size={12} className={studentsLoading ? "animate-spin" : ""} /> 새로고침
+            </button>
           </div>
 
           {/* Top Bar: Course Selector */}
@@ -737,7 +716,7 @@ export default function InstructorDashboard({
             ))}
           </div>
 
-          {/* Filter Pills & Search Bar (Community Style) */}
+          {/* Filter Pills & Search Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
               <button
@@ -748,7 +727,17 @@ export default function InstructorDashboard({
                     : "text-brand-on-surface-variant hover:text-white"
                 }`}
               >
-                전체 ({mockStudents.length})
+                전체 ({students.length})
+              </button>
+              <button
+                onClick={() => setStudentFilter("in_progress")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  studentFilter === "in_progress"
+                    ? "bg-brand-primary-container text-white shadow-sm"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                수강 중 ({students.filter((s) => !s.completed && s.paymentStatus !== "환불").length})
               </button>
               <button
                 onClick={() => setStudentFilter("behind")}
@@ -758,7 +747,7 @@ export default function InstructorDashboard({
                     : "text-brand-on-surface-variant hover:text-white"
                 }`}
               >
-                진도율 50% 미만 ({mockStudents.filter((s) => s.progress < 50).length})
+                진도율 50% 미만 ({students.filter((s) => (s.progress || 0) < 50 && !s.completed && s.paymentStatus !== "환불").length})
               </button>
               <button
                 onClick={() => setStudentFilter("high")}
@@ -768,7 +757,27 @@ export default function InstructorDashboard({
                     : "text-brand-on-surface-variant hover:text-white"
                 }`}
               >
-                우수 수강생 ({mockStudents.filter((s) => s.progress >= 80).length})
+                우수 수강생 ({students.filter((s) => (s.progress || 0) >= 80 && !s.completed && s.paymentStatus !== "환불").length})
+              </button>
+              <button
+                onClick={() => setStudentFilter("completed")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  studentFilter === "completed"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-emerald-400 hover:text-white"
+                }`}
+              >
+                🎓 수료 완료 ({students.filter((s) => s.completed).length})
+              </button>
+              <button
+                onClick={() => setStudentFilter("refunded")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  studentFilter === "refunded"
+                    ? "bg-rose-700 text-white shadow-sm"
+                    : "text-rose-400 hover:text-white"
+                }`}
+              >
+                💸 환불/취소 ({students.filter((s) => s.paymentStatus === "환불").length})
               </button>
             </div>
 
@@ -836,33 +845,40 @@ export default function InstructorDashboard({
               <Mail size={13} />
               {selectedStudentIds.length > 0
                 ? `선택한 ${selectedStudentIds.length}명에게 메시지 전송`
-                : `${studentFilter === "behind" ? "진도율 미달자" : "전체 대상자"}에게 메시지 전송`}
+                : `${studentFilter === "behind" ? "진도율 미달자" : studentFilter === "completed" ? "수료자" : "대상자"}에게 메시지 전송`}
             </button>
           </div>
 
-          {/* Student Table */}
+          {/* Student Table with Actions */}
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
             <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider">
               <span className="col-span-1">선택</span>
-              <span className="col-span-4">수강생</span>
-              <span className="col-span-3">진도율</span>
-              <span className="col-span-2">마지막 활동</span>
-              <span className="col-span-2 text-right">개별 발송</span>
+              <span className="col-span-3">수강생</span>
+              <span className="col-span-2">진도율</span>
+              <span className="col-span-2">수료 및 결제상태</span>
+              <span className="col-span-2">수강등록일</span>
+              <span className="col-span-2 text-right">강사 권한 액션</span>
             </div>
 
-            {filteredStudents.length === 0 ? (
+            {studentsLoading ? (
+              <div className="px-5 py-12 text-center text-xs text-brand-on-surface-variant animate-pulse">
+                수강생 목록을 불러오는 중...
+              </div>
+            ) : filteredStudents.length === 0 ? (
               <div className="px-5 py-10 text-center text-xs text-brand-on-surface-variant">
                 일치하는 수강생이 없습니다.
               </div>
             ) : (
               paginatedStudents.map((student) => {
                 const isChecked = selectedStudentIds.includes(student.id);
+                const isRefunded = student.paymentStatus === "환불";
+
                 return (
                   <div
                     key={student.id}
-                    className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors ${
+                    className={`grid grid-cols-12 gap-2 px-5 py-3.5 items-center border-b border-brand-border/20 last:border-0 hover:bg-brand-surface-low transition-colors ${
                       isChecked ? "bg-brand-primary-container/5" : ""
-                    }`}
+                    } ${isRefunded ? "opacity-60 bg-rose-950/10" : ""}`}
                   >
                     <div className="col-span-1">
                       <input
@@ -876,7 +892,7 @@ export default function InstructorDashboard({
                         className="rounded border-brand-border text-brand-primary focus:ring-0 cursor-pointer"
                       />
                     </div>
-                    <div className="col-span-4 flex items-center gap-2.5">
+                    <div className="col-span-3 flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-brand-surface-high flex items-center justify-center text-[10px] font-bold text-brand-primary">
                         {student.name.charAt(0)}
                       </div>
@@ -885,80 +901,84 @@ export default function InstructorDashboard({
                         <p className="text-[10px] text-brand-on-surface-variant">{student.email}</p>
                       </div>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-2">
                       <div className="flex items-center gap-2">
-                        <div className="progress-bar w-24">
+                        <div className="progress-bar w-20">
                           <div
                             className="progress-bar-fill"
                             style={{
-                              width: `${student.progress}%`,
-                              backgroundColor: student.progress < 50 ? "#f43f5e" : undefined,
+                              width: `${student.progress || 0}%`,
+                              backgroundColor: (student.progress || 0) < 50 ? "#f43f5e" : undefined,
                             }}
                           />
                         </div>
                         <span
                           className={`text-[10px] font-bold font-mono ${
-                            student.progress < 50 ? "text-brand-accent-rose" : "text-brand-tertiary"
+                            (student.progress || 0) < 50 ? "text-brand-accent-rose" : "text-brand-tertiary"
                           }`}
                         >
-                          {student.progress}%
+                          {student.progress || 0}%
                         </span>
                       </div>
                     </div>
-                    <span className="col-span-2 text-xs text-brand-on-surface-variant">
-                      {student.lastActive}
+
+                    <div className="col-span-2 flex flex-col gap-1">
+                      {student.completed ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1 w-fit">
+                          <CheckCircle size={10} /> 수료 완료
+                        </span>
+                      ) : isRefunded ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 w-fit">
+                          환불 처리됨
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-brand-surface-high text-brand-on-surface-variant w-fit">
+                          수강 중
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="col-span-2 text-xs text-brand-on-surface-variant font-mono">
+                      {student.enrolledAt || "2025-08-01"}
                     </span>
-                    <div className="col-span-2 flex justify-end">
+
+                    {/* 강사 권한 Action Buttons */}
+                    <div className="col-span-2 flex items-center justify-end gap-1.5 flex-wrap">
+                      {!student.completed && !isRefunded && (
+                        <button
+                          onClick={() => handleCompleteStudent(student)}
+                          title="수강생 수료 승인 및 수료증 발급"
+                          className="text-[10px] bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white py-1 px-2 rounded-lg border border-emerald-500/40 transition-colors cursor-pointer flex items-center gap-1 font-semibold"
+                        >
+                          <GraduationCap size={11} /> 수료
+                        </button>
+                      )}
+
+                      {!isRefunded && (
+                        <button
+                          onClick={() => handleOpenRefundModal(student)}
+                          title="수강생 결제 직권 환불 및 수강 취소"
+                          className="text-[10px] bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white py-1 px-2 rounded-lg border border-rose-500/40 transition-colors cursor-pointer flex items-center gap-1 font-semibold"
+                        >
+                          <Undo2 size={11} /> 환불
+                        </button>
+                      )}
+
                       <button
                         onClick={() => {
                           setSelectedStudentIds([student.id]);
                           setShowMessageModal(true);
                         }}
-                        className="text-[10px] bg-brand-primary-container/15 text-brand-primary py-1 px-2.5 rounded-lg border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                        className="text-[10px] bg-brand-primary-container/15 text-brand-primary py-1 px-2 rounded-lg border border-brand-primary/30 hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                        title="1:1 개별 메시지"
                       >
-                        <Send size={10} /> 1:1 메시지
+                        <Send size={10} />
                       </button>
                     </div>
                   </div>
                 );
               })
             )}
-          </div>
-
-          {/* CRM Message Sent History Log */}
-          <div className="mt-4">
-            <h3 className="text-xs font-bold text-white mb-3 flex items-center gap-1.5">
-              <Clock size={14} className="text-brand-primary" />
-              최근 CRM 메시지 발송 이력
-            </h3>
-            <div className="flex flex-col gap-2.5">
-              {sentHistory.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-brand-card border border-brand-border/40 rounded-xl p-4 flex flex-col sm:flex-row justify-between gap-3 text-xs"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white">{item.title}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-brand-primary-container/20 text-brand-primary font-mono">
-                        {item.targetCount}명 전송
-                      </span>
-                      <div className="flex gap-1">
-                        {item.channels.map((ch) => (
-                          <span key={ch} className="text-[9px] px-1.5 py-0.2 rounded bg-brand-surface-high text-brand-on-surface-variant">
-                            {ch === "inapp" ? "인앱" : ch === "email" ? "이메일" : "알림톡"}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-brand-on-surface-variant mt-1">{item.content}</p>
-                  </div>
-                  <span className="text-[10px] text-brand-on-surface-variant/70 font-mono whitespace-nowrap self-start sm:self-center">
-                    {item.sentAt}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -989,7 +1009,7 @@ export default function InstructorDashboard({
             </div>
           </div>
 
-          {/* Filter Pills & Search Bar (Community Style) */}
+          {/* Filter Pills & Search Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
               <button
@@ -1107,362 +1127,89 @@ export default function InstructorDashboard({
         </div>
       )}
 
-      {/* ──────────────── Modal 1: AI Chat & Curriculum Calendar Modal ──────────────── */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-3xl w-full shadow-2xl max-h-[90vh] overflow-y-auto border border-brand-border relative">
-            <button
-              onClick={() => setShowCreateModal(false)}
-              aria-label="닫기"
-              className="absolute top-4 right-4 text-brand-on-surface-variant hover:text-white p-1.5 rounded-lg hover:bg-brand-surface-high transition-colors cursor-pointer z-10"
-            >
-              <X size={18} />
-            </button>
-            {/* Header */}
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-brand-border/30 pr-10">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-brand-primary-container flex items-center justify-center text-white font-bold">
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <h2 className="font-display text-lg font-bold text-white">AI 연계 강의 개설 & 달력 일정 등록</h2>
-                  <p className="text-xs text-brand-on-surface-variant">
-                    {createStep === "ai_chat"
-                      ? "1단계: AI 채팅창으로 초벌 생성"
-                      : "2단계: 상세 수정 및 커리큘럼 달력 연계 설정"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex bg-brand-surface-low rounded-lg p-1 border border-brand-border/40 text-xs">
-                  <button
-                    onClick={() => setCreateStep("ai_chat")}
-                    className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
-                      createStep === "ai_chat" ? "bg-brand-primary text-white font-bold" : "text-brand-on-surface-variant"
-                    }`}
-                  >
-                    AI 채팅 초벌
-                  </button>
-                  <button
-                    onClick={() => setCreateStep("detail_edit")}
-                    className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
-                      createStep === "detail_edit" ? "bg-brand-primary text-white font-bold" : "text-brand-on-surface-variant"
-                    }`}
-                  >
-                    상세 및 달력 설정
-                  </button>
-                </div>
-              </div>
+      {/* ──────────────── Modal 1: 강의 생성 / 수정 모달 통합 ──────────────── */}
+      {showCourseModal && (
+        <CourseCreateEditModal
+          isOpen={showCourseModal}
+          initialCourse={editingCourse}
+          instructorName="김소현"
+          onClose={() => {
+            setShowCourseModal(false);
+            if (onCloseModalExternal) onCloseModalExternal();
+          }}
+          onSave={(course) => {
+            if (onSaveCourse) onSaveCourse(course);
+            setShowCourseModal(false);
+            if (onCloseModalExternal) onCloseModalExternal();
+            toast.success("강의 저장 완료", `'${course.title}' 강의 설정이 저장되었습니다.`);
+          }}
+        />
+      )}
+
+      {/* ──────────────── Modal 2: 강사 직권 환불 확인 모달 ──────────────── */}
+      {showRefundModal && refundTargetStudent && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-rose-500/40 relative">
+            <div className="flex items-center gap-2 mb-4 text-rose-400">
+              <AlertTriangle size={20} />
+              <h3 className="font-display text-base font-bold text-white">강사 직권 환불 처리 확인</h3>
             </div>
 
+            <div className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/40 text-xs mb-4 space-y-1.5">
+              <p className="text-brand-on-surface-variant">
+                수강생: <strong className="text-white">{refundTargetStudent.name}</strong> ({refundTargetStudent.email})
+              </p>
+              <p className="text-brand-on-surface-variant">
+                강의명: <strong className="text-white">{refundTargetStudent.courseTitle}</strong>
+              </p>
+              <p className="text-brand-on-surface-variant">
+                환불 금액: <strong className="text-rose-400 font-mono font-bold">₩{(refundTargetStudent.paymentAmount || 590000).toLocaleString()}원</strong>
+              </p>
+            </div>
 
-            {/* STEP 1: AI Chat Interface */}
-            {createStep === "ai_chat" && (
-              <div className="flex flex-col gap-4">
-                {/* Chat Log Window */}
-                <div className="bg-brand-surface-low rounded-xl p-4 border border-brand-border/40 h-80 overflow-y-auto flex flex-col gap-3">
-                  {aiChatMessages.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      {msg.sender === "ai" && (
-                        <div className="w-7 h-7 rounded-full bg-brand-primary-container flex items-center justify-center text-white flex-shrink-0">
-                          <Bot size={14} />
-                        </div>
-                      )}
-                      <div
-                        className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed ${
-                          msg.sender === "user"
-                            ? "bg-brand-primary text-white rounded-tr-none shadow"
-                            : "bg-brand-card border border-brand-border text-brand-on-surface rounded-tl-none shadow"
-                        }`}
-                      >
-                        <p className="whitespace-pre-line">{msg.text}</p>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">
+                환불 사유 입력 *
+              </label>
+              <input
+                type="text"
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="예: 수강생 사정으로 인한 취소 요청 승인"
+                className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-rose-400"
+              />
+            </div>
 
-                        {/* Generated Draft Preview Card */}
-                        {msg.generatedDraft && (
-                          <div className="mt-3 p-3 bg-brand-surface-low rounded-xl border border-brand-primary/30">
-                            <span className="text-[10px] font-bold text-brand-primary block mb-1">
-                              [생성된 커리큘럼 초안]
-                            </span>
-                            <p className="text-xs font-bold text-white">{msg.generatedDraft.title}</p>
-                            <p className="text-[11px] text-brand-on-surface-variant mt-1">
-                              일정: {msg.generatedDraft.schedule?.startDate} ~ {msg.generatedDraft.schedule?.endDate} (매주 {msg.generatedDraft.schedule?.daysOfWeek?.join(",")})
-                            </p>
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                onClick={() => handleApplyDraft(msg.generatedDraft!)}
-                                className="w-full text-xs bg-brand-primary-container text-white font-bold py-1.5 rounded-lg hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1"
-                              >
-                                상세 편집기로 적용 & 달력 설정 →
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {isAiGenerating && (
-                    <div className="flex gap-2 items-center text-xs text-brand-primary p-2 animate-pulse">
-                      <Bot size={14} />
-                      AI가 맞춤형 커리큘럼 및 징검다리 일정을 설계하고 있습니다...
-                    </div>
-                  )}
-                </div>
+            <p className="text-[11px] text-rose-300/80 mb-4 leading-relaxed">
+              ⚠️ 환불 처리 시 수강생의 강의 수강 권한이 즉시 해제되며, 수강생에게 결제 취소 및 환불 안내 알림이 발송됩니다.
+            </p>
 
-                {/* Chat Input */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleGenerateFromAi()}
-                    placeholder="예: '비개발자 창업가를 위한 AI 자동화 에이전트 6회차 실무 강의 만들어줘'"
-                    className="flex-1 bg-brand-surface-low border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors"
-                  />
-                  <button
-                    onClick={handleGenerateFromAi}
-                    disabled={isAiGenerating || !aiPrompt.trim()}
-                    className="bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <Send size={13} />
-                    생성
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: Detail Form & Stepping Stone Calendar Linking */}
-            {createStep === "detail_edit" && (
-              <div className="flex flex-col gap-5 animate-fadeIn">
-                {/* Basic info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">강의 제목</label>
-                    <input
-                      type="text"
-                      value={courseTitle}
-                      onChange={(e) => setCourseTitle(e.target.value)}
-                      placeholder="강의 제목을 입력하세요"
-                      className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">
-                      교육 분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 추천)
-                    </label>
-                    <input
-                      type="text"
-                      value={courseCategory}
-                      onChange={(e) => setCourseCategory(e.target.value)}
-                      placeholder="예: AI 모델링 / LLM, 멀티에이전트 시스템, B2B SaaS"
-                      className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
-                    />
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {recommendedCategories.map((cat) => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setCourseCategory(cat)}
-                          className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
-                            courseCategory === cat
-                              ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
-                              : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">강의 설명</label>
-                  <textarea
-                    value={courseDesc}
-                    onChange={(e) => setCourseDesc(e.target.value)}
-                    placeholder="강의 세부 설명을 작성하세요"
-                    className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors h-20 resize-none"
-                  />
-                </div>
-
-                {/* Stepping-Stone Calendar Settings Section */}
-                <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-primary/30">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <CalendarIcon size={14} className="text-brand-tertiary" />
-                      커리큘럼 달력 연계 설정 (기간 & 징검다리 방식 날짜·시간)
-                    </h4>
-                    <button
-                      onClick={handleAutoGenerateSchedule}
-                      className="text-[11px] bg-brand-primary-container/20 text-brand-primary border border-brand-primary/40 font-bold px-2.5 py-1 rounded-lg hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <RefreshCw size={11} /> 달력 일정 자동 재배정
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                    <div>
-                      <label className="text-[11px] text-brand-on-surface-variant block mb-1">시작일</label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] text-brand-on-surface-variant block mb-1">종료일</label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] text-brand-on-surface-variant block mb-1">진행 시간대</label>
-                      <input
-                        type="text"
-                        value={timeSlot}
-                        onChange={(e) => setTimeSlot(e.target.value)}
-                        placeholder="19:30 ~ 21:30"
-                        className="w-full bg-brand-card border border-brand-border rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Days of week selector (Stepping Stone) */}
-                  <div className="mb-4">
-                    <label className="text-[11px] text-brand-on-surface-variant block mb-1.5">
-                      징검다리 요일 지정 (선택한 요일에 순차적으로 세션이 배정됩니다)
-                    </label>
-                    <div className="flex gap-1.5">
-                      {["월", "화", "수", "목", "금", "토", "일"].map((day) => {
-                        const isSelected = selectedDays.includes(day);
-                        return (
-                          <button
-                            key={day}
-                            onClick={() => {
-                              setSelectedDays((prev) =>
-                                isSelected ? prev.filter((d) => d !== day) : [...prev, day]
-                              );
-                            }}
-                            className={`w-9 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? "bg-brand-primary text-white shadow-sm"
-                                : "bg-brand-card text-brand-on-surface-variant border border-brand-border hover:text-white"
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Curriculum Session Items List */}
-                  <div>
-                    <label className="text-[11px] font-bold text-white block mb-2">
-                      회차별 세부 커리큘럼 & 배정된 일정 ({curriculumDraft.length}회차)
-                    </label>
-                    <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                      {curriculumDraft.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-2 p-2.5 bg-brand-card rounded-lg border border-brand-border/30 text-xs"
-                        >
-                          <span className="w-6 h-6 rounded-md bg-brand-primary-container/20 text-brand-primary flex items-center justify-center font-bold text-[10px] flex-shrink-0">
-                            {item.sessionNumber || idx + 1}
-                          </span>
-                          <input
-                            type="text"
-                            value={item.title}
-                            onChange={(e) => {
-                              const updated = [...curriculumDraft];
-                              updated[idx].title = e.target.value;
-                              setCurriculumDraft(updated);
-                            }}
-                            placeholder="회차 제목"
-                            className="flex-1 bg-transparent border-b border-brand-border/40 text-xs text-white focus:outline-none focus:border-brand-primary"
-                          />
-                          <input
-                            type="text"
-                            value={item.date || ""}
-                            onChange={(e) => {
-                              const updated = [...curriculumDraft];
-                              updated[idx].date = e.target.value;
-                              setCurriculumDraft(updated);
-                            }}
-                            placeholder="2025-09-02"
-                            className="w-24 bg-transparent border-b border-brand-border/40 text-[10px] text-brand-primary font-mono focus:outline-none"
-                          />
-                          <span className="text-[10px] text-brand-on-surface-variant font-mono">
-                            {item.dayOfWeek || "화"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Final Submit Buttons */}
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => setCreateStep("ai_chat")}
-                    className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
-                  >
-                    ← AI 채팅으로 돌아가기
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!courseTitle.trim()) {
-                        toast.warning("강의 제목 입력 필요", "강의 제목을 입력하세요.");
-                        return;
-                      }
-                      const newCourse: Course = {
-                        id: `c-${Date.now()}`,
-                        title: courseTitle,
-                        description: courseDesc || "실전 AI 창업 집중 코스",
-                        category: courseCategory,
-                        instructor: "김소현",
-                        instructorAvatar: "",
-                        price: coursePrice,
-                        discountedPrice: coursePrice * 0.8,
-                        thumbnail: "",
-                        rating: 5.0,
-                        reviewCount: 0,
-                        studentCount: 0,
-                        status: "모집중",
-                        schedule: {
-                          startDate,
-                          endDate,
-                          daysOfWeek: selectedDays,
-                          timeSlot,
-                          totalSessions: curriculumDraft.length,
-                          scheduleType: "stepping_stone",
-                        },
-                        curriculum: curriculumDraft,
-                        reviews: [],
-                      };
-                      if (onSaveCourse) onSaveCourse(newCourse);
-                      setShowCreateModal(false);
-                      toast.success("강의 개설 완료", "강의가 성공적으로 등록 및 개설되었습니다!");
-                    }}
-                    className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs shadow-md"
-                  >
-                    강의 개설 및 배포 완료
-                  </button>
-                </div>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundTargetStudent(null);
+                }}
+                className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRefund}
+                disabled={isProcessingRefund}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <Undo2 size={13} />
+                {isProcessingRefund ? "환불 처리 중..." : "환불 확정 실행"}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ──────────────── Modal 2: CRM Targeted Messaging Modal ──────────────── */}
+      {/* ──────────────── Modal 3: CRM Targeted Messaging Modal ──────────────── */}
       {showMessageModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
           <div className="glass-panel-heavy rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-brand-border">
@@ -1487,6 +1234,8 @@ export default function InstructorDashboard({
                   ? `선택한 수강생 ${selectedStudentIds.length}명`
                   : studentFilter === "behind"
                   ? "진도율 50% 미만 수강생 전체 (집중 독려)"
+                  : studentFilter === "completed"
+                  ? "수료 완료 수강생 전체"
                   : studentFilter === "high"
                   ? "우수 수강생 전체"
                   : "현재 강의 수강생 전체 (전체 공지)"}
@@ -1511,9 +1260,9 @@ export default function InstructorDashboard({
                     body: "이번 회차 실습에 대한 실시간 질의응답 오피스아워가 진행됩니다. 사전 질문을 준비해 주세요!",
                   },
                   {
-                    title: "1:1 피드백 완료",
-                    subject: "[피드백] 제출하신 비즈니스 캔버스 피드백이 등록되었습니다",
-                    body: "제출해주신 기획안을 검토 후 피드백을 남겨드렸습니다. 확인 후 보완해 보세요.",
+                    title: "수료 축하 안내",
+                    subject: "[수료 축하] 커리큘럼 이수 완료 및 수료증 발급 안내",
+                    body: "축하합니다! 전 과정을 성실히 이수하셨습니다. 마이페이지 내 강의실에서 수료증을 확인해 보세요.",
                   },
                 ].map((tmpl, idx) => (
                   <button
@@ -1593,7 +1342,7 @@ export default function InstructorDashboard({
                   className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-md"
                 >
                   <Send size={13} />
-                  메시지 즉시 발송
+                  발송하기
                 </button>
               </div>
             </div>
@@ -1601,22 +1350,24 @@ export default function InstructorDashboard({
         </div>
       )}
 
-      {/* Course Proposal Modal */}
-      <CourseProposalModal
-        request={selectedRequestForProposal}
-        isOpen={showProposalModal}
-        onClose={() => {
-          setShowProposalModal(false);
-          setSelectedRequestForProposal(null);
-        }}
-        onProposalSubmitted={(proposal) => {
-          setShowProposalModal(false);
-          setSelectedRequestForProposal(null);
-          toast.success("제안서 등록 완료", "수강생 개강 요청에 맞춤 커리큘럼 제안서가 등록되었습니다.");
-        }}
-        instructorName="김소현"
-        instructorId="inst-current"
-      />
+      {/* ──────────────── Modal 4: 역제안 제안서 모달 ──────────────── */}
+      {showProposalModal && selectedRequestForProposal && (
+        <CourseProposalModal
+          isOpen={showProposalModal}
+          request={selectedRequestForProposal}
+          onClose={() => {
+            setShowProposalModal(false);
+            setSelectedRequestForProposal(null);
+          }}
+          onProposalSubmitted={(proposal) => {
+            setShowProposalModal(false);
+            setSelectedRequestForProposal(null);
+            api.getCourseRequests().then((res) => setDiscoveredRequests(res.requests || []));
+            toast.success("제안서 등록 완료", "수강생 개강 요청에 맞춤 커리큘럼 제안서가 등록되었습니다.");
+          }}
+          instructorName="김소현"
+        />
+      )}
     </div>
   );
 }

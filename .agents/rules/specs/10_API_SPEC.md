@@ -44,6 +44,10 @@
 | API-ADM-03 | PATCH | `/api/admin/members/:id/role` | 회원 권한 변경 | Admin | 관리자 | ✅ 완료 |
 | API-ADM-04 | POST | `/api/admin/boards` | 신규 멀티 게시판 생성 | Admin | 관리자 | ✅ 완료 |
 | API-CRM-01 | POST | `/api/instructor/crm/send` | 강사 수강생 타깃 CRM 발송 | Instructor | 강사 | ✅ 완료 |
+| API-INST-01 | GET | `/api/instructor/students` | 강사 개설 강의별 수강생 목록 조회 | Instructor | 강사 | ✅ 완료 |
+| API-INST-02 | POST | `/api/instructor/courses/:courseId/students/:studentId/complete` | 수강생 수료 완료 승인 및 수료증 발급 | Instructor | 강사 | ✅ 완료 |
+| API-INST-03 | POST | `/api/instructor/courses/:courseId/students/:studentId/refund` | 수강생 직권 환불 처리 및 수강 취소 | Instructor | 강사 | ✅ 완료 |
+| API-INST-04 | PATCH | `/api/instructor/courses/:courseId/students/:studentId/progress` | 수강생 진도율 수동 조정 | Instructor | 강사 | ✅ 완료 |
 | API-CODE-01 | GET | `/api/common/codes` | 공통 코드 목록 조회 (그룹 필터링) | Common | 불필요 | ✅ 완료 |
 | API-CODE-02 | GET | `/api/common/groups` | 공통 코드 그룹 목록 조회 | Common | 불필요 | ✅ 완료 |
 | API-CODE-03 | POST | `/api/common/codes` | 신규 공통 코드 등록 | Common | 관리자 | ✅ 완료 |

@@ -354,7 +354,7 @@ export default function MyCoursesView({
                     <span className="text-4xl opacity-50 drop-shadow-md select-none group-hover:scale-110 transition-transform duration-300">
                       🎓
                     </span>
-                    <div className="absolute top-3 left-3 flex gap-2">
+                    <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
                       <span
                         className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
                           course.status === "모집중"
@@ -366,6 +366,30 @@ export default function MyCoursesView({
                       >
                         {course.status}
                       </span>
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                          course.deliveryType === "vod"
+                            ? "bg-purple-500/30 border-purple-500/50 text-purple-200"
+                            : course.deliveryType === "offline"
+                            ? "bg-amber-500/30 border-amber-500/50 text-amber-200"
+                            : course.deliveryType === "hybrid"
+                            ? "bg-emerald-500/30 border-emerald-500/50 text-emerald-200"
+                            : "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
+                        }`}
+                      >
+                        {course.deliveryType === "vod"
+                          ? "🎥 VOD"
+                          : course.deliveryType === "offline"
+                          ? "🏢 현장"
+                          : course.deliveryType === "hybrid"
+                          ? "🔄 혼합"
+                          : "💻 온라인"}
+                      </span>
+                      {isCompleted && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/30 text-emerald-200 border border-emerald-500/50 backdrop-blur-md">
+                          🎓 수료 완료
+                        </span>
+                      )}
                       {schedule && (
                         <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
                           {schedule.totalSessions}회차
@@ -375,7 +399,7 @@ export default function MyCoursesView({
                   </div>
 
                   <div className="p-5">
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
                       <span className="text-xs text-slate-400 font-medium">
                         {course.category}
                       </span>
@@ -395,7 +419,7 @@ export default function MyCoursesView({
                       {course.description}
                     </p>
 
-                    {/* Schedule Info */}
+                    {/* Schedule & Location Info */}
                     {schedule && (
                       <div className="bg-[#0b1329]/90 p-3 rounded-xl border border-slate-800/80 mb-3 space-y-1">
                         <div className="flex items-center justify-between text-xs">
@@ -406,13 +430,20 @@ export default function MyCoursesView({
                             {schedule.timeSlot}
                           </span>
                         </div>
+                        {course.location && (
+                          <div className="text-[11px] text-amber-300/90 pt-1 border-t border-slate-800/60">
+                            🏢 오프라인: {course.location}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Progress Bar */}
                     <div className="space-y-1.5 mb-2">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">학습 진도율</span>
+                        <span className="text-slate-400">
+                          {isCompleted ? "🎉 공식 수료 완료" : "학습 진도율"}
+                        </span>
                         <span className="text-[#34d399] font-mono font-bold">
                           {course.progress || 0}%
                         </span>
@@ -436,7 +467,7 @@ export default function MyCoursesView({
                       }}
                       className="flex-1 text-xs font-bold bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                     >
-                      <Play size={12} /> {isCompleted ? "복습하기" : "강의실 입장"}
+                      <Play size={12} /> {isCompleted ? "복습하기 / 수료증" : "강의실 입장"}
                     </button>
                     <button
                       onClick={(e) => {

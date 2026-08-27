@@ -438,6 +438,9 @@ router.post("/", async (req, res) => {
       category: aiResult.category, // AI 자동 분류 카테고리
       tags: aiResult.tags, // AI 자동 추출 키워드 태그
       aiSummary: aiResult.aiSummary, // AI 요약
+      deliveryType: newCourseData.deliveryType || "online",
+      location: newCourseData.location || "",
+      liveMeetingUrl: newCourseData.liveMeetingUrl || "",
       instructor: newCourseData.instructor || "김소현",
       instructorAvatar: newCourseData.instructorAvatar || "",
       instructorTitle: newCourseData.instructorTitle || "전문 멘토 강사",
@@ -488,7 +491,7 @@ router.post("/", async (req, res) => {
 // POST /api/courses/:id/enroll (Enroll & Pay)
 router.post("/:id/enroll", (req, res) => {
   const { id } = req.params;
-  const { paymentMethod = "카드" } = req.body;
+  const { paymentMethod = "카드", userName = "김수강생", userEmail = "student@mail.com" } = req.body;
 
   let enrolledCourse: Course | null = null;
 
@@ -513,19 +516,39 @@ router.post("/:id/enroll", (req, res) => {
 
   const course: Course = enrolledCourse;
   const finalPrice = course.discountedPrice || course.price;
+  const paymentId = `pay-${Date.now()}`;
 
   // Add Payment Record
   const newPayment: PaymentRecord = {
-    id: `pay-${Date.now()}`,
+    id: paymentId,
     courseId: course.id,
     courseTitle: course.title,
-    userId: "user", // TODO: Get actual user from session
+    userId: "m1",
     amount: finalPrice,
     date: new Date().toISOString().split("T")[0],
     method: paymentMethod === "계좌이체" ? "계좌이체" : "카드",
     status: "완료",
   };
   db.update("payments", (payments) => [newPayment, ...payments]);
+
+  // Add CourseStudent record
+  const newStudent = {
+    id: `cs-${Date.now()}`,
+    userId: "m1",
+    name: userName,
+    email: userEmail,
+    avatar: "",
+    courseId: course.id,
+    courseTitle: course.title,
+    enrolledAt: new Date().toISOString().split("T")[0],
+    progress: 0,
+    completed: false,
+    paymentId,
+    paymentAmount: finalPrice,
+    paymentStatus: "완료" as const,
+    lastActive: "방금 전",
+  };
+  db.update("courseStudents", (students) => [newStudent, ...(students || [])]);
 
   // Update Revenue stats
   db.update("stats", (stats) => ({

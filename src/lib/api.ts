@@ -1,5 +1,6 @@
 import type {
   Course,
+  CourseStudent,
   IRProject,
   BoardPost,
   Comment,
@@ -398,7 +399,41 @@ export const api = {
     });
   },
 
-  // ── Instructor CRM & Settlements ──
+  // ── Instructor CRM, Students & Settlements ──
+  getInstructorStudents: async (courseId?: string) => {
+    const query = courseId ? `?courseId=${encodeURIComponent(courseId)}` : "";
+    return fetchJson<{ students: CourseStudent[] }>(`/api/instructor/students${query}`);
+  },
+
+  completeStudentCourse: async (courseId: string, studentId: string) => {
+    return fetchJson<{ success: boolean; student: CourseStudent; message: string }>(
+      `/api/instructor/courses/${courseId}/students/${studentId}/complete`,
+      {
+        method: "POST",
+      }
+    );
+  },
+
+  refundStudentCourse: async (courseId: string, studentId: string, reason?: string) => {
+    return fetchJson<{ success: boolean; student: CourseStudent; message: string }>(
+      `/api/instructor/courses/${courseId}/students/${studentId}/refund`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }
+    );
+  },
+
+  updateStudentProgress: async (courseId: string, studentId: string, progress: number) => {
+    return fetchJson<{ success: boolean; student: CourseStudent }>(
+      `/api/instructor/courses/${courseId}/students/${studentId}/progress`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ progress }),
+      }
+    );
+  },
+
   sendCRMMessage: async (crmData: {
     courseId?: string;
     courseTitle: string;

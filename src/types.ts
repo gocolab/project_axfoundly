@@ -39,6 +39,8 @@ export interface User {
 }
 
 // ── Course Schedule & Curriculum ──
+export type CourseDeliveryType = "online" | "offline" | "vod" | "hybrid";
+
 export interface CourseSchedule {
   startDate: string; // "2025-09-01"
   endDate: string;   // "2025-10-15"
@@ -57,6 +59,8 @@ export interface CurriculumItem {
   date?: string;       // "2025-09-02"
   dayOfWeek?: string;  // "화"
   time?: string;       // "19:30 ~ 21:30"
+  deliveryType?: CourseDeliveryType;
+  locationOrLink?: string;
 }
 
 // ── Instructor Profile & Infographics ──
@@ -99,6 +103,9 @@ export interface Course {
   category: string; // AI가 자동 분류한 카테고리 (예: "AI 모델링", "비즈니스 기획", "바이오헬스" 등)
   tags?: string[]; // AI가 자동 추출한 키워드 태그
   aiSummary?: string; // AI가 생성한 1줄 요약
+  deliveryType?: CourseDeliveryType; // "online" | "offline" | "vod" | "hybrid"
+  location?: string; // 오프라인 강의장 주소
+  liveMeetingUrl?: string; // 온라인 화상 회의 / VOD 링크
   instructor: string;
   instructorAvatar: string;
   instructorTitle?: string;
@@ -115,6 +122,25 @@ export interface Course {
   instructorProfile?: InstructorProfile;
   isEnrolled?: boolean;
   progress?: number; // 0-100
+}
+
+export interface CourseStudent {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  courseId: string;
+  courseTitle: string;
+  enrolledAt: string;
+  progress: number; // 0-100
+  completed: boolean;
+  completedAt?: string;
+  certificateIssued?: boolean;
+  paymentId?: string;
+  paymentAmount?: number;
+  paymentStatus: "완료" | "환불" | "취소";
+  lastActive: string;
 }
 
 export interface Review {
