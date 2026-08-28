@@ -337,16 +337,96 @@ export interface JobApplication {
 }
 
 
-// ── Notification ──
+// ── Notification & Preference ──
+export type NotificationCategory =
+  | "course"
+  | "team"
+  | "investor"
+  | "community"
+  | "digest"
+  | "marketing"
+  | "system"
+  | "instructor_msg";
+
+export type NotificationChannel = "inapp" | "email" | "alimtalk";
+
 export interface Notification {
   id: string;
-  type: "course" | "team" | "investor" | "system" | "instructor_msg";
+  type: "course" | "team" | "investor" | "system" | "instructor_msg" | "community" | "marketing";
+  category?: NotificationCategory;
   title: string;
   message: string;
   time: string;
   isRead: boolean;
   sender?: string;
   courseTitle?: string;
+  targetUrl?: string; // 스마트 딥링크 (예: "/courses?tab=requests&requestId=cr1", "/ir?projectId=p1")
+  actionLabel?: string; // CTA 버튼 문구 (예: "강의실 바로가기", "제안서 확인하기")
+  aggregationKey?: string; // 5분 이내 스마트 묶음 키 (예: "post:post-1:comment")
+  aggregationCount?: number; // 병합된 이벤트 수
+  metadata?: Record<string, any>;
+  createdAt?: string;
+}
+
+export interface NotificationCategoryPreference {
+  inapp: boolean;
+  email: boolean;
+  alimtalk: boolean;
+}
+
+export interface NotificationPreference {
+  userId: string;
+  emailEnabled: boolean;
+  inAppEnabled: boolean;
+  alimtalkEnabled: boolean;
+  categories: {
+    course: NotificationCategoryPreference;
+    team: NotificationCategoryPreference;
+    investor: NotificationCategoryPreference;
+    community: NotificationCategoryPreference;
+    digest: NotificationCategoryPreference;
+    marketing: NotificationCategoryPreference;
+  };
+  quietHours: {
+    enabled: boolean;
+    start: string; // "21:00"
+    end: string;   // "08:00"
+  };
+  snoozeUntil?: string | null; // ISO Date (30일 일시중지 등)
+  updatedAt: string;
+}
+
+export interface NotificationTemplate {
+  id: string;
+  code: string;
+  name: string;
+  category: NotificationCategory;
+  titleTemplate: string;
+  contentTemplate: string;
+  targetUrlTemplate: string;
+  actionLabelTemplate: string;
+  channels: NotificationChannel[];
+  isMarketing?: boolean;
+  frequencyCap?: { limit: number; windowHours: number };
+}
+
+export interface NotificationLog {
+  id: string;
+  userId: string;
+  templateCode?: string;
+  channel: NotificationChannel;
+  status:
+    | "sent"
+    | "held_quiet_hours"
+    | "suppressed_active_session"
+    | "aggregated"
+    | "unsubscribed"
+    | "failed";
+  title: string;
+  message: string;
+  sentAt: string;
+  targetUrl?: string;
+  metadata?: Record<string, any>;
 }
 
 // ── Dashboard Stats (Admin) ──

@@ -58,6 +58,14 @@
 | API-CODE-06 | POST | `/api/common/groups` | 신규 코드 그룹 등록 | Common | 관리자 | ✅ 완료 |
 | API-CODE-07 | PUT | `/api/common/groups/:groupCode` | 코드 그룹 수정 | Common | 관리자 | ✅ 완료 |
 | API-CODE-08 | DELETE | `/api/common/groups/:groupCode` | 코드 그룹 삭제 및 소속 코드 연쇄 삭제 | Common | 관리자 | ✅ 완료 |
+| API-NOTIF-01 | GET | `/api/notifications` | 수신된 알림 목록 조회 | Notifications | 회원 | ✅ 완료 |
+| API-NOTIF-02 | PATCH | `/api/notifications/:id/read` | 특정 알림 읽음 처리 | Notifications | 회원 | ✅ 완료 |
+| API-NOTIF-03 | POST | `/api/notifications/read-all` | 모든 알림 전체 읽음 처리 | Notifications | 회원 | ✅ 완료 |
+| API-NOTIF-04 | GET | `/api/notifications/preferences` | 사용자 알림 수신 및 스팸 방지 설정 조회 | Notifications | 회원 | ✅ 완료 |
+| API-NOTIF-05 | PUT | `/api/notifications/preferences` | 알림 수신 설정 (채널별/야간방해금지) 수정 | Notifications | 회원 | ✅ 완료 |
+| API-NOTIF-06 | POST | `/api/notifications/snooze` | 30일간 알림 일시 중지 (Snooze) | Notifications | 회원 | ✅ 완료 |
+| API-NOTIF-07 | GET/POST | `/api/notifications/unsubscribe` | RFC 8058 1-Click 원클릭 수신 거부 | Notifications | 불필요 | ✅ 완료 |
+| API-NOTIF-08 | POST | `/api/notifications/preview-email` | 사이트 유입 유도 HTML 이메일 미리보기 | Notifications | 전체 | ✅ 완료 |
 
 ## 2. 주요 신규 고도화 API 상세
 

@@ -130,34 +130,70 @@ export default function GNB({
                   </button>
 
                   {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-80 glass-panel-heavy rounded-xl shadow-2xl overflow-hidden animate-fadeIn">
-                      <div className="p-3 border-b border-brand-border/40 flex justify-between items-center">
-                        <span className="font-bold text-sm text-white">알림</span>
-                        <span className="text-[10px] text-brand-on-surface-variant">{unreadCount}개 안 읽음</span>
+                    <div className="absolute right-0 mt-2 w-88 glass-panel-heavy rounded-xl shadow-2xl overflow-hidden animate-fadeIn border border-brand-border/60">
+                      <div className="p-3 border-b border-brand-border/40 flex justify-between items-center bg-brand-surface-low/80">
+                        <span className="font-bold text-sm text-white flex items-center gap-1.5">
+                          <Bell size={14} className="text-brand-primary" /> 알림
+                        </span>
+                        <span className="text-[10px] text-brand-on-surface-variant font-mono">{unreadCount}개 안 읽음</span>
                       </div>
-                      <div className="max-h-64 overflow-y-auto">
+                      <div className="max-h-72 overflow-y-auto">
                         {notifications.length === 0 ? (
-                          <p className="p-4 text-xs text-center text-brand-on-surface-variant">알림이 없습니다</p>
+                          <p className="p-4 text-xs text-center text-brand-on-surface-variant">수신된 알림이 없습니다</p>
                         ) : (
                           notifications.map((n) => (
                             <button
                               key={n.id}
-                              onClick={() => { onMarkNotificationRead(n.id); }}
+                              onClick={() => {
+                                onMarkNotificationRead(n.id);
+                                setShowNotifications(false);
+                                if (n.targetUrl) {
+                                  if (n.targetUrl.startsWith("/courses")) setCurrentPage("courses");
+                                  else if (n.targetUrl.startsWith("/ir")) setCurrentPage("ir");
+                                  else if (n.targetUrl.startsWith("/community")) setCurrentPage("community");
+                                  else if (n.targetUrl.startsWith("/mypage")) setCurrentPage("dashboard");
+                                }
+                              }}
                               className={`w-full text-left p-3 border-b border-brand-border/20 hover:bg-brand-surface-low transition-colors cursor-pointer ${
-                                !n.isRead ? "bg-brand-primary-container/5" : ""
+                                !n.isRead ? "bg-brand-primary-container/10" : ""
                               }`}
                             >
                               <div className="flex items-start gap-2">
                                 {!n.isRead && <span className="mt-1.5 notification-dot flex-shrink-0" />}
-                                <div className={!n.isRead ? "" : "ml-4"}>
-                                  <p className="text-xs font-semibold text-white">{n.title}</p>
-                                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5">{n.message}</p>
-                                  <p className="text-[9px] text-brand-on-surface-variant/50 mt-1">{n.time}</p>
+                                <div className={`flex-1 min-w-0 ${!n.isRead ? "" : "ml-3"}`}>
+                                  <div className="flex items-center justify-between gap-1">
+                                    <p className="text-xs font-semibold text-white truncate">{n.title}</p>
+                                    {n.aggregationCount && n.aggregationCount > 1 && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300">
+                                        {n.aggregationCount}건
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5 line-clamp-2">{n.message}</p>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-[9px] text-brand-on-surface-variant/60 font-mono">{n.time}</span>
+                                    {n.actionLabel && (
+                                      <span className="text-[9px] font-bold text-brand-primary">
+                                        {n.actionLabel} &rarr;
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </button>
                           ))
                         )}
+                      </div>
+                      <div className="p-2 border-t border-brand-border/40 bg-brand-surface-low/60 text-center">
+                        <button
+                          onClick={() => {
+                            setCurrentPage("dashboard");
+                            setShowNotifications(false);
+                          }}
+                          className="text-[11px] text-brand-primary hover:text-brand-primary-light font-bold cursor-pointer"
+                        >
+                          마이페이지에서 전체 알림 & 설정 보기 &rarr;
+                        </button>
                       </div>
                     </div>
                   )}

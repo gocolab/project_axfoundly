@@ -343,6 +343,7 @@ export default function MyPage({
               payments={payments}
               notifications={notifications}
               onRefundPayment={handleRefundPayment}
+              onNavigate={onNavigate}
             />
           )}
         </main>

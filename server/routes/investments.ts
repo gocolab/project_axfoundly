@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "../db.js";
+import { notificationService } from "../services/notificationService.js";
 import type { InvestmentProposal, Notification } from "../../src/types.js";
 
 const router = Router();
@@ -38,16 +39,20 @@ router.post("/proposals", (req, res) => {
     investmentMatchCount: stats.investmentMatchCount + 1,
   }));
 
-  // Trigger Notification to project founder
-  const newNotif: Notification = {
-    id: `notif-${Date.now()}`,
+  // Trigger Notification to project founder via Service
+  notificationService.sendNotification({
+    templateCode: "INVESTMENT_PROPOSAL_RECEIVED",
+    category: "investor",
     type: "investor",
-    title: `[투자 제안 도착] ${finalProjectName}`,
+    title: `💼 [투자 제안] 전문 투자자로부터 '${finalProjectName}' 미팅 제안이 도착했습니다`,
     message: `투자자로부터 새로운 투자/미팅 제안이 도착했습니다: "${message.substring(0, 40)}..."`,
-    time: "방금 전",
-    isRead: false,
-  };
-  db.update("notifications", (notifs) => [newNotif, ...notifs]);
+    targetUrl: `/mypage?tab=startup`,
+    actionLabel: "투자 제안서 열람",
+    data: {
+      projectName: finalProjectName,
+      message,
+    },
+  });
 
   res.status(201).json({ proposal: newProposal });
 });

@@ -22,6 +22,9 @@ import type {
   IdeaRequest,
   IdeaProposal,
   AdminCategoryInsight,
+  NotificationPreference,
+  NotificationTemplate,
+  NotificationLog,
 } from "../types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -396,7 +399,7 @@ export const api = {
     });
   },
 
-  // ── Notifications ──
+  // ── Notifications & Preferences ──
   getNotifications: async () => {
     return fetchJson<{ notifications: Notification[] }>("/api/notifications");
   },
@@ -410,6 +413,62 @@ export const api = {
   markAllNotificationsRead: async () => {
     return fetchJson<{ success: boolean; count: number }>("/api/notifications/read-all", {
       method: "POST",
+    });
+  },
+
+  getNotificationPreferences: async (userId?: string) => {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+    return fetchJson<{ preferences: NotificationPreference }>(`/api/notifications/preferences${query}`);
+  },
+
+  updateNotificationPreferences: async (preferences: Partial<NotificationPreference>, userId?: string) => {
+    return fetchJson<{ success: boolean; preferences: NotificationPreference }>("/api/notifications/preferences", {
+      method: "PUT",
+      body: JSON.stringify({ userId, ...preferences }),
+    });
+  },
+
+  snoozeNotifications: async (days = 30, userId?: string) => {
+    return fetchJson<{ success: boolean; preferences: NotificationPreference; message: string }>("/api/notifications/snooze", {
+      method: "POST",
+      body: JSON.stringify({ userId, days }),
+    });
+  },
+
+  unsnoozeNotifications: async (userId?: string) => {
+    return fetchJson<{ success: boolean; preferences: NotificationPreference; message: string }>("/api/notifications/unsnooze", {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  getNotificationTemplates: async () => {
+    return fetchJson<{ templates: NotificationTemplate[] }>("/api/notifications/templates");
+  },
+
+  previewEmailTemplate: async (params: {
+    title?: string;
+    message?: string;
+    targetUrl?: string;
+    actionLabel?: string;
+    category?: string;
+    userName?: string;
+    userId?: string;
+  }) => {
+    return fetchJson<{ html: string }>("/api/notifications/preview-email", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+  },
+
+  getNotificationLogs: async () => {
+    return fetchJson<{ logs: NotificationLog[] }>("/api/notifications/logs");
+  },
+
+  testTriggerNotification: async (payload: any) => {
+    return fetchJson<{ success: boolean; result: any }>("/api/notifications/test-trigger", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
   },
 

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "../db.js";
+import { notificationService } from "../services/notificationService.js";
 import type { TeamBuildingRequest, Notification } from "../../src/types.js";
 
 const router = Router();
@@ -38,16 +39,21 @@ router.post("/requests", (req, res) => {
     teamMatchCount: stats.teamMatchCount + 1,
   }));
 
-  // Trigger Notification
-  const newNotif: Notification = {
-    id: `notif-${Date.now()}`,
+  // Trigger Notification via Service
+  notificationService.sendNotification({
+    templateCode: "TEAM_PROPOSAL_RECEIVED",
+    category: "team",
     type: "team",
-    title: `[팀빌딩 제안] ${projectName}`,
+    title: `🤝 ${fromUser}님이 '${projectName}' 팀 합류를 제안했습니다`,
     message: `${fromUser}님이 '${projectName}' 프로젝트에 ${role || "팀원"} 포지션으로 합류를 제안했습니다.`,
-    time: "방금 전",
-    isRead: false,
-  };
-  db.update("notifications", (notifs) => [newNotif, ...notifs]);
+    targetUrl: "/mypage?tab=startup",
+    actionLabel: "제안서 확인하기",
+    data: {
+      fromUser,
+      projectName,
+      role: role || "팀원",
+    },
+  });
 
   res.status(201).json({ request: newReq });
 });

@@ -24,6 +24,9 @@ import type {
   CourseProposal,
   IdeaRequest,
   IdeaProposal,
+  NotificationPreference,
+  NotificationTemplate,
+  NotificationLog,
 } from "../src/types";
 
 export interface DatabaseSchema {
@@ -37,6 +40,9 @@ export interface DatabaseSchema {
   posts: BoardPost[];
   comments: Comment[];
   notifications: Notification[];
+  notificationPreferences: NotificationPreference[];
+  notificationTemplates: NotificationTemplate[];
+  notificationLogs: NotificationLog[];
   teamRequests: TeamBuildingRequest[];
   payments: PaymentRecord[];
   settlements: SettlementRecord[];
@@ -696,39 +702,173 @@ const SEED_NOTIFICATIONS: Notification[] = [
   {
     id: "n1",
     type: "instructor_msg",
+    category: "instructor_msg",
     title: "[김소현 강사] 2회차 과제 피드백이 등록되었습니다",
     message: "작성해주신 프롬프트 체이닝 구조도가 매우 우수합니다. 에러 핸들링 폴백만 보완해보세요.",
     time: "10분 전",
     isRead: false,
     sender: "김소현 강사",
     courseTitle: "AI 프로덕트 매니저 부트캠프",
+    targetUrl: "/courses?courseId=c1",
+    actionLabel: "강의실 바로가기",
+    createdAt: "2025-08-10 19:40",
   },
   {
     id: "n2",
     type: "course",
+    category: "course",
     title: "내일 19:30 라이브 세션 안내",
     message: "3회차 'RAG 파이프라인 아키텍처' 라이브 수업이 내일 19:30에 시작됩니다.",
     time: "2시간 전",
     isRead: false,
     courseTitle: "AI 프로덕트 매니저 부트캠프",
+    targetUrl: "/courses?courseId=c1",
+    actionLabel: "강의실 입장",
+    createdAt: "2025-08-10 17:30",
   },
   {
     id: "n3",
     type: "team",
+    category: "team",
     title: "팀 빌딩 합류 제안 도착",
     message: "'VoiceFlow KR' 프로젝트로부터 프론트엔드 포지션 제안이 도착했습니다.",
     time: "1일 전",
     isRead: true,
+    targetUrl: "/mypage?tab=startup",
+    actionLabel: "제안서 확인하기",
+    createdAt: "2025-08-09 14:20",
   },
   {
     id: "n4",
     type: "investor",
+    category: "investor",
     title: "투자자 관심 알림",
     message: "넥서스벤처스 한승우 심사역님이 회원님의 프로젝트를 북마크했습니다.",
     time: "2일 전",
     isRead: true,
+    targetUrl: "/mypage?tab=startup",
+    actionLabel: "관심 투자자 보기",
+    createdAt: "2025-08-08 11:05",
   },
 ];
+
+const SEED_NOTIFICATION_PREFERENCES: NotificationPreference[] = [
+  {
+    userId: "user-default",
+    emailEnabled: true,
+    inAppEnabled: true,
+    alimtalkEnabled: true,
+    categories: {
+      course: { inapp: true, email: true, alimtalk: true },
+      team: { inapp: true, email: true, alimtalk: false },
+      investor: { inapp: true, email: true, alimtalk: true },
+      community: { inapp: true, email: false, alimtalk: false },
+      digest: { inapp: true, email: true, alimtalk: false },
+      marketing: { inapp: true, email: false, alimtalk: false },
+    },
+    quietHours: {
+      enabled: true,
+      start: "21:00",
+      end: "08:00",
+    },
+    snoozeUntil: null,
+    updatedAt: "2025-08-10 10:00",
+  },
+];
+
+const SEED_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
+  {
+    id: "tmpl-course-d1",
+    code: "COURSE_D1_REMINDER",
+    name: "강의 시작 D-1 리마인더",
+    category: "course",
+    titleTemplate: "[D-1] 내일 {{courseTitle}} 라이브 수업이 시작됩니다!",
+    contentTemplate: "안녕하세요 {{userName}}님! 신청하신 '{{courseTitle}}' 1회차가 내일 {{startTime}}에 시작됩니다. 원활한 수강을 위해 강의실 환경과 사전 실습 자료를 미리 확인해 보세요.",
+    targetUrlTemplate: "/courses?courseId={{courseId}}",
+    actionLabelTemplate: "강의실 바로가기",
+    channels: ["email", "alimtalk", "inapp"],
+  },
+  {
+    id: "tmpl-team-proposal",
+    code: "TEAM_PROPOSAL_RECEIVED",
+    name: "팀 빌딩 합류 제안 수신",
+    category: "team",
+    titleTemplate: "🤝 {{fromUser}}님이 '{{projectName}}' 팀 합류를 제안했습니다",
+    contentTemplate: "{{fromUser}}님이 회원님의 포트폴리오를 확인하고 {{role}} 포지션으로 합류를 제안했습니다. 제안 메시지와 프로젝트 비전을 확인하고 48시간 내에 응답해 주세요.",
+    targetUrlTemplate: "/mypage?tab=startup",
+    actionLabelTemplate: "제안서 확인하기",
+    channels: ["email", "inapp"],
+  },
+  {
+    id: "tmpl-invest-proposal",
+    code: "INVESTMENT_PROPOSAL_RECEIVED",
+    name: "투자자 미팅/투자 제안 수신",
+    category: "investor",
+    titleTemplate: "💼 [투자 제안] 전문 투자자로부터 '{{projectName}}' 미팅 제안이 도착했습니다",
+    contentTemplate: "유망 스타트업 발굴을 진행 중인 투자자로부터 미팅 제안이 접수되었습니다. 플랫폼 워크스페이스에서 상세 제안 내용을 확인하고 일정을 조율해 보세요.",
+    targetUrlTemplate: "/mypage?tab=startup",
+    actionLabelTemplate: "투자 제안서 열람",
+    channels: ["email", "alimtalk", "inapp"],
+  },
+  {
+    id: "tmpl-post-comment",
+    code: "POST_COMMENT_RECEIVED",
+    name: "게시글 새 댓글 등록",
+    category: "community",
+    titleTemplate: "💬 회원님의 글 '{{postTitle}}'에 새 댓글이 달렸습니다",
+    contentTemplate: "{{author}}님이 회원님의 게시글에 새로운 의견을 남겼습니다: \"{{commentSnippet}}\"",
+    targetUrlTemplate: "/community?postId={{postId}}",
+    actionLabelTemplate: "댓글 답글달기",
+    channels: ["inapp", "email"],
+  },
+  {
+    id: "tmpl-weekly-digest",
+    code: "WEEKLY_DIGEST",
+    name: "주간 인기 스타트업 & 트렌드 다이제스트",
+    category: "digest",
+    isMarketing: true,
+    titleTemplate: "☕ [위클리 다이제스트] 이번 주 주목받은 AI 스타트업 TOP 3",
+    contentTemplate: "이번 주 가장 많은 투자자 북마크를 받은 유망 AI 스타트업과 커뮤니티 인기 토론글을 모았습니다. 창업 생태계의 최신 트렌드를 지금 확인하세요!",
+    targetUrlTemplate: "/ir",
+    actionLabelTemplate: "위클리 트렌드 보기",
+    channels: ["email"],
+  },
+  {
+    id: "tmpl-course-proposal",
+    code: "COURSE_PROPOSAL_MATCHED",
+    name: "수강생 개강요청 강사 역제안 도착",
+    category: "course",
+    titleTemplate: "🧑‍🏫 요청하신 '{{requestTitle}}'에 전문 강사님의 커리큘럼 제안이 도착했습니다!",
+    contentTemplate: "수강생님께서 발제하신 '{{requestTitle}}' 수요에 맞춰 전문 강사님이 맞춤 커리큘럼과 일정을 제안했습니다. 제안서를 검토하고 정식 개강을 확정해 주세요.",
+    targetUrlTemplate: "/courses?tab=requests&requestId={{requestId}}",
+    actionLabelTemplate: "강사 제안서 검토하기",
+    channels: ["email", "inapp"],
+  },
+  {
+    id: "tmpl-idea-proposal",
+    code: "IDEA_PROPOSAL_MATCHED",
+    name: "아이디어 의뢰 빌더 팀 제작 역제안",
+    category: "team",
+    titleTemplate: "🧩 '{{ideaTitle}}' 아이디어에 빌더 팀의 MVP 제작 계획서가 접수되었습니다",
+    contentTemplate: "등록하신 아이디어에 실력파 개발/기획 빌더 팀이 예상 개발 기간과 기술 스택을 역제안했습니다. 제안서를 확인하고 선발 여부를 결정하세요.",
+    targetUrlTemplate: "/ir?tab=idea_requests&requestId={{requestId}}",
+    actionLabelTemplate: "빌더 제안서 열람하기",
+    channels: ["email", "inapp"],
+  },
+  {
+    id: "tmpl-payment-complete",
+    code: "PAYMENT_COMPLETED",
+    name: "강의 수강 결제 완료",
+    category: "course",
+    titleTemplate: "🎉 [결제 완료] '{{courseTitle}}' 수강 신청이 완료되었습니다",
+    contentTemplate: "{{userName}}님, '{{courseTitle}}' 결제가 정상 완료되었습니다. 강의 일정과 준비사항을 내 강의실에서 확인하세요.",
+    targetUrlTemplate: "/mypage?tab=courses",
+    actionLabelTemplate: "내 강의실 바로가기",
+    channels: ["email", "alimtalk", "inapp"],
+  },
+];
+
+const SEED_NOTIFICATION_LOGS: NotificationLog[] = [];
 
 const SEED_TEAM_REQUESTS: TeamBuildingRequest[] = [
   {
@@ -1503,6 +1643,9 @@ function buildSeedData(): DatabaseSchema {
     posts: SEED_POSTS,
     comments: SEED_COMMENTS,
     notifications: SEED_NOTIFICATIONS,
+    notificationPreferences: SEED_NOTIFICATION_PREFERENCES,
+    notificationTemplates: SEED_NOTIFICATION_TEMPLATES,
+    notificationLogs: SEED_NOTIFICATION_LOGS,
     teamRequests: SEED_TEAM_REQUESTS,
     payments: SEED_PAYMENTS,
     settlements: SEED_SETTLEMENTS,
@@ -1592,12 +1735,13 @@ class Database {
             return rest;
           });
 
-          // 고유 ID 기준 중복 제거 방어
+          // 고유 ID / userId / groupCode 기준 중복 제거 방어
           const seen = new Set<string>();
           (this.cache as any)[key] = mappedDocs.filter((item: any) => {
-            if (item && item.id) {
-              if (seen.has(item.id)) return false;
-              seen.add(item.id);
+            const uid = item?.id || item?.userId || item?.groupCode;
+            if (uid) {
+              if (seen.has(uid)) return false;
+              seen.add(uid);
             }
             return true;
           });

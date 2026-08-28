@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "../db.js";
+import { notificationService } from "../services/notificationService.js";
 import type { BoardPost, Comment, Notification, BoardType, UserRole } from "../../src/types.js";
 
 const router = Router();
@@ -225,16 +226,23 @@ router.post("/posts/:id/comments", (req, res) => {
     posts.map((p) => (p.id === id ? { ...p, commentCount: p.commentCount + 1 } : p))
   );
 
-  // Trigger Notification to post author
-  const newNotif: Notification = {
-    id: `notif-${Date.now()}`,
-    type: "team",
+  // Trigger Notification to post author (스마트 묶음 & 딥링크 적용)
+  notificationService.sendNotification({
+    templateCode: "POST_COMMENT_RECEIVED",
+    category: "community",
+    type: "community",
     title: `[새 댓글] ${post.title}`,
     message: `${author}님이 회원님의 게시글에 댓글을 남겼습니다: "${content.substring(0, 30)}..."`,
-    time: "방금 전",
-    isRead: false,
-  };
-  db.update("notifications", (notifs) => [newNotif, ...notifs]);
+    targetUrl: `/community?postId=${post.id}`,
+    actionLabel: "댓글 답글달기",
+    aggregationKey: `post:${post.id}:comment`,
+    data: {
+      postTitle: post.title,
+      author,
+      commentSnippet: content.substring(0, 30),
+      postId: post.id,
+    },
+  });
 
   res.status(201).json({ comment: newComment });
 });

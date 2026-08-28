@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { classifyContent } from "../services/aiClassifier.js";
+import { notificationService } from "../services/notificationService.js";
 import type { Course, PaymentRecord, Notification, Review, CourseRequest, CourseProposal } from "../../src/types.js";
 
 const router = Router();
@@ -143,15 +144,14 @@ router.post("/requests", async (req, res) => {
 
     db.update("courseRequests", (list) => [newRequest, ...(list || [])]);
 
-    const notif: Notification = {
-      id: `notif-${Date.now()}`,
+    notificationService.sendNotification({
+      category: "course",
       type: "course",
       title: "개강 요청 등록 완료",
       message: `'${title}' 개강 요청이 성공적으로 등록되었습니다.`,
-      time: "방금 전",
-      isRead: false,
-    };
-    db.update("notifications", (notifs) => [notif, ...notifs]);
+      targetUrl: `/courses?tab=requests&requestId=${newRequest.id}`,
+      actionLabel: "내 요청 확인하기",
+    });
 
     res.status(201).json({ success: true, request: newRequest });
   } catch (error) {
@@ -253,15 +253,20 @@ router.post("/requests/:id/proposals", (req, res) => {
     (list || []).map((r) => (r.id === id && r.status === "모집중" ? { ...r, status: "강사매칭중" } : r))
   );
 
-  const notif: Notification = {
-    id: `notif-${Date.now()}`,
+  notificationService.sendNotification({
+    templateCode: "COURSE_PROPOSAL_MATCHED",
+    category: "course",
     type: "course",
-    title: "새로운 강사 개강 제안서 도착",
+    title: `🧑‍🏫 요청하신 '${request.title}'에 전문 강사님의 커리큘럼 제안이 도착했습니다!`,
     message: `'${request.title}' 요청에 ${instructorName} 강사님의 개강 제안서가 등록되었습니다.`,
-    time: "방금 전",
-    isRead: false,
-  };
-  db.update("notifications", (notifs) => [notif, ...notifs]);
+    targetUrl: `/courses?tab=requests&requestId=${request.id}`,
+    actionLabel: "강사 제안서 검토하기",
+    data: {
+      requestTitle: request.title,
+      instructorName,
+      requestId: request.id,
+    },
+  });
 
   res.status(201).json({ success: true, proposal: newProposal });
 });
@@ -334,16 +339,15 @@ router.post("/requests/:id/accept-proposal", (req, res) => {
     (list || []).map((r) => (r.id === id ? { ...r, status: "개강완료", matchedCourseId: newCourseId } : r))
   );
 
-  const notif: Notification = {
-    id: `notif-${Date.now()}`,
+  notificationService.sendNotification({
+    category: "course",
     type: "course",
     title: "🎉 개강 제안 채택 및 강의 개설 완료!",
     message: `'${proposal.proposedTitle}' 강의가 정식으로 개설되었습니다.`,
-    time: "방금 전",
-    isRead: false,
+    targetUrl: `/courses?courseId=${newCourseId}`,
+    actionLabel: "개설된 강의 보기",
     courseTitle: proposal.proposedTitle,
-  };
-  db.update("notifications", (notifs) => [notif, ...notifs]);
+  });
 
   res.json({ success: true, course: newCourse, request: { ...request, status: "개강완료", matchedCourseId: newCourseId } });
 });
@@ -557,17 +561,22 @@ router.post("/:id/enroll", (req, res) => {
     monthlyRevenue: stats.monthlyRevenue + finalPrice,
   }));
 
-  // Add Notification
-  const newNotif: Notification = {
-    id: `notif-${Date.now()}`,
+  // Add Notification via Service
+  notificationService.sendNotification({
+    templateCode: "PAYMENT_COMPLETED",
+    category: "course",
     type: "course",
-    title: `[수강신청 완료] ${course.title}`,
+    title: `🎉 [결제 완료] '${course.title}' 수강 신청이 완료되었습니다`,
     message: `${course.title} 수강신청 및 결제가 정상 완료되었습니다. 강의실에서 일정을 확인하세요.`,
-    time: "방금 전",
-    isRead: false,
+    targetUrl: `/mypage?tab=courses`,
+    actionLabel: "내 강의실 바로가기",
     courseTitle: course.title,
-  };
-  db.update("notifications", (notifs) => [newNotif, ...notifs]);
+    isUrgent: true,
+    data: {
+      courseTitle: course.title,
+      userName: "김수강생",
+    },
+  });
 
   res.json({
     success: true,
