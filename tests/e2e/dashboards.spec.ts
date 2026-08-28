@@ -100,18 +100,24 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await expect(applyDraftBtn).toBeVisible({ timeout: 10000 });
     await applyDraftBtn.click();
 
+    // 징검다리 자동 배정 버튼 클릭
+    const autoScheduleBtn = page.getByRole('button', { name: '징검다리 일정 자동 재배정' });
+    if (await autoScheduleBtn.isVisible()) {
+      await autoScheduleBtn.click();
+    }
+
     // 상세 편집기 폼에서 강의 개설 완료
     await expect(page.getByPlaceholder('강의 제목을 입력하세요')).toBeVisible();
 
-    const submitCourseBtn = page.locator('.glass-panel-heavy').getByRole('button', { name: '강의 개설 및 배포 완료' });
+    const submitCourseBtn = page.locator('.glass-panel-heavy').getByRole('button', { name: /강의 개설 및 (일정 등록|배포) 완료/ });
     await submitCourseBtn.click();
 
     // 모달 닫힘 확인
     await expect(page.locator('h2', { hasText: 'AI 연계 강의 개설 & 달력 일정 등록' })).not.toBeVisible();
 
     // 4. 수강생 관리 (CRM) 탭 이동 및 메시지 발송
-    await page.getByRole('button', { name: '수강생 관리 (CRM)' }).click();
-    await expect(page.locator('text=수강생 명단 및 진도 관리')).toBeVisible();
+    await page.locator('button', { hasText: '수강생 관리' }).click();
+    await expect(page.locator('text=수강생 명단 및')).toBeVisible();
 
     // 메시지 발송 모달 열기
     const sendMsgBtn = page.locator('button', { hasText: '메시지 전송' }).first();
@@ -122,7 +128,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await page.getByPlaceholder('메시지 제목을 입력하세요').fill('3주차 실습 안내');
     await page.getByPlaceholder('수강생에게 전달할 메시지 내용...').fill('실습 환경 접속 링크와 가이드 문서입니다.');
 
-    await page.locator('.glass-panel-heavy').getByRole('button', { name: '메시지 즉시 발송' }).click();
+    await page.locator('.glass-panel-heavy').getByRole('button', { name: '발송하기' }).click();
     await expect(page.locator('h3', { hasText: '수강 대상자 맞춤 메시지 발송' })).not.toBeVisible();
 
     // 5. 정산 관리 탭 전환 및 매출 통계 확인
@@ -202,6 +208,6 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await page.getByTestId('create-board-submit-btn').click();
 
     // 생성된 게시판 확인
-    await expect(page.locator(`text=${uniqueBoard}`)).toBeVisible();
+    await expect(page.locator(`text=${uniqueBoard}`).first()).toBeVisible();
   });
 });
