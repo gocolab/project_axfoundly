@@ -316,7 +316,7 @@ export default function MyOverview({
                 onClick={() => onNavigateTab("startup")}
                 className="text-xs text-brand-tertiary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
               >
-                관리하기 <ArrowRight size={12} />
+                전체보기 <ArrowRight size={12} />
               </button>
             </div>
 
@@ -334,7 +334,7 @@ export default function MyOverview({
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {myProjects.map((p) => (
+                {myProjects.slice(0, 5).map((p) => (
                   <div
                     key={p.id}
                     className="p-3.5 bg-brand-surface-low rounded-xl border border-brand-border/40 flex items-center justify-between gap-3"

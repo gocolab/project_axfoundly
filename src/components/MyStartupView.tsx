@@ -50,6 +50,9 @@ export default function MyStartupView({
   // SubTab: Idea Requests
   const [myIdeas, setMyIdeas] = React.useState<IdeaRequest[]>([]);
   const [ideasLoading, setIdeasLoading] = React.useState(false);
+  const [searchIdea, setSearchIdea] = React.useState("");
+  const [ideaPage, setIdeaPage] = React.useState(1);
+  const ideaItemsPerPage = 6;
 
   React.useEffect(() => {
     if (activeSubTab === "ideas") {
@@ -79,6 +82,29 @@ export default function MyStartupView({
   const [searchProposal, setSearchProposal] = React.useState("");
   const [proposalPage, setProposalPage] = React.useState(1);
   const proposalItemsPerPage = 5;
+
+  // SubTab 4: Filtered Ideas
+  const filteredIdeas = myIdeas.filter((idea) => {
+    if (!searchIdea.trim()) return true;
+    const query = searchIdea.toLowerCase().trim();
+    return (
+      idea.title.toLowerCase().includes(query) ||
+      (idea.problem && idea.problem.toLowerCase().includes(query)) ||
+      idea.category.toLowerCase().includes(query) ||
+      (idea.rewardType && idea.rewardType.toLowerCase().includes(query)) ||
+      (idea.rewardDetail && idea.rewardDetail.toLowerCase().includes(query)) ||
+      (idea.proposals && idea.proposals.some((p) => p.proposerName?.toLowerCase().includes(query) || p.planSummary?.toLowerCase().includes(query)))
+    );
+  });
+  const ideaTotalPages = Math.ceil(filteredIdeas.length / ideaItemsPerPage);
+  const paginatedIdeas = filteredIdeas.slice(
+    (ideaPage - 1) * ideaItemsPerPage,
+    ideaPage * ideaItemsPerPage
+  );
+
+  React.useEffect(() => {
+    setIdeaPage(1);
+  }, [searchIdea]);
 
   // External trigger handler
   React.useEffect(() => {
@@ -712,88 +738,146 @@ export default function MyStartupView({
             </div>
           </div>
 
+          {/* Search & Stats Bar */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="text-xs text-brand-on-surface-variant">
+              등록된 의뢰: <span className="text-white font-semibold">{myIdeas.length}</span>개
+              {searchIdea && (
+                <span className="ml-1.5 text-cyan-300">
+                  (검색 결과: <strong>{filteredIdeas.length}</strong>개)
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
+                <input
+                  type="text"
+                  placeholder="아이디어 제목, 문제, 기술스택 검색..."
+                  value={searchIdea}
+                  onChange={(e) => setSearchIdea(e.target.value)}
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-cyan-400 transition-colors"
+                />
+                {searchIdea && (
+                  <button
+                    onClick={() => setSearchIdea("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {ideasLoading ? (
             <div className="text-center py-12 text-white/50 text-xs">아이디어 목록 로딩 중...</div>
           ) : myIdeas.length === 0 ? (
             <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-white/10">
               <p className="text-xs text-white/50">등록된 아이디어 제작 의뢰가 없습니다.</p>
             </div>
+          ) : filteredIdeas.length === 0 ? (
+            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-brand-border/40">
+              <p className="text-xs text-white/60">검색 조건에 일치하는 아이디어 의뢰가 없습니다.</p>
+              <button
+                onClick={() => setSearchIdea("")}
+                className="mt-3 px-3 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-bold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={12} /> 검색 초기화
+              </button>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myIdeas.map((idea) => (
-                <div
-                  key={idea.id}
-                  className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all shadow-md"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          idea.status === "모집중"
-                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-                            : idea.status === "빌더제안중" || idea.status === "협의중" || idea.status === "선발진행중"
-                            ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                            : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                        }`}
-                      >
-                        {idea.status}
-                      </span>
-                      <span className="text-[10px] text-white/50 font-mono">{idea.category}</span>
-                    </div>
-                    <h4 className="text-sm font-bold text-white line-clamp-1">{idea.title}</h4>
-                    <p className="text-xs text-white/60 mt-1 line-clamp-2">{idea.problem}</p>
-                    <div className="mt-3 flex items-center justify-between text-xs">
-                      <span className="text-amber-300 font-medium">💎 {idea.rewardType} ({idea.rewardDetail || "협의"})</span>
-                      <span className="text-cyan-400 font-bold">{idea.upvoteCount}명 공감</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-cyan-300 font-medium">
-                        접수된 빌더 제안: <strong className="text-white font-bold">{idea.proposals?.length || 0}건</strong>
-                      </span>
-                      {idea.status !== "매칭완료" && (
-                        <span className="text-[10px] text-brand-on-surface-variant font-mono">
-                          마감: {idea.deadline || "상시접수"}
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginatedIdeas.map((idea) => (
+                  <div
+                    key={idea.id}
+                    className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-cyan-500/40 transition-all shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            idea.status === "모집중"
+                              ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                              : idea.status === "빌더제안중" || idea.status === "협의중" || idea.status === "선발진행중"
+                              ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          }`}
+                        >
+                          {idea.status}
                         </span>
+                        <span className="text-[10px] text-white/50 font-mono">{idea.category}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-white line-clamp-1">{idea.title}</h4>
+                      <p className="text-xs text-white/60 mt-1 line-clamp-2">{idea.problem}</p>
+                      <div className="mt-3 flex items-center justify-between text-xs">
+                        <span className="text-amber-300 font-medium">💎 {idea.rewardType} ({idea.rewardDetail || "협의"})</span>
+                        <span className="text-cyan-400 font-bold">{idea.upvoteCount}명 공감</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-cyan-300 font-medium">
+                          접수된 빌더 제안: <strong className="text-white font-bold">{idea.proposals?.length || 0}건</strong>
+                        </span>
+                        {idea.status !== "매칭완료" && (
+                          <span className="text-[10px] text-brand-on-surface-variant font-mono">
+                            마감: {idea.deadline || "상시접수"}
+                          </span>
+                        )}
+                      </div>
+
+                      {idea.proposals && idea.proposals.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {idea.proposals.map((p) => (
+                            <div
+                              key={p.id}
+                              className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-1.5"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-white">{p.proposerName} 빌더팀</span>
+                                <span
+                                  className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                    p.status === "채택됨"
+                                      ? "bg-emerald-500/20 text-emerald-300"
+                                      : p.status === "선발(협의중)"
+                                      ? "bg-amber-500/20 text-amber-300"
+                                      : "bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  {p.status}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-white/70 line-clamp-2">{p.planSummary}</p>
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                                <span>스택: {Array.isArray(p.techStack) ? p.techStack.slice(0, 3).join(", ") : p.techStack}</span>
+                                <span className="font-semibold text-cyan-300">{p.estimatedWeeks}주 완성</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-
-                    {idea.proposals && idea.proposals.length > 0 && (
-                      <div className="mt-2 space-y-2">
-                        {idea.proposals.map((p) => (
-                          <div
-                            key={p.id}
-                            className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-1.5"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-white">{p.proposerName} 빌더팀</span>
-                              <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded ${
-                                  p.status === "채택됨"
-                                    ? "bg-emerald-500/20 text-emerald-300"
-                                    : p.status === "선발(협의중)"
-                                    ? "bg-amber-500/20 text-amber-300"
-                                    : "bg-slate-700 text-slate-300"
-                                }`}
-                              >
-                                {p.status}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-white/70 line-clamp-2">{p.planSummary}</p>
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                              <span>스택: {Array.isArray(p.techStack) ? p.techStack.slice(0, 3).join(", ") : p.techStack}</span>
-                              <span className="font-semibold text-cyan-300">{p.estimatedWeeks}주 완성</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
+                ))}
+              </div>
+
+              {ideaTotalPages > 1 && (
+                <div className="pt-2">
+                  <Pagination
+                    currentPage={ideaPage}
+                    totalPages={ideaTotalPages}
+                    onPageChange={setIdeaPage}
+                    totalItems={filteredIdeas.length}
+                    itemsPerPage={ideaItemsPerPage}
+                  />
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       )}

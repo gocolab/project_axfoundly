@@ -226,6 +226,25 @@ export default function CourseCreateEditModal({
     toast.success("달력 일정 자동 재배정", `선택한 요일(${selectedDays.join(",")})에 맞춰 ${updated.length}개 회차의 일정이 자동 배정되었습니다. 날짜를 개별 수정하실 수도 있습니다.`);
   };
 
+  // Batch Set Delivery Type for all sessions
+  const handleBatchSetDeliveryType = (type: "online" | "offline" | "vod" | "hybrid") => {
+    setDeliveryType(type);
+    if (type !== "hybrid") {
+      setCurriculumDraft((prev) =>
+        prev.map((item) => ({
+          ...item,
+          deliveryType: type,
+        }))
+      );
+      toast.success(
+        "전체 회차 진행 방식 일괄 변경",
+        `모든 회차가 '${type === "online" ? "실시간 온라인" : type === "offline" ? "현장 오프라인" : "VOD 동영상"}'으로 일괄 지정되었습니다.`
+      );
+    } else {
+      toast.info("회차별 맞춤 설정", "아래 회차 목록에서 각 회차별 진행 방식(온라인/오프라인/VOD)을 개별 지정하세요.");
+    }
+  };
+
   // Curriculum Item Management Handlers
   const handleAddSession = () => {
     const nextSessionNum = curriculumDraft.length + 1;
@@ -238,7 +257,7 @@ export default function CourseCreateEditModal({
       date: startDate,
       dayOfWeek: getDayNameFromDateStr(startDate),
       time: timeSlot,
-      deliveryType,
+      deliveryType: deliveryType === "hybrid" ? "online" : deliveryType,
     };
     setCurriculumDraft((prev) => [...prev, newSession]);
     toast.info("회차 추가", `${nextSessionNum}회차 커리큘럼이 추가되었습니다.`);
@@ -469,22 +488,48 @@ export default function CourseCreateEditModal({
               </p>
             </div>
 
-            {/* 강의 진행 방식 선택 (VOD / 실시간 온라인 / 현장 오프라인 / 온·오프라인 혼합) */}
+            {/* 강의 진행 방식 선택 (VOD / 실시간 온라인 / 현장 오프라인 / 각 회차별 맞춤 설정) */}
             <div>
-              <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">
-                강의 진행 방식 선택 *
-              </label>
+              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                <label className="text-xs font-semibold text-brand-on-surface-variant block">
+                  강의 진행 방식 선택 *
+                </label>
+                <div className="flex items-center gap-1.5 bg-brand-surface-low px-2 py-1 rounded-lg border border-brand-border/40">
+                  <span className="text-[10px] text-brand-on-surface-variant font-medium">모든 회차 일괄 지정:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchSetDeliveryType("online")}
+                    className="text-[10px] px-2 py-0.5 rounded bg-brand-surface-high hover:bg-brand-primary hover:text-white border border-brand-border/50 text-brand-primary font-bold cursor-pointer transition-all"
+                  >
+                    💻 온라인 일괄
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchSetDeliveryType("offline")}
+                    className="text-[10px] px-2 py-0.5 rounded bg-brand-surface-high hover:bg-amber-500 hover:text-black border border-brand-border/50 text-amber-300 font-bold cursor-pointer transition-all"
+                  >
+                    🏢 오프라인 일괄
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchSetDeliveryType("vod")}
+                    className="text-[10px] px-2 py-0.5 rounded bg-brand-surface-high hover:bg-purple-500 hover:text-white border border-brand-border/50 text-purple-300 font-bold cursor-pointer transition-all"
+                  >
+                    🎥 VOD 일괄
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { type: "online" as const, label: "실시간 온라인", desc: "Zoom / Meet 라이브", icon: "💻" },
-                  { type: "offline" as const, label: "현장 오프라인", desc: "오프라인 강의장 참석", icon: "🏢" },
-                  { type: "vod" as const, label: "VOD 동영상", desc: "언제든 자유 수강", icon: "🎥" },
-                  { type: "hybrid" as const, label: "온·오프라인 혼합", desc: "현장 + 온라인 병행", icon: "🔄" },
+                  { type: "online" as const, label: "실시간 온라인", desc: "Zoom / Meet 라이브 (전 회차)", icon: "💻" },
+                  { type: "offline" as const, label: "현장 오프라인", desc: "오프라인 강의장 (전 회차)", icon: "🏢" },
+                  { type: "vod" as const, label: "VOD 동영상", desc: "언제든 자유 수강 (전 회차)", icon: "🎥" },
+                  { type: "hybrid" as const, label: "각 회차별 설정", desc: "회차마다 온·오프·VOD 개별 지정", icon: "🔄" },
                 ].map((item) => (
                   <button
                     key={item.type}
                     type="button"
-                    onClick={() => setDeliveryType(item.type)}
+                    onClick={() => handleBatchSetDeliveryType(item.type)}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                       deliveryType === item.type
                         ? "bg-brand-primary-container/20 border-brand-primary text-white shadow-md shadow-brand-primary/10 ring-1 ring-brand-primary"
@@ -779,6 +824,65 @@ export default function CourseCreateEditModal({
                         placeholder="회차 세부 실습 및 다루는 내용 요약"
                         className="bg-transparent border-b border-brand-border/20 py-0.5 text-[11px] text-brand-on-surface-variant focus:outline-none focus:text-white"
                       />
+
+                      {/* Per-Session Delivery Method Selector */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-brand-border/30 text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-brand-on-surface-variant font-medium shrink-0">
+                            진행 방식:
+                          </span>
+                          <div className="flex items-center bg-brand-surface-low rounded-lg p-0.5 border border-brand-border/40 gap-0.5">
+                            {[
+                              { type: "online" as const, label: "온라인", icon: "💻" },
+                              { type: "offline" as const, label: "오프라인", icon: "🏢" },
+                              { type: "vod" as const, label: "VOD", icon: "🎥" },
+                            ].map((opt) => {
+                              const currentSessionType = item.deliveryType || (deliveryType === "hybrid" ? "online" : deliveryType);
+                              const isCurrent = currentSessionType === opt.type;
+                              return (
+                                <button
+                                  key={opt.type}
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...curriculumDraft];
+                                    updated[idx].deliveryType = opt.type;
+                                    setCurriculumDraft(updated);
+                                    // Check if mixed types exist
+                                    const types = new Set(updated.map((s) => s.deliveryType || (deliveryType === "hybrid" ? "online" : deliveryType)));
+                                    if (types.size > 1) {
+                                      setDeliveryType("hybrid");
+                                    }
+                                  }}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                                    isCurrent
+                                      ? opt.type === "online"
+                                        ? "bg-brand-primary text-white shadow-xs"
+                                        : opt.type === "offline"
+                                        ? "bg-amber-500 text-black shadow-xs"
+                                        : "bg-purple-600 text-white shadow-xs"
+                                      : "text-brand-on-surface-variant hover:text-white"
+                                  }`}
+                                >
+                                  <span>{opt.icon}</span>
+                                  <span>{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] font-mono shrink-0">
+                          {(item.deliveryType || (deliveryType === "hybrid" ? "online" : deliveryType)) === "offline" && (
+                            <span className="text-amber-300">📍 오프라인 강의장 참석</span>
+                          )}
+                          {(item.deliveryType || (deliveryType === "hybrid" ? "online" : deliveryType)) === "online" && (
+                            <span className="text-brand-primary">💻 실시간 Zoom/Meet</span>
+                          )}
+                          {(item.deliveryType || (deliveryType === "hybrid" ? "online" : deliveryType)) === "vod" && (
+                            <span className="text-purple-300">🎥 VOD 녹화 스트리밍</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
