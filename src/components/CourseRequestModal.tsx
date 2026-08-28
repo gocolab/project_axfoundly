@@ -49,14 +49,7 @@ export default function CourseRequestModal({
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const recommendedCategories = [
-    "AI 모델링 / LLM",
-    "실전 멀티에이전트",
-    "비즈니스 기획",
-    "개발·IT",
-    "그로스 마케팅",
-    "바이오·헬스케어",
-  ];
+
 
   const handleAIAssist = async () => {
     if (!title.trim()) {
@@ -245,7 +238,7 @@ export default function CourseRequestModal({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-medium text-white/70">
-                  분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 채우기)
+                  분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 생성)
                 </label>
               </div>
               <input
@@ -255,22 +248,6 @@ export default function CourseRequestModal({
                 placeholder="예: AI 모델링 / LLM, 실전 멀티에이전트, B2B SaaS"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-primary placeholder:text-white/30"
               />
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {recommendedCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setCategory(cat)}
-                    className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
-                      category === cat
-                        ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
-                        : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>

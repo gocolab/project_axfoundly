@@ -11,7 +11,6 @@ import {
 import type { Course, CurriculumItem } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
-import { useCommonCodes } from "../hooks/useCommonCodes";
 
 interface CourseCreateEditModalProps {
   isOpen: boolean;
@@ -29,11 +28,6 @@ export default function CourseCreateEditModal({
   instructorName = "김소현",
 }: CourseCreateEditModalProps) {
   const toast = useToast();
-  const { getCodesByGroup } = useCommonCodes(["COURSE_CATEGORY"]);
-  const categoryCodes = getCodesByGroup("COURSE_CATEGORY");
-  const recommendedCategories = categoryCodes.length > 0
-    ? categoryCodes.map((c) => c.displayName || c.codeName)
-    : ["AI 모델링 / LLM", "실전 멀티에이전트", "비즈니스 기획", "개발·IT", "그로스 마케팅", "바이오·헬스케어"];
 
   const [createStep, setCreateStep] = React.useState<"ai_chat" | "detail_edit">(
     initialCourse ? "detail_edit" : "ai_chat"
@@ -456,7 +450,7 @@ export default function CourseCreateEditModal({
 
             <div>
               <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1">
-                교육 분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 추천)
+                교육 분야 / 카테고리 (자연어 직접 입력 또는 AI 자동 생성)
               </label>
               <input
                 type="text"
@@ -465,22 +459,6 @@ export default function CourseCreateEditModal({
                 placeholder="예: 실전 AI 모델링 / LLM, 멀티에이전트 시스템, B2B SaaS 기획"
                 className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
               />
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {recommendedCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setCourseCategory(cat)}
-                    className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
-                      courseCategory === cat
-                        ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
-                        : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* AI Auto-Classification Info Banner */}

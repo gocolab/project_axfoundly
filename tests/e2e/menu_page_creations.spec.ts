@@ -14,8 +14,8 @@ test.describe('메뉴 페이지별 직접 등록/생성 기능 E2E 검증', () =
     await page.locator('header nav').getByRole('button', { name: '교육/강의' }).click();
     await expect(page.locator('h1', { hasText: '교육 / 강의' })).toBeVisible();
 
-    // 2. [강의 생성] 버튼 클릭
-    const createBtn = page.getByRole('button', { name: '강의 생성' });
+    // 2. [강의 개설] 버튼 클릭
+    const createBtn = page.getByRole('button', { name: /강의 개설/ });
     await expect(createBtn).toBeVisible();
     await createBtn.click();
 
@@ -46,7 +46,7 @@ test.describe('메뉴 페이지별 직접 등록/생성 기능 E2E 검증', () =
     await expect(page.locator('h1', { hasText: /스타트업/ })).toBeVisible();
 
     // 2. [프로젝트 등록] 버튼 클릭
-    const createBtn = page.getByRole('button', { name: '프로젝트 등록' });
+    const createBtn = page.getByRole('button', { name: /프로젝트 등록/ });
     await expect(createBtn).toBeVisible();
     await createBtn.click();
 
@@ -68,7 +68,7 @@ test.describe('메뉴 페이지별 직접 등록/생성 기능 E2E 검증', () =
 
     // 6. 모달 닫힘 및 성공 확인
     await expect(modalTitle).not.toBeVisible();
-    await expect(page.locator('h3', { hasText: uniqueTeamName })).toBeVisible();
+    await expect(page.locator('h3', { hasText: uniqueTitle })).toBeVisible();
   });
 
   test('커뮤니티 메뉴 페이지에서 직접 [글쓰기] 모달을 열고 신규 게시글을 등록할 수 있다', async ({ page }) => {

@@ -19,21 +19,9 @@ export default function ProjectCreateEditModal({
   onSave,
 }: ProjectCreateEditModalProps) {
   const toast = useToast();
-  const { getCodesByGroup } = useCommonCodes(["INVESTMENT_STAGE", "EMPLOYMENT_TYPE", "IR_FIELD"]);
+  const { getCodesByGroup } = useCommonCodes(["INVESTMENT_STAGE", "EMPLOYMENT_TYPE"]);
   const stageCodes = getCodesByGroup("INVESTMENT_STAGE");
   const empTypeCodes = getCodesByGroup("EMPLOYMENT_TYPE");
-  const irFieldCodes = getCodesByGroup("IR_FIELD");
-
-  const recommendedFields = irFieldCodes.length > 0
-    ? irFieldCodes.map((c) => c.displayName || c.codeName)
-    : [
-        "B2B Enterprise AI",
-        "차세대 핀테크 / 결제",
-        "초정밀 헬스케어 AI",
-        "실전 멀티에이전트 SaaS",
-        "모빌리티 / 로보틱스",
-        "스마트 이커머스",
-      ];
 
   const [teamName, setTeamName] = React.useState(initialProject?.teamName || "");
   const [anonymousTeamName, setAnonymousTeamName] = React.useState(
@@ -305,7 +293,7 @@ export default function ProjectCreateEditModal({
           {/* Natural Language Industry Field */}
           <div>
             <label className="font-semibold text-white block mb-1">
-              산업 / 분야 (자연어 직접 입력 또는 AI 자동 추천)
+              산업 / 분야 (자연어 직접 입력 또는 AI 자동 생성)
             </label>
             <input
               type="text"
@@ -314,22 +302,6 @@ export default function ProjectCreateEditModal({
               placeholder="예: B2B Enterprise AI, 차세대 핀테크 / 결제, 초정밀 헬스케어 AI"
               className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary text-xs placeholder:text-white/30"
             />
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {recommendedFields.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setField(f)}
-                  className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
-                    field === f
-                      ? "bg-brand-primary/20 text-brand-primary border-brand-primary/40 font-semibold"
-                      : "bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* AI Auto-Classification Info Banner */}
