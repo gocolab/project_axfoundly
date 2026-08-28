@@ -193,6 +193,23 @@ class NotificationService {
   }
 
   /**
+   * Base URL 조회 (환경변수 기반)
+   */
+  public getBaseUrl(): string {
+    return process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3005";
+  }
+
+  /**
+   * 상대 경로를 절대 URL로 변환
+   */
+  public toAbsoluteUrl(url?: string): string {
+    const baseUrl = this.getBaseUrl();
+    if (!url || url === "/") return baseUrl;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  }
+
+  /**
    * HTML 이메일 템플릿 렌더러 (호기심 갭 + 스마트 딥링크 CTA + 수신거부 하단 푸터)
    */
   public renderEmailHtml(params: {
@@ -205,7 +222,11 @@ class NotificationService {
     userId?: string;
   }): string {
     const { title, message, targetUrl, actionLabel, category, userName = "회원", userId = "user-default" } = params;
-    const unsubUrl = `/api/notifications/unsubscribe?userId=${encodeURIComponent(userId)}&category=${category}`;
+    const baseUrl = this.getBaseUrl();
+    const fullTargetUrl = this.toAbsoluteUrl(targetUrl);
+    const fullUnsubUrl = `${baseUrl}/api/notifications/unsubscribe?userId=${encodeURIComponent(userId)}&category=${category}`;
+    const fullSettingsUrl = `${baseUrl}/mypage?tab=settings`;
+    const fullHomeUrl = baseUrl;
 
     return `
 <!DOCTYPE html>
@@ -226,12 +247,14 @@ class NotificationService {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                      🚀 AI로 창업하라
-                    </div>
-                    <div style="font-size: 11px; color: #e0e7ff; margin-top: 2px; letter-spacing: 1px; font-family: monospace;">
-                      LAUNCH WITH AI
-                    </div>
+                    <a href="${fullHomeUrl}" target="_blank" style="text-decoration: none; display: block;">
+                      <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
+                        🚀 AI로 창업하라
+                      </div>
+                      <div style="font-size: 11px; color: #e0e7ff; margin-top: 2px; letter-spacing: 1px; font-family: monospace;">
+                        LAUNCH WITH AI
+                      </div>
+                    </a>
                   </td>
                 </tr>
               </table>
@@ -252,7 +275,7 @@ class NotificationService {
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                 <tr>
                   <td align="center">
-                    <a href="${targetUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 14px rgba(99,102,241,0.4); letter-spacing: -0.3px;">
+                    <a href="${fullTargetUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 14px rgba(99,102,241,0.4); letter-spacing: -0.3px;">
                       ${actionLabel} &rarr;
                     </a>
                   </td>
@@ -260,7 +283,7 @@ class NotificationService {
               </table>
 
               <div style="background-color: #1f2937; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #9ca3af; line-height: 1.5;">
-                💡 <strong>안내:</strong> 안전하고 빠른 확인을 위해 원클릭 자동 로그인 링크가 적용되어 있습니다. 48시간 이내에 확인해 주세요.
+                💡 <strong>안내:</strong> 안전하고 빠른 확인을 위해 스마트 딥링크가 적용되어 있습니다. 버튼을 클릭하면 해당 화면으로 즉시 이동합니다.
               </div>
             </td>
           </tr>
@@ -275,8 +298,8 @@ class NotificationService {
                 (주)AI로창업하라 | 서울특별시 강남구 테헤란로 123 | 고객센터: support@launchbizs.ai
               </div>
               <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1f2937;">
-                <a href="${unsubUrl}" style="color: #9ca3af; text-decoration: underline;">이 알림 유형 수신거부</a> &nbsp;|&nbsp;
-                <a href="/mypage?tab=settings" style="color: #9ca3af; text-decoration: underline;">알림 수신 설정 변경</a>
+                <a href="${fullUnsubUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">이 알림 유형 수신거부</a> &nbsp;|&nbsp;
+                <a href="${fullSettingsUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">알림 수신 설정 변경</a>
               </div>
             </td>
           </tr>
@@ -535,13 +558,14 @@ class NotificationService {
         },
       });
 
+      const baseUrl = this.getBaseUrl();
       const info = await transporter.sendMail({
         from: `"AI로 창업하라" <${smtpUser}>`,
         to,
         subject,
         html,
         headers: {
-          "List-Unsubscribe": `<https://launchbizs.ai/api/notifications/unsubscribe?userId=${encodeURIComponent(to)}&category=marketing>`,
+          "List-Unsubscribe": `<${baseUrl}/api/notifications/unsubscribe?userId=${encodeURIComponent(to)}&category=marketing>`,
         },
       });
 
