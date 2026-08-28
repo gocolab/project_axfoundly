@@ -9,6 +9,7 @@ import {
   Briefcase,
   CornerDownRight,
   Pin,
+  Trash2,
 } from "lucide-react";
 import type { BoardPost, Comment, UserRole } from "../types";
 import { api } from "../lib/api";
@@ -23,6 +24,8 @@ interface CommunityPostDetailModalProps {
   userName: string;
   onLoginClick: () => void;
   onCommentAdded?: (newComment: Comment) => void;
+  onDeletePost?: (postId: string) => void;
+  onDeleteComment?: (commentId: string) => void;
   onSendTeamRequest?: (projectName: string, message: string) => void;
   inline?: boolean;
 }
@@ -35,6 +38,8 @@ export default function CommunityPostDetailModal({
   userName,
   onLoginClick,
   onCommentAdded,
+  onDeletePost,
+  onDeleteComment,
   onSendTeamRequest,
   inline = false,
 }: CommunityPostDetailModalProps) {
@@ -43,6 +48,11 @@ export default function CommunityPostDetailModal({
   const [loading, setLoading] = React.useState(false);
   const [commentInput, setCommentInput] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [deletingPost, setDeletingPost] = React.useState(false);
+
+  const isAdmin = userRoles.includes("admin") || userRoles.includes("manager");
+  const isPostAuthor = isLoggedIn && post?.author === userName;
+  const canDeletePost = isAdmin || isPostAuthor;
 
   // Team proposal inside post
   const [showTeamProposalInput, setShowTeamProposalInput] = React.useState(false);
@@ -125,6 +135,35 @@ export default function CommunityPostDetailModal({
     setShowTeamProposalInput(false);
   };
 
+  const handleDeletePost = async () => {
+    if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+    setDeletingPost(true);
+    try {
+      await api.deletePost(post.id, { author: userName, userRoles });
+      toast.success("게시글 삭제 완료", "게시글이 성공적으로 삭제되었습니다.");
+      if (onDeletePost) onDeletePost(post.id);
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete post", error);
+      toast.error("게시글 삭제 실패", "게시글 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeletingPost(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
+    try {
+      await api.deleteComment(post.id, commentId, { author: userName, userRoles });
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast.success("댓글 삭제 완료", "댓글이 삭제되었습니다.");
+      if (onDeleteComment) onDeleteComment(commentId);
+    } catch (error) {
+      console.error("Failed to delete comment", error);
+      toast.error("댓글 삭제 실패", "댓글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   const content = (
     <div className={`glass-panel-heavy ${inline ? "rounded-2xl border border-brand-border/60 shadow-xl" : "rounded-l-2xl border-l border-brand-border shadow-2xl animate-slideInFromRight"} w-full h-full flex flex-col overflow-hidden`}>
         {/* Modal Header */}
@@ -147,12 +186,25 @@ export default function CommunityPostDetailModal({
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {canDeletePost && (
+              <button
+                onClick={handleDeletePost}
+                disabled={deletingPost}
+                className="p-1 px-2 rounded-lg text-brand-accent-rose/80 hover:text-brand-accent-rose hover:bg-brand-accent-rose/10 transition-colors cursor-pointer text-xs flex items-center gap-1 border border-brand-accent-rose/20"
+                title="게시글 삭제"
+              >
+                <Trash2 size={13} />
+                <span className="text-[11px] font-semibold">{deletingPost ? "삭제 중..." : "삭제"}</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body (Scrollable) */}
@@ -258,13 +310,25 @@ export default function CommunityPostDetailModal({
                           {comment.author.charAt(0)}
                         </div>
                         <span className="text-xs font-semibold text-white">{comment.author}</span>
-                        {comment.authorRoles && comment.authorRoles.includes("admin") && (
+                        {comment.authorRoles && (comment.authorRoles.includes("admin") || comment.authorRoles.includes("manager")) && (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-primary-container/10 text-brand-primary font-medium">
                             관리자
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-brand-on-surface-variant">{comment.createdAt}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-brand-on-surface-variant">{comment.createdAt}</span>
+                        {(isAdmin || (isLoggedIn && comment.author === userName)) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="text-brand-on-surface-variant/60 hover:text-brand-accent-rose transition-colors p-0.5 cursor-pointer"
+                            title="댓글 삭제"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-brand-on-surface pl-7">{comment.content}</p>
                   </div>

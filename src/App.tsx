@@ -313,6 +313,7 @@ export default function App() {
       const res = await api.createPost({
         ...post,
         author: userName,
+        authorRoles: userRoles,
       });
       setPosts((prev) => [res.post, ...prev]);
       refreshData();
@@ -321,6 +322,11 @@ export default function App() {
       console.error("Add post failed:", error);
       toast.error("게시글 작성 실패");
     }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    refreshData();
   };
 
   const handleMarkNotificationRead = async (id: string) => {
@@ -533,12 +539,14 @@ export default function App() {
           <CommunityPage
             posts={posts}
             onAddPost={handleAddPost}
+            onDeletePost={handleDeletePost}
             isLoggedIn={isLoggedIn}
             userRoles={userRoles}
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
             initialPostId={selectedPostId}
             onClearSelectedPost={() => setSelectedPostId(null)}
+            adminBoards={adminBoards}
           />
         );
       case "dashboard":
@@ -573,6 +581,15 @@ export default function App() {
             onApproveCourse={handleApproveCourse}
             onRejectCourse={handleRejectCourse}
             onViewCourse={handleViewCourse}
+            onBoardCreated={(newBoard) => {
+              setAdminBoards((prev) => [newBoard, ...prev]);
+              refreshData();
+            }}
+            onBoardDeleted={(deletedId) => {
+              setAdminBoards((prev) => prev.filter((b) => b.id !== deletedId));
+              refreshData();
+            }}
+            onRefresh={refreshData}
           />
         );
 

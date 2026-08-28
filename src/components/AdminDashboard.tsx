@@ -55,6 +55,9 @@ interface AdminDashboardProps {
   onApproveCourse: (courseId: string) => void;
   onRejectCourse: (courseId: string) => void;
   onViewCourse?: (courseId: string) => void;
+  onBoardCreated?: (board: AdminBoard) => void;
+  onBoardDeleted?: (boardId: string) => void;
+  onRefresh?: () => void;
 }
 
 export default function AdminDashboard({
@@ -66,6 +69,9 @@ export default function AdminDashboard({
   onApproveCourse,
   onRejectCourse,
   onViewCourse,
+  onBoardCreated,
+  onBoardDeleted,
+  onRefresh,
 }: AdminDashboardProps) {
   const toast = useToast();
   type AdminTab = "stats" | "members" | "courses" | "startup" | "categories" | "boards" | "crm" | "payments" | "common_codes";
@@ -441,9 +447,14 @@ export default function AdminDashboard({
     try {
       await api.deleteAdminBoard(id);
       setLocalBoards((prev) => prev.filter((b) => b.id !== id));
+      if (onBoardDeleted) onBoardDeleted(id);
+      if (onRefresh) onRefresh();
+      toast.success("게시판 삭제 완료", `"${name}" 게시판이 삭제되었습니다.`);
     } catch (e) {
       console.error(e);
       setLocalBoards((prev) => prev.filter((b) => b.id !== id));
+      if (onBoardDeleted) onBoardDeleted(id);
+      if (onRefresh) onRefresh();
     }
   };
 
@@ -2013,6 +2024,8 @@ export default function AdminDashboard({
               onClose={() => setShowCreateBoardModal(false)}
               onSuccess={(newBoard) => {
                 setLocalBoards((prev) => [newBoard, ...prev]);
+                if (onBoardCreated) onBoardCreated(newBoard);
+                if (onRefresh) onRefresh();
                 toast.success("게시판 생성 완료", `"${newBoard.name}" 게시판이 성공적으로 생성되었습니다.`);
               }}
             />

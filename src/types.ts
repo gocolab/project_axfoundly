@@ -299,7 +299,7 @@ export interface IdeaRequest {
 
 
 // ── Community / Board & Comments ──
-export type BoardType = "공지사항" | "팀빌딩" | "QnA";
+export type BoardType = "공지사항" | "팀빌딩" | "QnA" | string;
 
 export interface Comment {
   id: string;
@@ -318,6 +318,7 @@ export interface BoardPost {
   content: string;
   author: string;
   authorAvatar: string;
+  authorRoles?: UserRole[];
   createdAt: string;
   viewCount: number;
   commentCount: number;

@@ -10,33 +10,40 @@ import {
   X,
   Send,
   Search,
+  CheckCircle2,
+  Lock,
 } from "lucide-react";
-import type { BoardPost, BoardType, UserRole } from "../types";
+import type { BoardPost, BoardType, UserRole, AdminBoard } from "../types";
 import Pagination from "./common/Pagination";
 import CommunityPostDetailModal from "./CommunityPostDetailModal";
 
 interface CommunityPageProps {
   posts: BoardPost[];
   onAddPost: (post: Omit<BoardPost, "id" | "viewCount" | "commentCount" | "authorAvatar">) => void;
+  onDeletePost?: (postId: string) => void;
   isLoggedIn: boolean;
   userRoles?: UserRole[];
   userName?: string;
   onLoginClick: () => void;
   initialPostId?: string | null;
   onClearSelectedPost?: () => void;
+  adminBoards?: AdminBoard[];
 }
 
 export default function CommunityPage({
   posts,
   onAddPost,
+  onDeletePost,
   isLoggedIn,
   userRoles = ["member"],
   userName = "김수강생",
   onLoginClick,
   initialPostId,
   onClearSelectedPost,
+  adminBoards = [],
 }: CommunityPageProps) {
-  const [activeBoard, setActiveBoard] = React.useState<BoardType | "전체">("전체");
+  const isAdmin = userRoles.includes("admin") || userRoles.includes("manager");
+  const [activeBoard, setActiveBoard] = React.useState<string>("전체");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
@@ -57,26 +64,92 @@ export default function CommunityPage({
       }
     }
   }, [initialPostId, posts]);
-  const [showWriteModal, setShowWriteModal] = React.useState(false);
 
+  const [showWriteModal, setShowWriteModal] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState("");
   const [newContent, setNewContent] = React.useState("");
-  const [newBoardType, setNewBoardType] = React.useState<BoardType>("QnA");
+  const [newBoardType, setNewBoardType] = React.useState<string>("QnA");
+  const [newIsPinned, setNewIsPinned] = React.useState(false);
 
-  const boards: { type: BoardType | "전체"; label: string; icon: React.ReactNode; desc: string }[] = [
-    { type: "전체", label: "전체", icon: <MessageSquare size={14} />, desc: "모든 게시판" },
-    { type: "공지사항", label: "공지사항", icon: <Megaphone size={14} />, desc: "플랫폼 공식 알림" },
-    { type: "팀빌딩", label: "팀 빌딩", icon: <Users size={14} />, desc: "Co-founder 모집 게시판" },
-    { type: "QnA", label: "Q&A 자유게시판", icon: <HelpCircle size={14} />, desc: "기술/사업 질의응답" },
-  ];
+  // 동적 게시판 탭 구성 (관리자 등록 게시판 연동)
+  const boards = React.useMemo(() => {
+    const defaultList = [
+      { type: "전체", label: "전체", icon: <MessageSquare size={14} />, desc: "모든 게시판" },
+      { type: "공지사항", label: "공지사항", icon: <Megaphone size={14} />, desc: "플랫폼 공식 알림", writePermission: "관리자" },
+      { type: "팀빌딩", label: "팀 빌딩", icon: <Users size={14} />, desc: "Co-founder 모집 게시판", writePermission: "회원" },
+      { type: "QnA", label: "Q&A 자유게시판", icon: <HelpCircle size={14} />, desc: "기술/사업 질의응답", writePermission: "회원" },
+    ];
 
-  // 중복 ID 방어 및 고유 게시글 정제
+    if (!adminBoards || adminBoards.length === 0) {
+      return defaultList;
+    }
+
+    const dynamicBoards = adminBoards.map((b) => {
+      let icon = <MessageSquare size={14} />;
+      if (b.name.includes("공지") || b.name.includes("알림")) {
+        icon = <Megaphone size={14} />;
+      } else if (b.name.includes("팀") || b.name.includes("빌딩") || b.name.includes("Co-founder")) {
+        icon = <Users size={14} />;
+      } else if (b.name.includes("QnA") || b.name.includes("질문") || b.name.includes("문의")) {
+        icon = <HelpCircle size={14} />;
+      }
+
+      return {
+        type: b.name,
+        label: b.name,
+        icon,
+        desc: `${b.template || "일반형"} · 읽기: ${b.readPermission} · 쓰기: ${b.writePermission}`,
+        writePermission: b.writePermission,
+      };
+    });
+
+    return [
+      { type: "전체", label: "전체", icon: <MessageSquare size={14} />, desc: "모든 게시판", writePermission: "전체" },
+      ...dynamicBoards,
+    ];
+  }, [adminBoards]);
+
+  // 글쓰기 가능한 게시판 목록 필터링 (권한 기반)
+  const availableWriteBoards = React.useMemo(() => {
+    const list = boards.filter((b) => b.type !== "전체");
+    if (isAdmin) {
+      return list;
+    }
+    // 일반 사용자는 writePermission이 '관리자'인 게시판 제외
+    return list.filter((b) => b.writePermission !== "관리자" && b.type !== "공지사항");
+  }, [boards, isAdmin]);
+
+  // 글쓰기 모달 열릴 때 초기 선택값 보정
+  const handleOpenWriteModal = () => {
+    if (!isLoggedIn) {
+      onLoginClick();
+      return;
+    }
+    const currentBoard = availableWriteBoards.find((b) => b.type === activeBoard);
+    if (currentBoard) {
+      setNewBoardType(currentBoard.type);
+    } else if (availableWriteBoards.length > 0) {
+      setNewBoardType(availableWriteBoards[0].type);
+    } else {
+      setNewBoardType("QnA");
+    }
+    setNewIsPinned(false);
+    setShowWriteModal(true);
+  };
+
+  // 중복 ID 방어 및 상단 고정(isPinned) 최우선 정렬
   const uniquePosts = React.useMemo(() => {
     const seen = new Set<string>();
-    return posts.filter((p) => {
+    const unique = posts.filter((p) => {
       if (!p.id || seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
+    });
+
+    return unique.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
     });
   }, [posts]);
 
@@ -132,14 +205,15 @@ export default function CommunityPage({
     if (!newTitle.trim() || !newContent.trim()) return;
     onAddPost({
       boardType: newBoardType,
-      title: newTitle,
-      content: newContent,
-      author: "나",
+      title: newTitle.trim(),
+      content: newContent.trim(),
+      author: userName || "나",
       createdAt: "방금 전",
-      isPinned: false,
+      isPinned: isAdmin ? newIsPinned : false,
     });
     setNewTitle("");
     setNewContent("");
+    setNewIsPinned(false);
     setShowWriteModal(false);
   };
 
@@ -148,16 +222,13 @@ export default function CommunityPage({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="font-display text-2xl font-bold text-white">커뮤니티</h1>
-          <p className="text-sm text-brand-on-surface-variant mt-1">멀티 게시판 — 공지, 팀 빌딩, Q&A</p>
+          <p className="text-sm text-brand-on-surface-variant mt-1">
+            실시간 창업 커뮤니티 — 공지, 팀 빌딩, Q&A 및 분야별 자유 게시판
+          </p>
         </div>
         <button
-          onClick={() => {
-            if (!isLoggedIn) {
-              onLoginClick();
-              return;
-            }
-            setShowWriteModal(true);
-          }}
+          onClick={handleOpenWriteModal}
+          data-testid="community-write-btn"
           className="bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center gap-1.5 shadow-md"
         >
           <Plus size={14} />
@@ -211,10 +282,15 @@ export default function CommunityPage({
 
       {/* Active board description */}
       {activeBoard !== "전체" && (
-        <div className="mb-4 px-4 py-2 bg-brand-surface-low rounded-lg border border-brand-border/30">
+        <div className="mb-4 px-4 py-2 bg-brand-surface-low rounded-lg border border-brand-border/30 flex items-center justify-between">
           <p className="text-xs text-brand-on-surface-variant">
             {boards.find((b) => b.type === activeBoard)?.desc}
           </p>
+          {boards.find((b) => b.type === activeBoard)?.writePermission === "관리자" && (
+            <span className="text-[10px] text-brand-accent-rose flex items-center gap-1 font-medium">
+              <Lock size={11} /> 관리자 전용 작성
+            </span>
+          )}
         </div>
       )}
 
@@ -229,7 +305,7 @@ export default function CommunityPage({
           <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
             {/* Header row */}
             <div className="flex items-center px-4 sm:px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[10px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
-              <span className="w-12 sm:w-14 shrink-0">분류</span>
+              <span className="w-16 sm:w-20 shrink-0">분류</span>
               <span className="flex-1 min-w-0">제목</span>
               <div
                 className={`flex items-center gap-3 sm:gap-4 shrink-0 transition-all duration-300 ease-in-out ${
@@ -263,27 +339,35 @@ export default function CommunityPage({
                   }`}
                 >
                   {/* Category Badge */}
-                  <div className="w-12 sm:w-14 shrink-0">
+                  <div className="w-16 sm:w-20 shrink-0">
                     <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block ${
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block truncate max-w-full ${
                         post.boardType === "공지사항"
                           ? "bg-brand-accent-rose/10 text-brand-accent-rose border border-brand-accent-rose/20"
-                          : post.boardType === "팀빌딩"
+                          : post.boardType === "팀빌딩" || post.boardType?.includes("팀")
                           ? "bg-brand-tertiary/10 text-brand-tertiary border border-brand-tertiary/20"
-                          : "bg-brand-primary-container/10 text-brand-primary border border-brand-primary-container/20"
+                          : post.boardType === "QnA"
+                          ? "bg-brand-primary-container/10 text-brand-primary border border-brand-primary-container/20"
+                          : "bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
                       }`}
                     >
-                      {post.boardType === "공지사항" ? "공지" : post.boardType === "팀빌딩" ? "팀" : "Q&A"}
+                      {post.boardType}
                     </span>
                   </div>
 
                   {/* Title & Comment count */}
                   <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    {post.isPinned && <Pin size={11} className="text-brand-accent-rose shrink-0" />}
+                    {post.isPinned && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.2 rounded bg-brand-accent-rose/20 text-brand-accent-rose shrink-0">
+                        <Pin size={10} /> 공지
+                      </span>
+                    )}
                     <span
                       className={`text-xs truncate transition-colors ${
                         selectedPost?.id === post.id
                           ? "text-white font-semibold"
+                          : post.isPinned
+                          ? "text-white font-bold"
                           : "text-white/90 font-medium hover:text-brand-primary"
                       }`}
                     >
@@ -296,7 +380,7 @@ export default function CommunityPage({
                     )}
                   </div>
 
-                  {/* Metadata Columns (Collapses smoothly on click without DOM unmount) */}
+                  {/* Metadata Columns */}
                   <div
                     className={`flex items-center gap-3 sm:gap-4 shrink-0 transition-all duration-300 ease-in-out ${
                       selectedPost
@@ -341,8 +425,11 @@ export default function CommunityPage({
               userRoles={userRoles}
               userName={userName}
               onLoginClick={onLoginClick}
+              onDeletePost={(postId) => {
+                if (onDeletePost) onDeletePost(postId);
+                setSelectedPost(null);
+              }}
               onCommentAdded={(newComment) => {
-                // Update local post commentCount
                 setSelectedPost((prev) => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : null));
               }}
             />
@@ -353,10 +440,11 @@ export default function CommunityPage({
       {/* Write Post Modal */}
       {showWriteModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="glass-panel-heavy rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-brand-border">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-brand-border">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-display text-lg font-bold text-white">게시글 작성</h3>
               <button
+                type="button"
                 onClick={() => setShowWriteModal(false)}
                 className="text-brand-on-surface-variant hover:text-white cursor-pointer"
               >
@@ -365,27 +453,58 @@ export default function CommunityPage({
             </div>
 
             <div className="flex flex-col gap-4">
-              {/* Board Type Select */}
+              {/* Board Type Select (동적 및 권한 분기) */}
               <div>
-                <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">
-                  게시판 선택
-                </label>
-                <div className="flex gap-2">
-                  {(["팀빌딩", "QnA"] as BoardType[]).map((bt) => (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-brand-on-surface-variant block">
+                    게시판 선택
+                  </label>
+                  {isAdmin && (
+                    <span className="text-[10px] text-brand-primary font-medium flex items-center gap-1">
+                      <CheckCircle2 size={11} /> 관리자 권한 활성화
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableWriteBoards.map((b) => (
                     <button
-                      key={bt}
-                      onClick={() => setNewBoardType(bt)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                        newBoardType === bt
-                          ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold"
-                          : "border-brand-border text-brand-on-surface-variant hover:text-white"
+                      key={b.type}
+                      type="button"
+                      onClick={() => setNewBoardType(b.type)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+                        newBoardType === b.type
+                          ? "bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm"
+                          : "border-brand-border text-brand-on-surface-variant hover:text-white bg-brand-surface-low"
                       }`}
                     >
-                      {bt === "팀빌딩" ? "팀 빌딩" : "Q&A 자유게시판"}
+                      {b.icon}
+                      {b.label}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Pinned notice option (관리자 전용) */}
+              {isAdmin && (
+                <div className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/40 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Pin size={14} className={newIsPinned ? "text-brand-accent-rose" : "text-brand-on-surface-variant"} />
+                    <div>
+                      <p className="text-xs font-semibold text-white">상단 공지 고정 (Pin)</p>
+                      <p className="text-[10px] text-brand-on-surface-variant">게시판 목록 최상단에 항상 고정하여 노출합니다</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newIsPinned}
+                      onChange={(e) => setNewIsPinned(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-brand-surface-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-accent-rose"></div>
+                  </label>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">제목</label>
@@ -404,20 +523,24 @@ export default function CommunityPage({
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder="내용을 작성하세요..."
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors h-36 resize-none"
+                  className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors h-32 resize-none"
                 />
               </div>
 
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setShowWriteModal(false)}
                   className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
                 >
                   취소
                 </button>
                 <button
+                  type="button"
+                  data-testid="community-submit-post-btn"
                   onClick={handleSubmit}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-md"
+                  disabled={!newTitle.trim() || !newContent.trim()}
+                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-md"
                 >
                   <Send size={13} />
                   등록 완료

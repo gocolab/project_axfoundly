@@ -37,6 +37,13 @@ router.get("/posts", (req, res) => {
     );
   }
 
+  // 상단 공지 고정(isPinned) 게시글 최우선 정렬
+  posts = [...posts].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return 0;
+  });
+
   const pageNum = parseInt(page || "1", 10);
   const limitNum = parseInt(limit || "100", 10);
   const total = posts.length;
@@ -74,12 +81,39 @@ router.get("/posts/:id", (req, res) => {
   res.json({ post: targetPost, comments });
 });
 
-// POST /api/community/posts (Create post)
+// POST /api/community/posts (Create post with permission checks)
 router.post("/posts", (req, res) => {
-  const { boardType = "QnA", title, content, author = "김수강생", isPinned = false } = req.body;
+  const {
+    boardType = "QnA",
+    title,
+    content,
+    author = "김수강생",
+    authorRoles = ["member"],
+    isPinned = false,
+  } = req.body;
 
   if (!title || !content) {
     return res.status(400).json({ error: "Title and content are required" });
+  }
+
+  const isAdmin =
+    Array.isArray(authorRoles) &&
+    (authorRoles.includes("admin") || authorRoles.includes("manager"));
+
+  // 1. 공지사항 카테고리 또는 상단 고정은 관리자만 가능
+  if ((boardType === "공지사항" || isPinned) && !isAdmin) {
+    return res.status(403).json({
+      error: "공지사항 작성 및 상단 고정글 설정은 관리자 권한이 필요합니다.",
+    });
+  }
+
+  // 2. 관리자가 생성한 게시판의 쓰기 권한(writePermission) 검증
+  const boards = db.get("boards") || [];
+  const targetBoard = boards.find((b) => b.name === boardType);
+  if (targetBoard && targetBoard.writePermission === "관리자" && !isAdmin) {
+    return res.status(403).json({
+      error: `'${boardType}' 게시판은 관리자 전용 게시판입니다.`,
+    });
   }
 
   const newPost: BoardPost = {
@@ -89,6 +123,7 @@ router.post("/posts", (req, res) => {
     content,
     author,
     authorAvatar: "",
+    authorRoles: Array.isArray(authorRoles) ? authorRoles : ["member"],
     createdAt: new Date().toISOString().split("T")[0],
     viewCount: 0,
     commentCount: 0,
@@ -109,6 +144,42 @@ router.post("/posts", (req, res) => {
   res.status(201).json({ post: newPost });
 });
 
+// DELETE /api/community/posts/:id (Delete post)
+router.delete("/posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { author, userRoles } = req.body || {};
+
+  const targetPost = db.get("posts").find((p) => p.id === id);
+  if (!targetPost) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  const isAdmin =
+    Array.isArray(userRoles) &&
+    (userRoles.includes("admin") || userRoles.includes("manager"));
+
+  if (author && targetPost.author !== author && !isAdmin) {
+    return res.status(403).json({ error: "게시글 삭제 권한이 없습니다." });
+  }
+
+  // 게시글 삭제
+  db.update("posts", (posts) => posts.filter((p) => p.id !== id));
+
+  // 연관 댓글 삭제
+  db.update("comments", (comments) => comments.filter((c) => c.postId !== id));
+
+  // 게시판 postCount 감소
+  db.update("boards", (boards) =>
+    boards.map((b) =>
+      b.name === targetPost.boardType
+        ? { ...b, postCount: Math.max(0, b.postCount - 1) }
+        : b
+    )
+  );
+
+  res.json({ success: true, message: "게시글이 삭제되었습니다." });
+});
+
 // GET /api/community/posts/:id/comments (List comments)
 router.get("/posts/:id/comments", (req, res) => {
   const { id } = req.params;
@@ -119,7 +190,7 @@ router.get("/posts/:id/comments", (req, res) => {
 // POST /api/community/posts/:id/comments (Add comment)
 router.post("/posts/:id/comments", (req, res) => {
   const { id } = req.params;
-  const { author = "김수강생", authorRole = "member", content } = req.body;
+  const { author = "김수강생", authorRole = "member", authorRoles, content } = req.body;
 
   if (!content) {
     return res.status(400).json({ error: "Comment content is required" });
@@ -133,12 +204,16 @@ router.post("/posts/:id/comments", (req, res) => {
   const now = new Date();
   const timeStr = `${now.toISOString().split("T")[0]} ${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
+  const resolvedRoles: UserRole[] = Array.isArray(authorRoles) && authorRoles.length > 0
+    ? authorRoles
+    : [authorRole as UserRole];
+
   const newComment: Comment = {
     id: `c-${Date.now()}`,
     postId: id,
     author,
     authorAvatar: "",
-    authorRoles: [authorRole as UserRole],
+    authorRoles: resolvedRoles,
     content,
     createdAt: timeStr,
   };
@@ -163,5 +238,39 @@ router.post("/posts/:id/comments", (req, res) => {
 
   res.status(201).json({ comment: newComment });
 });
+
+// DELETE /api/community/posts/:postId/comments/:commentId
+const handleDeleteComment = (req: any, res: any) => {
+  const { postId, commentId } = req.params;
+  const { author, userRoles } = req.body || {};
+
+  const targetComment = db.get("comments").find((c) => c.id === commentId);
+  if (!targetComment) {
+    return res.status(404).json({ error: "Comment not found" });
+  }
+
+  const isAdmin =
+    Array.isArray(userRoles) &&
+    (userRoles.includes("admin") || userRoles.includes("manager"));
+
+  if (author && targetComment.author.trim() !== author.trim() && !isAdmin) {
+    return res.status(403).json({ error: "댓글 삭제 권한이 없습니다." });
+  }
+
+  db.update("comments", (comments) => comments.filter((c) => c.id !== commentId));
+
+  // Decrement commentCount in post
+  const targetPostId = postId || targetComment.postId;
+  db.update("posts", (posts) =>
+    posts.map((p) =>
+      p.id === targetPostId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p
+    )
+  );
+
+  res.json({ success: true, message: "댓글이 삭제되었습니다." });
+};
+
+router.delete("/posts/:postId/comments/:commentId", handleDeleteComment);
+router.delete("/comments/:commentId", handleDeleteComment);
 
 export default router;

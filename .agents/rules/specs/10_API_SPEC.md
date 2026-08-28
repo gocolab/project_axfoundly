@@ -35,10 +35,12 @@
 | API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |
 | API-AI-04 | POST | `/api/ai/tutor` | 실시간 AI 창업 튜터 Q&A | AI | 전체 | ✅ 완료 |
 | API-AI-05 | POST | `/api/ai/auto-fill` | 제목 재조정 & 자연어 분야 범용 AI 자동 채우기 | AI | 전체 | ✅ 완료 |
-| API-COM-01 | GET | `/api/community/posts` | 멀티 게시판 글 목록 | Community | 불필요 | ✅ 완료 |
-| API-COM-02 | POST | `/api/community/posts` | 게시글 작성 | Community | 회원 | ✅ 완료 |
+| API-COM-01 | GET | `/api/community/posts` | 멀티 게시판 글 목록 (상단 공지 고정 우선 정렬) | Community | 불필요 | ✅ 완료 |
+| API-COM-02 | POST | `/api/community/posts` | 게시글 작성 (공지사항/상단고정/관리자전용게시판 권한 검증) | Community | 회원/관리자 | ✅ 완료 |
 | API-COM-03 | GET | `/api/community/posts/:id` | 게시글 상세 및 댓글 조회 | Community | 불필요 | ✅ 완료 |
-| API-COM-04 | POST | `/api/community/posts/:id/comments` | 댓글 등록 | Community | 회원 | ✅ 완료 |
+| API-COM-04 | POST | `/api/community/posts/:id/comments` | 댓글 등록 및 알림 발송 | Community | 회원 | ✅ 완료 |
+| API-COM-05 | DELETE | `/api/community/posts/:id` | 게시글 삭제 (연관 댓글 연쇄 삭제 및 postCount 감소) | Community | 작성자/관리자 | ✅ 완료 |
+| API-COM-06 | DELETE | `/api/community/posts/:postId/comments/:commentId` | 댓글 삭제 (post commentCount 감소) | Community | 작성자/관리자 | ✅ 완료 |
 | API-ADM-01 | GET | `/api/admin/stats` | 대시보드 KPI 통계 조회 | Admin | 관리자 | ✅ 완료 |
 | API-ADM-02 | GET | `/api/admin/members` | 회원 목록 및 상태 조회 | Admin | 관리자 | ✅ 완료 |
 | API-ADM-03 | PATCH | `/api/admin/members/:id/role` | 회원 권한 변경 | Admin | 관리자 | ✅ 완료 |

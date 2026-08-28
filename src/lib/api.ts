@@ -352,6 +352,13 @@ export const api = {
     });
   },
 
+  deletePost: async (id: string, requesterInfo?: { author?: string; userRoles?: UserRole[] }) => {
+    return fetchJson<{ success: boolean; message: string }>(`/api/community/posts/${id}`, {
+      method: "DELETE",
+      body: JSON.stringify(requesterInfo || {}),
+    });
+  },
+
   getComments: async (postId: string) => {
     return fetchJson<{ comments: Comment[] }>(`/api/community/posts/${postId}/comments`);
   },
@@ -360,6 +367,13 @@ export const api = {
     return fetchJson<{ comment: Comment }>(`/api/community/posts/${postId}/comments`, {
       method: "POST",
       body: JSON.stringify(commentData),
+    });
+  },
+
+  deleteComment: async (postId: string, commentId: string, requesterInfo?: { author?: string; userRoles?: UserRole[] }) => {
+    return fetchJson<{ success: boolean; message: string }>(`/api/community/posts/${postId}/comments/${commentId}`, {
+      method: "DELETE",
+      body: JSON.stringify(requesterInfo || {}),
     });
   },
 
