@@ -180,18 +180,17 @@ export default function IRPage({
       });
       const fetched = res?.requests || [];
       setIdeaRequests(fetched);
-      if (selectedIdeaRequest) {
-        const found = fetched.find((r) => r.id === selectedIdeaRequest.id);
-        if (found) {
-          setSelectedIdeaRequest(found);
-        }
-      }
+      setSelectedIdeaRequest((prev) => {
+        if (!prev) return null;
+        const found = fetched.find((r) => r.id === prev.id);
+        return found || prev;
+      });
     } catch (e) {
       console.error("Failed to fetch idea requests", e);
     } finally {
       setRequestsLoading(false);
     }
-  }, [activeField, searchText, ideaSort, ideaStatusFilter, selectedIdeaRequest]);
+  }, [activeField, searchText, ideaSort, ideaStatusFilter]);
 
   React.useEffect(() => {
     if (activeTab === "ideas") {
@@ -225,15 +224,13 @@ export default function IRPage({
       return;
     }
     try {
-      const res = await api.upvoteIRProject(projectId, userName || "u-student-1");
+      const targetUser = userName || "u-student-1";
+      const res = await api.upvoteIRProject(projectId, targetUser);
       setLocalProjects((prev) =>
-        prev.map((p) => (p.id === projectId ? res.project : p))
+        prev.map((p) => (String(p.id) === String(projectId) ? res.project : p))
       );
-      if (selectedProject?.id === projectId) {
+      if (String(selectedProject?.id) === String(projectId)) {
         setSelectedProject(res.project);
-      }
-      if (onSaveProject) {
-        onSaveProject(res.project);
       }
     } catch (err) {
       console.error("Upvote project failed", err);
@@ -1449,6 +1446,7 @@ export default function IRPage({
                     return (
                       <div
                         key={req.id}
+                        data-testid="idea-request-card"
                         onClick={() => setSelectedIdeaRequest(req)}
                         className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between shadow-lg relative overflow-hidden group ${
                           isSelected

@@ -123,6 +123,7 @@ export default function ProjectCreateEditModal({
   };
 
   React.useEffect(() => {
+    if (!isOpen) return;
     if (initialProject) {
       setTeamName(initialProject.teamName);
       setAnonymousTeamName(initialProject.anonymousTeamName || `⚡ ${initialProject.teamName} (스텔스)`);

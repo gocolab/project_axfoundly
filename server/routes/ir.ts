@@ -44,7 +44,7 @@ router.get("/idea-requests", (req, res) => {
     category?: string;
     tag?: string;
     search?: string;
-    sort?: "popular" | "recent";
+    sort?: "deadline" | "popular" | "recent";
     status?: string;
     page?: string;
     limit?: string;
@@ -653,7 +653,7 @@ router.delete("/projects/:id", (req, res) => {
   const { id } = req.params;
   let deleted = false;
   db.update("irProjects", (projects) => {
-    const nextList = (projects || []).filter((p) => p.id !== id);
+    const nextList = (projects || []).filter((p) => String(p.id) !== String(id));
     if (nextList.length !== (projects || []).length) {
       deleted = true;
     }
@@ -675,7 +675,7 @@ router.post("/projects/:id/upvote", (req, res) => {
 
   db.update("irProjects", (list) =>
     (list || []).map((p) => {
-      if (p.id === id) {
+      if (String(p.id) === String(id)) {
         const upvotes = p.upvotes || [];
         const exists = upvotes.includes(userId);
         let newUpvotes: string[];

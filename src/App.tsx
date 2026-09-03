@@ -237,7 +237,8 @@ export default function App() {
         });
       }
     }
-  }, [refreshData, toast, saveSession, clearSession]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handlers
   const handleLogin = async (roles: UserRole[], email?: string) => {
