@@ -12,6 +12,7 @@ import {
   Search,
   CheckCircle2,
   Lock,
+  Lightbulb,
 } from "lucide-react";
 import type { BoardPost, BoardType, UserRole, AdminBoard } from "../types";
 import Pagination from "./common/Pagination";
@@ -78,6 +79,7 @@ export default function CommunityPage({
       { type: "공지사항", label: "공지사항", icon: <Megaphone size={14} />, desc: "플랫폼 공식 알림", writePermission: "관리자" },
       { type: "팀빌딩", label: "팀 빌딩", icon: <Users size={14} />, desc: "Co-founder 모집 게시판", writePermission: "회원" },
       { type: "QnA", label: "Q&A 자유게시판", icon: <HelpCircle size={14} />, desc: "기술/사업 질의응답", writePermission: "회원" },
+      { type: "수강생 역제안", label: "수강생 역제안", icon: <Lightbulb size={14} />, desc: "배우고 싶은 강의 수요 역제안 게시판", writePermission: "회원" },
     ];
 
     if (!adminBoards || adminBoards.length === 0) {
@@ -348,6 +350,8 @@ export default function CommunityPage({
                           ? "bg-brand-tertiary/10 text-brand-tertiary border border-brand-tertiary/20"
                           : post.boardType === "QnA"
                           ? "bg-brand-primary-container/10 text-brand-primary border border-brand-primary-container/20"
+                          : post.boardType === "수강생 역제안"
+                          ? "bg-amber-500/10 text-amber-300 border border-amber-500/20"
                           : "bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
                       }`}
                     >

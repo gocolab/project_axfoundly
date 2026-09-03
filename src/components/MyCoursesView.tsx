@@ -8,12 +8,10 @@ import {
   Search,
   X,
   RotateCcw,
-  Lightbulb,
 } from "lucide-react";
-import type { Course, CourseRequest } from "../types";
+import type { Course } from "../types";
 import Pagination from "./common/Pagination";
 import { useToast } from "./common/Toast";
-import { api } from "../lib/api";
 
 interface MyCoursesViewProps {
   courses: Course[];
@@ -27,52 +25,11 @@ export default function MyCoursesView({
   onNavigateToCourses,
 }: MyCoursesViewProps) {
   const toast = useToast();
-  const [viewTab, setViewTab] = React.useState<"enrolled" | "requested">("enrolled");
-  const [myRequests, setMyRequests] = React.useState<CourseRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = React.useState(false);
-  const [searchRequest, setSearchRequest] = React.useState("");
-  const [requestPage, setRequestPage] = React.useState(1);
-  const requestItemsPerPage = 6;
-
   const enrolledCourses = courses.filter((c) => c.isEnrolled);
   const [filter, setFilter] = React.useState<"all" | "in_progress" | "completed">("all");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
-
-  React.useEffect(() => {
-    if (viewTab === "requested") {
-      setRequestsLoading(true);
-      api.getCourseRequests()
-        .then((res) => {
-          setMyRequests(res.requests || []);
-        })
-        .catch((err) => console.error("Failed to load requests", err))
-        .finally(() => setRequestsLoading(false));
-    }
-  }, [viewTab]);
-
-  const filteredRequests = myRequests.filter((req) => {
-    const q = searchRequest.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      req.title.toLowerCase().includes(q) ||
-      req.description.toLowerCase().includes(q) ||
-      req.category.toLowerCase().includes(q) ||
-      (req.proposerName && req.proposerName.toLowerCase().includes(q)) ||
-      (req.proposals && req.proposals.some((p) => p.instructorName?.toLowerCase().includes(q) || p.proposedTitle?.toLowerCase().includes(q)))
-    );
-  });
-
-  const requestTotalPages = Math.ceil(filteredRequests.length / requestItemsPerPage);
-  const paginatedRequests = filteredRequests.slice(
-    (requestPage - 1) * requestItemsPerPage,
-    requestPage * requestItemsPerPage
-  );
-
-  React.useEffect(() => {
-    setRequestPage(1);
-  }, [searchRequest]);
 
   const filteredCourses = enrolledCourses.filter((course) => {
     const matchFilter =
@@ -107,215 +64,24 @@ export default function MyCoursesView({
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
-      {/* ── Header with Tab Switcher ── */}
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
             <BookOpen size={20} className="text-brand-primary" /> 내 강의실 (수강 관리)
           </h2>
           <p className="text-xs text-brand-on-surface-variant mt-1">
-            수강 중인 강의의 일정 및 진도율, 또는 내가 요청한 개강 건의 강사 제안 현황을 확인하세요
+            수강 중인 강의의 일정 및 진도율을 확인하고 학습을 이어가세요
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10 self-start">
-          <button
-            onClick={() => setViewTab("enrolled")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              viewTab === "enrolled"
-                ? "bg-brand-primary text-black shadow-md"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" /> 수강 중인 강의 ({enrolledCourses.length})
-          </button>
-          <button
-            onClick={() => setViewTab("requested")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              viewTab === "requested"
-                ? "bg-amber-500 text-black shadow-md"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            <Lightbulb className="w-3.5 h-3.5" /> 개강 요청 건
-          </button>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-primary-container/20 border border-brand-primary/40 text-brand-primary text-xs font-bold self-start">
+          <BookOpen className="w-3.5 h-3.5" /> 수강 중인 강의 {enrolledCourses.length}개
         </div>
       </div>
 
-      {viewTab === "requested" ? (
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
-            <div className="text-xs text-amber-200">
-              💡 내가 등록하거나 참여한 개강 요청 건입니다. 목표 공감 수가 모이면 전문 강사가 맞춤 커리큘럼을 제안합니다.
-            </div>
-            {onNavigateToCourses && (
-              <button
-                onClick={onNavigateToCourses}
-                className="text-xs font-bold text-amber-400 hover:underline shrink-0 ml-2"
-              >
-                개강 요청소 가기 →
-              </button>
-            )}
-          </div>
-
-          {/* Search & Stats Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="text-xs text-brand-on-surface-variant">
-              등록된 요청: <span className="text-white font-semibold">{myRequests.length}</span>개
-              {searchRequest && (
-                <span className="ml-1.5 text-amber-300">
-                  (검색 결과: <strong>{filteredRequests.length}</strong>개)
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="개강 요청 주제, 분야, 강사명 검색..."
-                  value={searchRequest}
-                  onChange={(e) => setSearchRequest(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-amber-400 transition-colors"
-                />
-                {searchRequest && (
-                  <button
-                    onClick={() => setSearchRequest("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {requestsLoading ? (
-            <div className="text-center py-12 text-white/50 text-xs">요청 목록 로딩 중...</div>
-          ) : myRequests.length === 0 ? (
-            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-white/10">
-              <p className="text-xs text-white/50">등록된 개강 요청이 없습니다.</p>
-            </div>
-          ) : filteredRequests.length === 0 ? (
-            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-brand-border/40">
-              <p className="text-xs text-white/60">검색 조건에 일치하는 개강 요청이 없습니다.</p>
-              <button
-                onClick={() => setSearchRequest("")}
-                className="mt-3 px-3 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-bold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw size={12} /> 검색 초기화
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 flex flex-col justify-between hover:border-purple-500/40 transition-all shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            req.status === "모집중"
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                              : req.status === "강사매칭중"
-                              ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                          }`}
-                        >
-                          {req.status}
-                        </span>
-                        <span className="text-[10px] text-white/50 font-mono">{req.category}</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-white line-clamp-1">{req.title}</h4>
-                      <p className="text-xs text-white/60 mt-1 line-clamp-2">{req.description}</p>
-                      <div className="mt-3 flex items-center justify-between text-xs">
-                        <span className="text-white/50">공감 수강생</span>
-                        <span className="text-amber-400 font-bold">{req.upvoteCount} / {req.targetCount}명</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-purple-300 font-medium">
-                          접수된 강사 제안: <strong className="text-white font-bold">{req.proposals?.length || 0}건</strong>
-                        </span>
-                        {onNavigateToCourses && (
-                          <button
-                            onClick={onNavigateToCourses}
-                            className="text-xs text-brand-primary hover:underline font-semibold cursor-pointer"
-                          >
-                            교육 메뉴로 이동 →
-                          </button>
-                        )}
-                      </div>
-
-                      {req.proposals && req.proposals.length > 0 && (
-                        <div className="mt-2 space-y-2">
-                          {req.proposals.map((p) => {
-                            const formattedPrice = (p.price || (p as any).proposedPrice || 0).toLocaleString();
-                            const scheduleText =
-                              typeof p.proposedSchedule === "string"
-                                ? p.proposedSchedule
-                                : p.proposedSchedule?.daysOfWeek
-                                ? `매주 [${p.proposedSchedule.daysOfWeek.join(", ")}] (${p.proposedSchedule.totalSessions || 8}회차)`
-                                : "일정 협의";
-
-                            return (
-                              <div
-                                key={p.id}
-                                className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs flex flex-col gap-1.5"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-white">{p.instructorName} 강사</span>
-                                  <span
-                                    className={`text-[9px] px-1.5 py-0.5 rounded ${
-                                      p.status === "채택됨"
-                                        ? "bg-emerald-500/20 text-emerald-300"
-                                        : "bg-slate-700 text-slate-300"
-                                    }`}
-                                  >
-                                    {p.status}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-purple-200/90 font-medium">{p.proposedTitle}</p>
-                                {p.message && <p className="text-[11px] text-white/70 line-clamp-2">{p.message}</p>}
-                                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                                  <span>일정: {scheduleText}</span>
-                                  <span className="font-semibold text-emerald-400">수강료: {formattedPrice}원</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {requestTotalPages > 1 && (
-                <div className="pt-2">
-                  <Pagination
-                    currentPage={requestPage}
-                    totalPages={requestTotalPages}
-                    onPageChange={setRequestPage}
-                    totalItems={filteredRequests.length}
-                    itemsPerPage={requestItemsPerPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* ── Filter Pills & Search Bar (Community Style) ── */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      {/* ── Filter Pills & Search Bar (Community Style) ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-1.5 p-1 bg-brand-surface-low rounded-xl border border-brand-border/40 self-start overflow-x-auto max-w-full">
           <button
             onClick={() => setFilter("all")}
@@ -568,8 +334,6 @@ export default function MyCoursesView({
             );
           })}
         </div>
-      )}
-      </>
       )}
     </div>
   );

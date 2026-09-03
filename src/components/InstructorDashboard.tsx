@@ -29,13 +29,11 @@ import type {
   Course,
   SettlementRecord,
   CRMMessage,
-  CourseRequest,
   CourseStudent,
 } from "../types";
 import { api } from "../lib/api";
 import Pagination from "./common/Pagination";
 import { useToast } from "./common/Toast";
-import CourseProposalModal from "./CourseProposalModal";
 import CourseCreateEditModal from "./CourseCreateEditModal";
 
 interface InstructorDashboardProps {
@@ -127,7 +125,6 @@ export default function InstructorDashboard({
 
   const tabs = [
     { id: "courses" as const, label: "내 강의 목록", icon: <BookOpen size={14} /> },
-    { id: "requests" as const, label: "수요 있는 개강 요청 탐색", icon: <Sparkles size={14} /> },
     { id: "students" as const, label: "수강생 관리 (수료·환불 권한)", icon: <Users size={14} /> },
     { id: "settlement" as const, label: "정산 관리", icon: <DollarSign size={14} /> },
   ];
@@ -220,52 +217,6 @@ export default function InstructorDashboard({
   React.useEffect(() => {
     setSettlementPage(1);
   }, [settlementFilter, searchSettlement]);
-
-  // 4. Discovered Course Requests for Reverse Proposal
-  const [discoveredRequests, setDiscoveredRequests] = React.useState<CourseRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = React.useState(false);
-  const [searchDiscoveredRequest, setSearchDiscoveredRequest] = React.useState("");
-  const [discoveredRequestPage, setDiscoveredRequestPage] = React.useState(1);
-  const discoveredRequestItemsPerPage = 6;
-  const [selectedRequestForProposal, setSelectedRequestForProposal] = React.useState<CourseRequest | null>(null);
-  const [showProposalModal, setShowProposalModal] = React.useState(false);
-
-  React.useEffect(() => {
-    if (activeTab === "requests") {
-      setRequestsLoading(true);
-      api.getCourseRequests()
-        .then((res) => {
-          setDiscoveredRequests(res.requests || []);
-        })
-        .catch((err) => console.error("Failed to load course requests", err))
-        .finally(() => setRequestsLoading(false));
-    }
-  }, [activeTab]);
-
-  const filteredDiscoveredRequests = discoveredRequests.filter((req) => {
-    if (!searchDiscoveredRequest.trim()) return true;
-    const query = searchDiscoveredRequest.toLowerCase().trim();
-    return (
-      req.title.toLowerCase().includes(query) ||
-      req.description.toLowerCase().includes(query) ||
-      req.category.toLowerCase().includes(query) ||
-      (req.preferredSchedule && req.preferredSchedule.toLowerCase().includes(query)) ||
-      (req.expectedPriceRange && req.expectedPriceRange.toLowerCase().includes(query)) ||
-      (req.proposerName && req.proposerName.toLowerCase().includes(query))
-    );
-  });
-
-  const discoveredRequestTotalPages = Math.ceil(
-    filteredDiscoveredRequests.length / discoveredRequestItemsPerPage
-  );
-  const paginatedDiscoveredRequests = filteredDiscoveredRequests.slice(
-    (discoveredRequestPage - 1) * discoveredRequestItemsPerPage,
-    discoveredRequestPage * discoveredRequestItemsPerPage
-  );
-
-  React.useEffect(() => {
-    setDiscoveredRequestPage(1);
-  }, [searchDiscoveredRequest]);
 
   const totalRevenue = settlements.reduce((sum, s) => sum + s.netAmount, 0);
 
@@ -629,136 +580,7 @@ export default function InstructorDashboard({
         </div>
       )}
 
-      {/* ──────────────── 1-2. 수요 있는 개강 요청 탐색 탭 ──────────────── */}
-      {activeTab === "requests" && (
-        <div className="flex flex-col gap-4 animate-fadeIn">
-          <div className="bg-gradient-to-r from-purple-900/30 via-brand-primary/10 to-transparent p-4 rounded-xl border border-purple-500/30 flex items-center justify-between">
-            <div>
-              <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sparkles size={14} className="text-purple-400" />
-                수강생 수요 역제안 탐색 & AI 제안서 자동 생성
-              </h3>
-              <p className="text-[11px] text-brand-on-surface-variant mt-0.5">
-                수강생들이 개설을 희망하는 주제와 공감 수를 확인하고, AI 맞춤 초안으로 원클릭 커리큘럼 제안서를 작성하세요.
-              </p>
-            </div>
-          </div>
 
-          {/* Search & Stats Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="text-xs text-brand-on-surface-variant">
-              등록된 수요 요청: <span className="text-white font-semibold">{discoveredRequests.length}</span>개
-              {searchDiscoveredRequest && (
-                <span className="ml-1.5 text-purple-300">
-                  (검색 결과: <strong>{filteredDiscoveredRequests.length}</strong>개)
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="주제, 카테고리, 희망일정 검색..."
-                  value={searchDiscoveredRequest}
-                  onChange={(e) => setSearchDiscoveredRequest(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-purple-400 transition-colors"
-                />
-                {searchDiscoveredRequest && (
-                  <button
-                    onClick={() => setSearchDiscoveredRequest("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {requestsLoading ? (
-            <div className="text-center py-12 text-white/50 text-xs">수요 개강 요청 로딩 중...</div>
-          ) : discoveredRequests.length === 0 ? (
-            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-white/10">
-              <p className="text-xs text-white/50">현재 등록된 수강생 개강 요청이 없습니다.</p>
-            </div>
-          ) : filteredDiscoveredRequests.length === 0 ? (
-            <div className="text-center py-12 bg-brand-surface-low rounded-xl border border-brand-border/40">
-              <p className="text-xs text-white/60">검색 조건에 일치하는 수요 요청이 없습니다.</p>
-              <button
-                onClick={() => setSearchDiscoveredRequest("")}
-                className="mt-3 px-3 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border text-white text-xs font-bold hover:bg-brand-surface-highest transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw size={12} /> 검색 초기화
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedDiscoveredRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="p-5 rounded-2xl bg-brand-card border border-brand-border/60 flex flex-col justify-between hover:border-purple-500/40 transition-all shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            req.status === "모집중"
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                              : req.status === "강사매칭중"
-                              ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                          }`}
-                        >
-                          {req.status}
-                        </span>
-                        <span className="text-[10px] text-brand-on-surface-variant font-mono">{req.category}</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-white line-clamp-1">{req.title}</h4>
-                      <p className="text-xs text-brand-on-surface-variant mt-1 line-clamp-2">{req.description}</p>
-                      <div className="mt-3 flex items-center justify-between text-xs">
-                        <span className="text-brand-on-surface-variant">
-                          희망 일정: {req.preferredSchedule || "협의"} | {req.expectedPriceRange || "협의"}
-                        </span>
-                        <span className="text-amber-400 font-bold">👍 {req.upvoteCount}명 공감</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-brand-border/40 flex items-center justify-between text-xs">
-                      <span className="text-purple-300 font-medium">접수된 제안 {req.proposals?.length || 0}건</span>
-                      <button
-                        onClick={() => {
-                          setSelectedRequestForProposal(req);
-                          setShowProposalModal(true);
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow cursor-pointer"
-                      >
-                        <Sparkles size={13} />
-                        AI 제안서 작성하기
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {discoveredRequestTotalPages > 1 && (
-                <div className="pt-2">
-                  <Pagination
-                    currentPage={discoveredRequestPage}
-                    totalPages={discoveredRequestTotalPages}
-                    onPageChange={setDiscoveredRequestPage}
-                    totalItems={filteredDiscoveredRequests.length}
-                    itemsPerPage={discoveredRequestItemsPerPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
 
       {/* ──────────────── 2. 수강생 관리 (수료·환불 권한 강화) 탭 ──────────────── */}
       {activeTab === "students" && (
@@ -1436,24 +1258,6 @@ export default function InstructorDashboard({
         </div>
       )}
 
-      {/* ──────────────── Modal 4: 역제안 제안서 모달 ──────────────── */}
-      {showProposalModal && selectedRequestForProposal && (
-        <CourseProposalModal
-          isOpen={showProposalModal}
-          request={selectedRequestForProposal}
-          onClose={() => {
-            setShowProposalModal(false);
-            setSelectedRequestForProposal(null);
-          }}
-          onProposalSubmitted={(proposal) => {
-            setShowProposalModal(false);
-            setSelectedRequestForProposal(null);
-            api.getCourseRequests().then((res) => setDiscoveredRequests(res.requests || []));
-            toast.success("제안서 등록 완료", "수강생 개강 요청에 맞춤 커리큘럼 제안서가 등록되었습니다.");
-          }}
-          instructorName="김소현"
-        />
-      )}
     </div>
   );
 }

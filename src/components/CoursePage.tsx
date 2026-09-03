@@ -20,17 +20,12 @@ import {
   ExternalLink,
   ShieldCheck,
   TrendingUp,
-  Lightbulb,
-  ThumbsUp,
-  Send,
-  Target,
   FileCheck,
+  Edit,
 } from "lucide-react";
-import type { Course, InstructorProfile, Review, CourseRequest, CourseProposal } from "../types";
+import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
 import CourseCreateEditModal from "./CourseCreateEditModal";
-import CourseRequestModal from "./CourseRequestModal";
-import CourseProposalModal from "./CourseProposalModal";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
 
@@ -50,6 +45,7 @@ export default function CoursePage({
   courses,
   onEnroll,
   isLoggedIn,
+  userRoles = ["member"],
   userName = "게스트",
   onLoginClick,
   onSaveCourse,
@@ -82,6 +78,7 @@ export default function CoursePage({
 
   const [activeCategory, setActiveCategory] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
+  const [deliveryFilter, setDeliveryFilter] = React.useState<"all" | "online" | "offline" | "hybrid">("all");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 6;
@@ -90,89 +87,10 @@ export default function CoursePage({
   const [paymentMethod, setPaymentMethod] = React.useState<"카드" | "카카오페이">("카카오페이");
   const [showInstructorModal, setShowInstructorModal] = React.useState(false);
   const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [editingCourse, setEditingCourse] = React.useState<Course | null>(null);
+  const [showEditModal, setShowEditModal] = React.useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = React.useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = React.useState<Date>(new Date(2025, 8, 1)); // Sep 2025
-
-  // ── Reverse Proposal (개강 요청소) State ──
-  const [courseRequests, setCourseRequests] = React.useState<CourseRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = React.useState(false);
-  const [selectedRequest, setSelectedRequest] = React.useState<CourseRequest | null>(null);
-  const [showRequestModal, setShowRequestModal] = React.useState(false);
-  const [showProposalModal, setShowProposalModal] = React.useState(false);
-  const [proposalTargetRequest, setProposalTargetRequest] = React.useState<CourseRequest | null>(null);
-  const [requestSort, setRequestSort] = React.useState<"popular" | "recent">("popular");
-  const [requestStatusFilter, setRequestStatusFilter] = React.useState<string>("전체");
-  const [requestPage, setRequestPage] = React.useState(1);
-  const requestsPerPage = 6;
-
-  const fetchRequests = React.useCallback(async () => {
-    try {
-      setRequestsLoading(true);
-      const res = await api.getCourseRequests({
-        category: activeCategory === "전체" ? undefined : activeCategory,
-        search: searchText || undefined,
-        sort: requestSort,
-        status: requestStatusFilter === "전체" ? undefined : requestStatusFilter,
-      });
-      setCourseRequests(res.requests || []);
-    } catch (e) {
-      console.error("Failed to fetch course requests", e);
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, [activeCategory, searchText, requestSort, requestStatusFilter]);
-
-  React.useEffect(() => {
-    if (activeTab === "requests") {
-      fetchRequests();
-    }
-  }, [activeTab, fetchRequests]);
-
-  const handleUpvoteRequest = async (e: React.MouseEvent, reqId: string) => {
-    e.stopPropagation();
-    if (!isLoggedIn) {
-      onLoginClick();
-      return;
-    }
-    try {
-      const res = await api.upvoteCourseRequest(reqId, userName || "u-student-1");
-      setCourseRequests((prev) =>
-        prev.map((r) => (r.id === reqId ? res.request : r))
-      );
-      if (selectedRequest?.id === reqId) {
-        setSelectedRequest(res.request);
-      }
-    } catch (err) {
-      console.error("Upvote failed", err);
-    }
-  };
-
-  const handleAcceptProposal = async (reqId: string, propId: string) => {
-    const confirmed = await toast.confirm({
-      title: "강의 개설 확정",
-      message: "이 강사님의 제안서를 채택하여 정식 강의로 개설하시겠습니까?\n채택 시 플랫폼에 정식 강의가 즉시 오픈됩니다.",
-      confirmText: "채택 및 개설하기",
-      cancelText: "취소",
-      type: "success",
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await api.acceptCourseProposal(reqId, propId);
-      toast.success(
-        "🎉 축하합니다! 정식 강의가 개설되었습니다.",
-        "강의 탐색 탭에서 개설된 강의를 바로 확인하실 수 있습니다."
-      );
-      if (onSaveCourse && res?.course) {
-        onSaveCourse(res.course);
-      }
-      fetchRequests();
-      setSelectedRequest(null);
-    } catch (err) {
-      console.error("Accept proposal failed", err);
-      toast.error("제안 채택 실패", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-    }
-  };
 
   const dynamicCategories = React.useMemo(() => {
     const catSet = new Set<string>();
@@ -196,6 +114,7 @@ export default function CoursePage({
   const filtered = courses.filter((c) => {
     const matchCategory = activeCategory === "전체" || c.category === activeCategory;
     const matchTag = !activeTag || c.tags?.includes(activeTag);
+    const matchDelivery = deliveryFilter === "all" || c.deliveryType === deliveryFilter;
     const q = searchText.toLowerCase();
     const matchSearch =
       !searchText ||
@@ -204,7 +123,7 @@ export default function CoursePage({
       c.instructor.toLowerCase().includes(q) ||
       c.category?.toLowerCase().includes(q) ||
       c.tags?.some((t) => t.toLowerCase().includes(q));
-    return matchCategory && matchTag && matchSearch;
+    return matchCategory && matchTag && matchDelivery && matchSearch;
   });
 
   // Pagination calculation
@@ -217,7 +136,7 @@ export default function CoursePage({
   // Reset page when category or search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, activeTag, searchText]);
+  }, [activeCategory, activeTag, deliveryFilter, searchText]);
 
   // Calendar generation helpers
   const getDaysInMonth = (year: number, month: number) => {
@@ -255,18 +174,33 @@ export default function CoursePage({
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fadeIn">
-        {/* Back Button */}
-        <button
-          onClick={() => {
-            setSelectedCourse(null);
-            setShowInstructorModal(false);
-            onClearSelectedCourse?.();
-          }}
-          className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white mb-6 cursor-pointer transition-colors"
-        >
-          <ArrowLeft size={16} />
-          강의 목록으로
-        </button>
+        {/* Back Button & Author Edit Button */}
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => {
+              setSelectedCourse(null);
+              setShowInstructorModal(false);
+              onClearSelectedCourse?.();
+            }}
+            className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white cursor-pointer transition-colors"
+          >
+            <ArrowLeft size={16} />
+            강의 목록으로
+          </button>
+
+          {isLoggedIn && (selectedCourse.instructor === userName || userRoles?.includes("admin")) && (
+            <button
+              onClick={() => {
+                setEditingCourse(selectedCourse);
+                setShowEditModal(true);
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary hover:opacity-90 text-white transition-all shadow-md cursor-pointer"
+            >
+              <Edit size={13} />
+              강의 수정
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Course Main Details */}
@@ -286,17 +220,13 @@ export default function CoursePage({
                     {selectedCourse.status}
                   </span>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
-                    selectedCourse.deliveryType === "vod"
-                      ? "bg-purple-500/30 border-purple-500/50 text-purple-200"
-                      : selectedCourse.deliveryType === "offline"
+                    selectedCourse.deliveryType === "offline"
                       ? "bg-amber-500/30 border-amber-500/50 text-amber-200"
                       : selectedCourse.deliveryType === "hybrid"
                       ? "bg-emerald-500/30 border-emerald-500/50 text-emerald-200"
                       : "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
                   }`}>
-                    {selectedCourse.deliveryType === "vod"
-                      ? "🎥 VOD 동영상"
-                      : selectedCourse.deliveryType === "offline"
+                    {selectedCourse.deliveryType === "offline"
                       ? "🏢 현장 오프라인"
                       : selectedCourse.deliveryType === "hybrid"
                       ? "🔄 온·오프라인 혼합"
@@ -353,9 +283,7 @@ export default function CoursePage({
                   <div>
                     <span className="text-[10px] text-slate-400 block font-mono">진행 방식</span>
                     <span className="text-xs font-semibold text-brand-primary">
-                      {selectedCourse.deliveryType === "vod"
-                        ? "VOD 동영상"
-                        : selectedCourse.deliveryType === "offline"
+                      {selectedCourse.deliveryType === "offline"
                         ? "현장 오프라인"
                         : selectedCourse.deliveryType === "hybrid"
                         ? "온·오프라인 혼합"
@@ -1034,120 +962,80 @@ export default function CoursePage({
     );
   }
 
-  // ── Course List & Request View ──
-  const filteredRequests = courseRequests.filter((r) => {
-    const matchCategory = activeCategory === "전체" || r.category === activeCategory;
-    const matchTag = !activeTag || r.tags?.includes(activeTag);
-    const matchStatus = requestStatusFilter === "전체" || r.status === requestStatusFilter;
-    const q = searchText.toLowerCase();
-    const matchSearch =
-      !searchText ||
-      r.title.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q) ||
-      r.requestedBy?.userName.toLowerCase().includes(q) ||
-      r.category?.toLowerCase().includes(q) ||
-      r.tags?.some((t) => t.toLowerCase().includes(q));
-    return matchCategory && matchTag && matchStatus && matchSearch;
-  });
-
-  const totalRequestPages = Math.ceil(filteredRequests.length / requestsPerPage);
-  const paginatedRequests = filteredRequests.slice(
-    (requestPage - 1) * requestsPerPage,
-    requestPage * requestsPerPage
-  );
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      <div className="mb-4">
-        <h1 className="font-display text-2xl font-bold text-white">교육 / 강의</h1>
-        <p className="text-sm text-brand-on-surface-variant mt-1">
-          실시간 일정 연계 강의 탐색부터 수강생 수요 기반 개강 요청까지 모두 지원합니다.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-white">교육 / 강의</h1>
+          <p className="text-sm text-brand-on-surface-variant mt-1">
+            실시간 일정 연계 강의 탐색 및 맞춤형 커리큘럼을 지원합니다.
+          </p>
+        </div>
+        {isLoggedIn && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="text-xs font-bold px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-brand-primary/10 self-start sm:self-auto"
+          >
+            <span className="text-base leading-none">+</span> 강의 개설 마법사
+          </button>
+        )}
       </div>
 
-      {/* ── Sub-Navigation Tabs (개설된 강의 탐색 vs 수강생 개강 요청소) ── */}
-      <div className="flex items-center gap-3 border-b border-white/10 mb-6 pb-1">
-        <button
-          onClick={() => {
-            setActiveTab("browse");
-            setSelectedRequest(null);
-          }}
-          className={`pb-2.5 px-3 text-sm font-bold transition-all cursor-pointer relative flex items-center gap-2 ${
-            activeTab === "browse"
-              ? "text-brand-primary border-b-2 border-brand-primary font-extrabold"
-              : "text-white/60 hover:text-white"
-          }`}
-        >
-          <BookOpen className="w-4 h-4" /> 개설된 강의 탐색
-          <span className="text-xs px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-primary border border-brand-primary/30">
-            {courses.length}
-          </span>
-        </button>
+      {/* Streamlined Search & Filter Action Bar */}
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
+            <input
+              type="text"
+              placeholder="강의명, 강사명, 분야, 태그 검색..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full shadow-inner"
+            />
+          </div>
 
-        <button
-          onClick={() => {
-            setActiveTab("requests");
-            setSelectedCourse(null);
-          }}
-          className={`pb-2.5 px-3 text-sm font-bold transition-all cursor-pointer relative flex items-center gap-2 ${
-            activeTab === "requests"
-              ? "text-amber-400 border-b-2 border-amber-400 font-extrabold"
-              : "text-white/60 hover:text-white"
-          }`}
-        >
-          <Lightbulb className="w-4 h-4 text-amber-400" /> 수강생 개강 요청소
-          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            수요 역제안
-          </span>
-        </button>
-      </div>
+          {/* Right Pagination */}
+          <div className="flex items-center gap-3 justify-end shrink-0">
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filtered.length}
+                itemsPerPage={itemsPerPage}
+              />
+            )}
+          </div>
+        </div>
 
-      {/* ────────────────────────────────────────────────────────── */}
-      {/* 1. 개설된 강의 탐색 (BROWSE TAB)                          */}
-      {/* ────────────────────────────────────────────────────────── */}
-      {activeTab === "browse" && (
-        <>
-          {/* Streamlined Search & Action Bar */}
-          <div className="flex flex-col gap-3 mb-6">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              {/* Search Input */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
-                <input
-                  type="text"
-                  placeholder="강의명, 강사명, 분야, 태그 검색..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full shadow-inner"
-                />
-              </div>
+        {/* Delivery Type Filter Buttons */}
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          <span className="text-[11px] font-semibold text-brand-on-surface-variant">강의 진행 방식:</span>
+          {[
+            { id: "all" as const, label: "전체" },
+            { id: "online" as const, label: "💻 실시간 온라인" },
+            { id: "offline" as const, label: "🏢 현장 오프라인" },
+            { id: "hybrid" as const, label: "🔄 온·오프라인 혼합" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setDeliveryFilter(item.id)}
+              className={`text-[11px] px-3 py-1 rounded-xl border transition-all cursor-pointer font-medium ${
+                deliveryFilter === item.id
+                  ? "bg-brand-primary text-black border-brand-primary font-bold shadow-sm"
+                  : "bg-brand-surface-low border-brand-border text-brand-on-surface-variant hover:text-white"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-              {/* Right Action & Pagination */}
-              <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
-                {isLoggedIn && (
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-brand-primary/10"
-                  >
-                    <span className="text-base leading-none">+</span> 강의 개설 마법사
-                  </button>
-                )}
-
-                {totalPages > 1 && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    totalItems={filtered.length}
-                    itemsPerPage={itemsPerPage}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Tag Cloud */}
-            {popularTags.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-brand-border/20">
+        {/* Tag Cloud */}
+        {popularTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-brand-border/20">
                 <span className="text-[11px] font-semibold text-brand-on-surface-variant flex items-center gap-1">
                   <Sparkles size={12} className="text-purple-400" /> 실무 스킬 태그:
                 </span>
@@ -1184,6 +1072,8 @@ export default function CoursePage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {paginatedCourses.map((course, idx) => {
               const schedule = course.schedule;
+              const isAuthor = isLoggedIn && (course.instructor === userName || userRoles?.includes("admin"));
+
               return (
                 <div
                   key={course.id}
@@ -1209,18 +1099,14 @@ export default function CoursePage({
                         </span>
                         <span
                           className={`text-xs font-semibold px-2 py-1 rounded-lg backdrop-blur-md border ${
-                            course.deliveryType === "vod"
-                              ? "bg-purple-500/30 border-purple-500/50 text-purple-200"
-                              : course.deliveryType === "offline"
+                            course.deliveryType === "offline"
                               ? "bg-amber-500/30 border-amber-500/50 text-amber-200"
                               : course.deliveryType === "hybrid"
                               ? "bg-emerald-500/30 border-emerald-500/50 text-emerald-200"
                               : "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
                           }`}
                         >
-                          {course.deliveryType === "vod"
-                            ? "🎥 VOD"
-                            : course.deliveryType === "offline"
+                          {course.deliveryType === "offline"
                             ? "🏢 오프라인"
                             : course.deliveryType === "hybrid"
                             ? "🔄 혼합"
@@ -1266,13 +1152,35 @@ export default function CoursePage({
                         <span className="text-white font-mono font-bold tracking-wider">{schedule.timeSlot}</span>
                       </div>
 
-                      <div className="flex items-center gap-2.5 mt-3.5">
-                        <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">
-                          {course.instructor.charAt(0)}
+                      {course.location && (
+                        <div className="mt-2.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-1.5">
+                          <span>🏢</span>
+                          <span className="truncate">{course.location}</span>
                         </div>
-                        <span className="text-xs text-slate-300 font-medium">
-                          {course.instructor} 강사
-                        </span>
+                      )}
+
+                      <div className="flex items-center justify-between gap-2.5 mt-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">
+                            {course.instructor.charAt(0)}
+                          </div>
+                          <span className="text-xs text-slate-300 font-medium">
+                            {course.instructor} 강사
+                          </span>
+                        </div>
+                        {isAuthor && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCourse(course);
+                              setShowEditModal(true);
+                            }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-purple-300 border border-purple-500/30 flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Edit size={11} /> 수정
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1310,388 +1218,6 @@ export default function CoursePage({
               <p className="text-brand-on-surface-variant text-sm">검색 결과가 없습니다</p>
             </div>
           )}
-        </>
-      )}
-
-      {/* ────────────────────────────────────────────────────────── */}
-      {/* 2. 수강생 개강 요청소 (REVERSE PROPOSALS TAB)              */}
-      {/* ────────────────────────────────────────────────────────── */}
-      {activeTab === "requests" && (
-        <div className="space-y-6">
-          {/* Hero Banner for Reverse Proposals */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-950/50 via-purple-950/40 to-slate-900 border border-amber-500/20 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold">
-                <Lightbulb className="w-3.5 h-3.5" /> 수요자 중심 개강 매칭
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                배우고 싶은 주제를 요청하면, <br />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200">
-                  전문 강사가 맞춤형 커리큘럼을 역제안합니다.
-                </span>
-              </h2>
-              <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-                공감 투표가 목표치에 도달하면 강사들의 개강 제안서가 등록되고, 채택 시 즉시 정식 강의로 개설됩니다.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                if (!isLoggedIn) {
-                  onLoginClick();
-                  return;
-                }
-                setShowRequestModal(true);
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm shadow-xl shadow-amber-500/20 transition-all transform active:scale-95 cursor-pointer whitespace-nowrap"
-            >
-              <Lightbulb className="w-4 h-4" /> + 개강 요청하기
-            </button>
-          </div>
-
-          {/* Streamlined Filter & Search Bar for Requests */}
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              {/* Status Filter */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {["전체", "모집중", "강사매칭중", "개강완료"].map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setRequestStatusFilter(st)}
-                    className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                      requestStatusFilter === st
-                        ? "bg-amber-500/20 border-amber-500/40 text-amber-300 font-bold shadow-sm"
-                        : "border-brand-border text-brand-on-surface-variant hover:text-white hover:bg-brand-surface-high/50"
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sort Switch */}
-              <div className="flex items-center gap-1 bg-brand-surface-low p-1 rounded-xl border border-brand-border text-xs shrink-0 self-start sm:self-auto">
-                <button
-                  onClick={() => setRequestSort("popular")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                    requestSort === "popular"
-                      ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30"
-                      : "text-white/50 hover:text-white"
-                  }`}
-                >
-                  🔥 인기순
-                </button>
-                <button
-                  onClick={() => setRequestSort("recent")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                    requestSort === "recent"
-                      ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30"
-                      : "text-white/50 hover:text-white"
-                  }`}
-                >
-                  ⏱️ 최신순
-                </button>
-              </div>
-            </div>
-
-            {/* Search + Pagination */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
-                <input
-                  type="text"
-                  placeholder="개강 요청 주제, 분야, 발제자, 키워드 검색..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-amber-500 transition-colors w-full shadow-inner"
-                />
-              </div>
-
-              {totalRequestPages > 1 && (
-                <div className="ml-auto shrink-0">
-                  <Pagination
-                    currentPage={requestPage}
-                    totalPages={totalRequestPages}
-                    onPageChange={setRequestPage}
-                    totalItems={filteredRequests.length}
-                    itemsPerPage={requestsPerPage}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Master-Detail Split Layout for Requests */}
-          <div className="flex gap-6 items-start">
-            {/* Left: Cards Grid (Pushes when detail panel is open) */}
-            <div className={`transition-all duration-300 ${selectedRequest ? "w-full lg:w-3/5" : "w-full"}`}>
-              {requestsLoading ? (
-                <div className="text-center py-16 text-white/50 text-sm">개강 요청 목록을 불러오는 중...</div>
-              ) : paginatedRequests.length === 0 ? (
-                <div className="text-center py-16 bg-brand-card rounded-2xl border border-white/10">
-                  <p className="text-white/60 text-sm">등록된 개강 요청이 없습니다.</p>
-                  <button
-                    onClick={() => setShowRequestModal(true)}
-                    className="mt-3 text-xs text-amber-400 hover:underline font-semibold"
-                  >
-                    + 첫 번째 개강 요청 등록하기
-                  </button>
-                </div>
-              ) : (
-                <div className={`grid gap-4 ${selectedRequest ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
-                  {paginatedRequests.map((req) => {
-                    const isSelected = selectedRequest?.id === req.id;
-                    const percent = Math.min(100, Math.round((req.upvoteCount / req.targetCount) * 100));
-                    const isUpvoted = req.upvotes?.includes(userName || "u-student-1");
-
-                    return (
-                      <div
-                        key={req.id}
-                        onClick={() => setSelectedRequest(req)}
-                        className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between shadow-lg relative overflow-hidden group ${
-                          isSelected
-                            ? "bg-brand-surface-high border-amber-500/60 ring-2 ring-amber-500/20"
-                            : "bg-[#0f172a] border-slate-800 hover:border-slate-700 hover:bg-[#131d36]"
-                        }`}
-                      >
-                        <div>
-                          {/* Header badges */}
-                          <div className="flex items-center justify-between gap-2 mb-3">
-                            <span
-                              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                                req.status === "모집중"
-                                  ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                  : req.status === "강사매칭중"
-                                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                                  : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                              }`}
-                            >
-                              {req.status === "모집중" ? "🔥 수요 모집중" : req.status === "강사매칭중" ? "🧑‍🏫 강사 제안 검토중" : "✓ 개강 완료"}
-                            </span>
-                            <span className="text-[10px] text-white/50">{req.category}</span>
-                          </div>
-
-                          <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
-                            {req.title}
-                          </h3>
-
-                          <p className="text-xs text-white/60 mt-2 line-clamp-2 leading-relaxed">
-                            {req.description}
-                          </p>
-
-                          {/* Progress Meter */}
-                          <div className="mt-4 space-y-1.5">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-white/60">공감 수강생</span>
-                              <span className="font-bold text-amber-400">
-                                {req.upvoteCount} / {req.targetCount}명 ({percent}%)
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Tags */}
-                          {req.tags && req.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-3">
-                              {req.tags.slice(0, 3).map((tag, tIdx) => (
-                                <span
-                                  key={tIdx}
-                                  className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-white/60 border border-white/10"
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Footer Buttons */}
-                        <div className="mt-4 pt-3.5 border-t border-white/10 flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={(e) => handleUpvoteRequest(e, req.id)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                              isUpvoted
-                                ? "bg-amber-500 text-black border-amber-500 shadow-sm"
-                                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
-                            }`}
-                          >
-                            <ThumbsUp className={`w-3.5 h-3.5 ${isUpvoted ? "fill-black" : ""}`} />
-                            {isUpvoted ? "공감 완료" : "나도 들을래요!"}
-                          </button>
-
-                          <div className="text-[11px] text-purple-300 font-medium">
-                            강사 제안 {req.proposals?.length || 0}건
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Right: Master-Detail Slide-in Panel */}
-            {selectedRequest && (
-              <div className="w-full lg:w-2/5 bg-brand-surface/95 border border-white/15 rounded-2xl p-6 shadow-2xl animate-slideInFromRight sticky top-24 max-h-[85vh] overflow-y-auto space-y-5">
-                {/* Detail Header */}
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-                        selectedRequest.status === "모집중"
-                          ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                          : selectedRequest.status === "강사매칭중"
-                          ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                          : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                      }`}
-                    >
-                      {selectedRequest.status}
-                    </span>
-                    <span className="text-xs text-white/50">{selectedRequest.category}</span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedRequest(null)}
-                    className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Request Info */}
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedRequest.title}</h3>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-white/60">
-                    <span>발제자: <b className="text-white">{selectedRequest.requestedBy.userName}</b></span>
-                    <span>•</span>
-                    <span>희망 난이도: <b className="text-amber-400">{selectedRequest.targetLevel || "입문"}</b></span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-white/60">
-                    <span>희망 일정: <b className="text-white/80">{selectedRequest.preferredSchedule || "협의"}</b></span>
-                    <span>•</span>
-                    <span>희망 가격: <b className="text-emerald-400">{selectedRequest.expectedPriceRange || "협의"}</b></span>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-white/80 leading-relaxed whitespace-pre-line">
-                  {selectedRequest.description}
-                </div>
-
-                {/* Upvote Meter & Action */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/40 to-slate-900 border border-amber-500/30 flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs text-white/60">현재 공감 수강생</div>
-                    <div className="text-base font-bold text-amber-400">
-                      {selectedRequest.upvoteCount} / {selectedRequest.targetCount}명
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => handleUpvoteRequest(e, selectedRequest.id)}
-                    className="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <ThumbsUp className="w-4 h-4 fill-black" />
-                    나도 수강 희망 (+1)
-                  </button>
-                </div>
-
-                {/* Instructor Proposals Section */}
-                <div className="pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      🧑‍🏫 강사 개강 제안서 ({selectedRequest.proposals?.length || 0}건)
-                    </h4>
-                    <button
-                      onClick={() => {
-                        if (!isLoggedIn) {
-                          onLoginClick();
-                          return;
-                        }
-                        setProposalTargetRequest(selectedRequest);
-                        setShowProposalModal(true);
-                      }}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors font-medium cursor-pointer"
-                    >
-                      + 내가 개강하기
-                    </button>
-                  </div>
-
-                  {(!selectedRequest.proposals || selectedRequest.proposals.length === 0) ? (
-                    <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center text-xs text-white/50">
-                      아직 등록된 강사 제안서가 없습니다. <br />
-                      전문 강사님이시라면 커리큘럼을 제안해보세요!
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {selectedRequest.proposals.map((prop) => (
-                        <div
-                          key={prop.id}
-                          className={`p-4 rounded-xl border transition-all ${
-                            prop.status === "채택됨"
-                              ? "bg-emerald-950/30 border-emerald-500/50"
-                              : "bg-white/5 border-white/10"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold">
-                                {prop.instructorName.charAt(0)}
-                              </div>
-                              <span className="text-xs font-bold text-white">{prop.instructorName} 강사</span>
-                              <span className="text-[10px] text-white/40">{prop.instructorTitle || "전문가"}</span>
-                            </div>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                                prop.status === "채택됨"
-                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                  : "bg-white/10 text-white/60"
-                              }`}
-                            >
-                              {prop.status}
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-bold text-white mb-1">{prop.proposedTitle}</div>
-                          <div className="flex items-center gap-3 text-[11px] text-white/60 mb-2">
-                            <span>수강료: <b className="text-emerald-400">₩{prop.proposedPrice.toLocaleString()}</b></span>
-                            <span>•</span>
-                            <span>일정: <b className="text-white/80">{prop.proposedSchedule}</b></span>
-                          </div>
-
-                          <p className="text-xs text-white/70 italic mb-3">"{prop.message}"</p>
-
-                          {prop.curriculumDraft && prop.curriculumDraft.length > 0 && (
-                            <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-white/70 space-y-1 mb-3">
-                              <div className="font-semibold text-white/90 mb-1">제안 커리큘럼:</div>
-                              {prop.curriculumDraft.map((c, i) => (
-                                <div key={i} className="truncate">• {c}</div>
-                              ))}
-                            </div>
-                          )}
-
-                          {prop.status === "대기중" && (
-                            <button
-                              onClick={() => handleAcceptProposal(selectedRequest.id, prop.id)}
-                              className="w-full py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
-                            >
-                              ✓ 이 제안 채택하여 강의 개설 확정하기
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ────────────────────────────────────────────────────────── */}
       {/* Modals                                                     */}
@@ -1705,34 +1231,33 @@ export default function CoursePage({
           if (onSaveCourse) {
             onSaveCourse(newCourse);
           }
+          setShowCreateModal(false);
         }}
       />
 
-      {/* 수강생 개강 요청 모달 */}
-      <CourseRequestModal
-        isOpen={showRequestModal}
-        onClose={() => setShowRequestModal(false)}
-        userName={userName || "김수강생"}
-        userId="u-student-1"
-        onRequestCreated={(newReq) => {
-          setCourseRequests((prev) => [newReq, ...prev]);
-        }}
-      />
-
-      {/* 강사 개강 제안 모달 */}
-      <CourseProposalModal
-        request={proposalTargetRequest}
-        isOpen={showProposalModal}
-        onClose={() => {
-          setShowProposalModal(false);
-          setProposalTargetRequest(null);
-        }}
-        instructorName={userName || "김소현"}
-        instructorId="ins-1"
-        onProposalSubmitted={() => {
-          fetchRequests();
-        }}
-      />
+      {/* 강의 수정 모달 */}
+      {showEditModal && editingCourse && (
+        <CourseCreateEditModal
+          isOpen={showEditModal}
+          initialCourse={editingCourse}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingCourse(null);
+          }}
+          instructorName={editingCourse.instructor || userName || "김수강생"}
+          onSave={(updatedCourse) => {
+            if (onSaveCourse) {
+              onSaveCourse(updatedCourse);
+            }
+            if (selectedCourse?.id === updatedCourse.id) {
+              setSelectedCourse(updatedCourse);
+            }
+            setShowEditModal(false);
+            setEditingCourse(null);
+            toast.success("강의 수정 완료", "강의 정보 및 커리큘럼 일정이 성공적으로 업데이트되었습니다.");
+          }}
+        />
+      )}
     </div>
   );
 }
