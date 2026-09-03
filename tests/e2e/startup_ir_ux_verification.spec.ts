@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('스타트업&IR 및 아이디어 제작 의뢰 UX/기능 실데이터 입력 종합 검증', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     // 다이얼로그 자동 수락
     page.on('dialog', async (dialog) => {
@@ -87,13 +89,15 @@ test.describe('스타트업&IR 및 아이디어 제작 의뢰 UX/기능 실데�
     // 프로젝트 저장
     const saveBtn = page.locator('button', { hasText: '프로젝트 등록' }).last();
     await saveBtn.click();
-    await page.waitForTimeout(1000);
+    await expect(modalTitle).not.toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(500);
 
     // 1-3. 목록 최상단에 신규 프로젝트가 노출되는지 확인 (createdAt 최신순 정렬)
     const newCard = page.locator('[data-testid="project-card"]', { hasText: testTeamName }).first();
-    await expect(newCard).toBeVisible({ timeout: 5000 });
+    await expect(newCard).toBeVisible({ timeout: 10000 });
 
     // 1-4. 카드 클릭하여 상세 뷰 진입
+    await newCard.scrollIntoViewIfNeeded();
     await newCard.click();
     await page.waitForTimeout(1000);
 
@@ -191,14 +195,17 @@ test.describe('스타트업&IR 및 아이디어 제작 의뢰 UX/기능 실데�
 
     // 의뢰서 등록 완료 클릭
     const submitIdeaBtn = page.locator('button', { hasText: '아이디어 제작 의뢰서 등록하기' });
+    await submitIdeaBtn.scrollIntoViewIfNeeded();
     await submitIdeaBtn.click();
-    await page.waitForTimeout(1000);
+    await expect(ideaModal).not.toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(500);
 
     // 2-4. 목록에 신규 의뢰서가 노출되는지 확인
     const newIdeaCard = page.locator('[data-testid="idea-request-card"]', { hasText: testIdeaTitle }).first();
-    await expect(newIdeaCard).toBeVisible({ timeout: 5000 });
+    await expect(newIdeaCard).toBeVisible({ timeout: 10000 });
 
     // 2-5. 카드 클릭하여 우측 상세 슬라이드인 패널 열기
+    await newIdeaCard.scrollIntoViewIfNeeded();
     await newIdeaCard.click();
     await page.waitForTimeout(1000);
 
