@@ -342,6 +342,10 @@ router.post("/auto-fill", async (req, res) => {
   "description": "2~3문장의 핵심 강의 소개 및 학습 효과",
   "price": 590000,
   "discountedPrice": 390000,
+  "deliveryType": "online 또는 offline 또는 hybrid",
+  "daysOfWeek": ["화", "목"],
+  "startDate": "YYYY-MM-DD (대화에서 언급된 시작일, 없으면 빈 문자열)",
+  "timeSlot": "19:30 ~ 21:30 (대화에서 언급된 시간대)",
   "tags": ["키워드1", "키워드2", "키워드3"],
   "curriculum": [
     { "week": 1, "sessionNumber": 1, "title": "1회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
@@ -350,6 +354,7 @@ router.post("/auto-fill", async (req, res) => {
     { "week": 2, "sessionNumber": 4, "title": "4회차 주제", "description": "상세 실습 내용", "duration": "2시간" }
   ]
 }`;
+
       } else if (type === "course_proposal") {
         promptBody += `
 출력 JSON 스키마:
@@ -488,6 +493,10 @@ function generateAutoFillFallback(type: string, input: string, context: any) {
       description: `${clean}의 원리부터 실전 MVP 런칭까지 체계적으로 학습하는 집중 실습 마스터클래스입니다.`,
       price: 590000,
       discountedPrice: 390000,
+      deliveryType: "online",
+      daysOfWeek: ["화", "목"],
+      startDate: "",
+      timeSlot: "19:30 ~ 21:30",
       tags: ["AI실전", naturalCategory.split(" ")[0] || "AI모델링", "MVP"],
       curriculum: [
         { week: 1, sessionNumber: 1, title: `${shortName} 기초 환경 및 가설 수립`, description: "핵심 라이브러리 셋업 및 기본 아키텍처 실습", duration: "2시간" },
