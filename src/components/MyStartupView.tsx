@@ -16,11 +16,13 @@ import {
   X,
   RotateCcw,
   Lightbulb,
+  Trash2,
 } from "lucide-react";
 import type { IRProject, TeamBuildingRequest, InvestmentProposal, IdeaRequest } from "../types";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import Pagination from "./common/Pagination";
 import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface MyStartupViewProps {
   myProjects: IRProject[];
@@ -28,6 +30,7 @@ interface MyStartupViewProps {
   receivedProposals?: InvestmentProposal[];
   onViewIR: (id: string) => void;
   onSaveProject: (project: IRProject) => void;
+  onDeleteProject?: (id: string) => void;
   onUpdateTeamRequest: (id: string, status: "수락" | "거절") => void;
   isModalOpenExternal?: boolean;
   onCloseModalExternal?: () => void;
@@ -39,10 +42,12 @@ export default function MyStartupView({
   receivedProposals = [],
   onViewIR,
   onSaveProject,
+  onDeleteProject,
   onUpdateTeamRequest,
   isModalOpenExternal,
   onCloseModalExternal,
 }: MyStartupViewProps) {
+  const toast = useToast();
   const [activeSubTab, setActiveSubTab] = React.useState<"projects" | "teambuilding" | "proposals" | "ideas">("projects");
   const [showProjectModal, setShowProjectModal] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<IRProject | null>(null);
@@ -193,6 +198,48 @@ export default function MyStartupView({
   React.useEffect(() => {
     setProposalPage(1);
   }, [proposalFilter, searchProposal]);
+
+  const handleDeleteProject = async (projectId: string) => {
+    const confirmed = await toast.confirm({
+      title: "프로젝트 삭제",
+      message: "정말 이 스타트업 프로젝트를 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.deleteIRProject(projectId);
+      toast.success("삭제 완료", "프로젝트가 삭제되었습니다.");
+      if (onDeleteProject) {
+        onDeleteProject(projectId);
+      }
+    } catch (err) {
+      console.error("Delete project failed", err);
+      toast.error("삭제 실패", "일시적인 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDeleteIdea = async (ideaId: string) => {
+    const confirmed = await toast.confirm({
+      title: "아이디어 의뢰 삭제",
+      message: "정말 이 아이디어 의뢰서를 삭제하시겠습니까?\n접수된 빌더 제안서도 함께 삭제됩니다.",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.deleteIdeaRequest(ideaId);
+      toast.success("삭제 완료", "아이디어 의뢰서가 삭제되었습니다.");
+      setMyIdeas((prev) => prev.filter((i) => i.id !== ideaId));
+    } catch (err) {
+      console.error("Delete idea failed", err);
+      toast.error("삭제 실패", "일시적인 오류가 발생했습니다.");
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -409,6 +456,12 @@ export default function MyStartupView({
                         className="text-xs text-brand-tertiary hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Edit3 size={12} /> 수정
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(p.id)}
+                        className="text-xs text-red-400 hover:text-red-300 hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 size={12} /> 삭제
                       </button>
                     </div>
                   </div>
@@ -809,7 +862,16 @@ export default function MyStartupView({
                         >
                           {idea.status}
                         </span>
-                        <span className="text-[10px] text-white/50 font-mono">{idea.category}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-white/50 font-mono">{idea.category}</span>
+                          <button
+                            onClick={() => handleDeleteIdea(idea.id)}
+                            className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors cursor-pointer"
+                            title="아이디어 의뢰서 삭제"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
                       <h4 className="text-sm font-bold text-white line-clamp-1">{idea.title}</h4>
                       <p className="text-xs text-white/60 mt-1 line-clamp-2">{idea.problem}</p>

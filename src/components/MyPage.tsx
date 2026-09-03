@@ -125,6 +125,11 @@ export default function MyPage({
   }, []);
   const [isCourseModalOpenExternal, setIsCourseModalOpenExternal] = React.useState(false);
   const [showIdeaRequestModal, setShowIdeaRequestModal] = React.useState(false);
+  const [deletedProjectIds, setDeletedProjectIds] = React.useState<string[]>([]);
+
+  const handleDeleteProject = (projectId: string) => {
+    setDeletedProjectIds((prev) => [...prev, projectId]);
+  };
 
   if (!isLoggedIn) {
     return (
@@ -185,9 +190,14 @@ export default function MyPage({
   ];
 
   // 내 프로젝트 & 내가 개설한 강의
-  const myProjects = irProjects.filter((p) =>
-    p.members?.some((m) => m.name === userName || m.anonymousName === userName)
-  );
+  const myProjects = irProjects
+    .filter((p) => !deletedProjectIds.includes(p.id))
+    .filter(
+      (p) =>
+        p.authorName === userName ||
+        p.authorId === "u-current" ||
+        p.members?.some((m) => m.name === userName || m.anonymousName === userName)
+    );
   const myCreatedCourses = courses.filter((c) => c.instructor.includes(userName));
   const bookmarkedProjects = irProjects.filter((p) => p.bookmarked);
 
@@ -301,6 +311,7 @@ export default function MyPage({
               receivedProposals={proposals}
               onViewIR={handleViewIR}
               onSaveProject={handleSaveProject}
+              onDeleteProject={handleDeleteProject}
               onUpdateTeamRequest={handleUpdateTeamRequest}
               isModalOpenExternal={isProjectModalOpenExternal}
               onCloseModalExternal={() => setIsProjectModalOpenExternal(false)}

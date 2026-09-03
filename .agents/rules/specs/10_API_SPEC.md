@@ -24,17 +24,21 @@
 | API-IR-03 | POST | `/api/ir/projects` | 프로젝트 등록/수정 | IR | 회원 | ✅ 완료 |
 | API-IR-04 | POST | `/api/ir/projects/:id/bookmark` | 관심 스타트업 북마크 토글 | IR | 투자자 | ✅ 완료 |
 | API-IR-05 | POST | `/api/ir/projects/:id/apply` | 구인 공고 원클릭 자체 지원 | IR | 수강생 | ✅ 완료 |
-| API-REV-IR-01 | GET | `/api/ir/idea-requests` | 아이디어 제작 의뢰 목록 조회 | IR | 불필요 | ✅ 완료 |
+| API-IR-06 | DELETE | `/api/ir/projects/:id` | 스타트업 IR 프로젝트 삭제 | IR | 작성자/관리자 | ✅ 완료 |
+| API-IR-07 | POST | `/api/ir/projects/:id/upvote` | 스타트업 IR '나도 쓸래요!' 공감 투표 토글 | IR | 회원 | ✅ 완료 |
+| API-REV-IR-01 | GET | `/api/ir/idea-requests` | 아이디어 제작 의뢰 목록 조회 (마감일순/인기순/최신순) | IR | 불필요 | ✅ 완료 |
 | API-REV-IR-02 | POST | `/api/ir/idea-requests` | 신규 아이디어 제작 의뢰 등록 | IR | 회원 | ✅ 완료 |
 | API-REV-IR-03 | POST | `/api/ir/idea-requests/:id/upvote` | 잠재 고객 공감 투표 토글 | IR | 회원 | ✅ 완료 |
 | API-REV-IR-04 | POST | `/api/ir/idea-requests/:id/proposals` | 빌더 팀 MVP 제작 제안서 제출 (산출물 링크/공개범위 포함, IR 자동 연동) | IR | 빌더/개발자 | ✅ 완료 |
 | API-REV-IR-05 | POST | `/api/ir/idea-requests/:id/accept-proposal` | 빌더 제안 최종 채택 및 정식 IR 프로젝트 승격 | IR | 회원 | ✅ 완료 |
 | API-REV-IR-06 | POST | `/api/ir/idea-requests/:id/select-proposals` | 아이디어 제안서 복수 선발 및 협의 대상 지정 | IR | 회원 | ✅ 완료 |
+| API-REV-IR-07 | DELETE | `/api/ir/idea-requests/:id` | 아이디어 제작 의뢰서 삭제 (연관 제안서 연쇄 삭제) | IR | 발제자/관리자 | ✅ 완료 |
 | API-AI-01 | POST | `/api/ai/course-draft` | AI 강의 초벌 커리큘럼 생성 | AI | 강사 | ✅ 완료 |
 | API-AI-02 | POST | `/api/ai/diagnosis` | 빌더 AI 아키텍트 페르소나 진단 | AI | 전체 | ✅ 완료 |
 | API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |
 | API-AI-04 | POST | `/api/ai/tutor` | 실시간 AI 창업 튜터 Q&A | AI | 전체 | ✅ 완료 |
 | API-AI-05 | POST | `/api/ai/auto-fill` | 제목 재조정 & 자연어 분야 범용 AI 자동 채우기 | AI | 전체 | ✅ 완료 |
+| API-AI-06 | POST | `/api/ai/idea-interview` | 아이디어 PRD 대화형 다중 턴 인터뷰 및 탈옥 방지 | AI | 전체 | ✅ 완료 |
 | API-COM-01 | GET | `/api/community/posts` | 멀티 게시판 글 목록 (상단 공지 고정 우선 정렬) | Community | 불필요 | ✅ 완료 |
 | API-COM-02 | POST | `/api/community/posts` | 게시글 작성 (공지사항/상단고정/관리자전용게시판 권한 검증) | Community | 회원/관리자 | ✅ 완료 |
 | API-COM-03 | GET | `/api/community/posts/:id` | 게시글 상세 및 댓글 조회 | Community | 불필요 | ✅ 완료 |

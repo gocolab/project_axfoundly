@@ -83,7 +83,13 @@ router.get("/idea-requests", (req, res) => {
     );
   }
 
-  if (sort === "popular") {
+  if (sort === "deadline") {
+    requests.sort((a, b) => {
+      const timeA = a.submissionDeadline ? new Date(a.submissionDeadline).getTime() : 0;
+      const timeB = b.submissionDeadline ? new Date(b.submissionDeadline).getTime() : 0;
+      return timeB - timeA;
+    });
+  } else if (sort === "popular") {
     requests.sort((a, b) => (b.upvoteCount || 0) - (a.upvoteCount || 0));
   } else {
     requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -503,7 +509,7 @@ router.get("/projects", (req, res) => {
     limit?: string;
   };
 
-  let projects = db.get("irProjects");
+  let projects = [...(db.get("irProjects") || [])];
 
   if (field && field !== "전체") {
     projects = projects.filter((p) => p.field === field);
@@ -525,6 +531,13 @@ router.get("/projects", (req, res) => {
         p.tags?.some((t) => t.toLowerCase().includes(q))
     );
   }
+
+  // 생성일(createdAt 또는 id 기반) 역순 정렬
+  projects.sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : (parseInt((a.id || "").replace(/\D/g, ""), 10) || 0);
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : (parseInt((b.id || "").replace(/\D/g, ""), 10) || 0);
+    return timeB - timeA;
+  });
 
   const pageNum = parseInt(page || "1", 10);
   const limitNum = parseInt(limit || "100", 10);
@@ -568,18 +581,22 @@ router.post("/projects", async (req, res) => {
       businessModel: projectData.businessModel,
     });
 
+    const projectId = projectData.id || `p-${Date.now()}`;
+    const existingProject = (db.get("irProjects") || []).find((p) => p.id === projectId);
+
     const newProject: IRProject = {
-      id: projectData.id || `p-${Date.now()}`,
+      id: projectId,
       teamName: projectData.teamName,
       anonymousTeamName: projectData.anonymousTeamName || `⚡ ${projectData.teamName} (스텔스)`,
       title: projectData.title,
       oneLiner: projectData.oneLiner || aiResult.aiSummary,
       description: projectData.description || "",
-      field: aiResult.category, // AI 자동 판별 분야
-      tags: aiResult.tags, // AI 자동 추출 키워드 태그
+      field: projectData.field || aiResult.category, // 사용자가 지정한 field 우선 또는 AI 자동 판별 분야
+      tags: projectData.tags && projectData.tags.length > 0 ? projectData.tags : aiResult.tags, // 태그
       aiSummary: aiResult.aiSummary, // AI 요약
       thumbnail: projectData.thumbnail || "",
       demoVideoUrl: projectData.demoVideoUrl || "",
+      prototypeUrl: projectData.prototypeUrl || "", // 🌐 프로토타입 / 사이트 링크 저장
       isAnonymous: !!projectData.isAnonymous,
       members: projectData.members || [
         { name: "김수강생", role: "CEO / Founder", avatar: "", anonymousName: "⚡ 캡틴 AI", anonymousRole: "Founder" },
@@ -590,8 +607,17 @@ router.post("/projects", async (req, res) => {
       isHiring: !!projectData.isHiring,
       hiringRoles: projectData.hiringRoles || [],
       hiringDetails: projectData.hiringDetails || [],
-      bookmarked: false,
+      bookmarked: existingProject ? existingProject.bookmarked : false,
+      upvotes: existingProject?.upvotes || projectData.upvotes || [],
+      upvoteCount: existingProject?.upvoteCount || projectData.upvoteCount || 0,
+      createdAt: existingProject?.createdAt || projectData.createdAt || new Date().toISOString(),
+      authorId: projectData.authorId || existingProject?.authorId || "u-current",
+      authorName: projectData.authorName || existingProject?.authorName || (projectData.members?.[0]?.name || "김수강생"),
       investmentStage: projectData.investmentStage || "Pre-Seed",
+      originIdeaRequestId: projectData.originIdeaRequestId,
+      originIdeaTitle: projectData.originIdeaTitle,
+      originProposalId: projectData.originProposalId,
+      visibility: projectData.visibility || "public",
     };
 
     db.update("irProjects", (projects) => {
@@ -620,6 +646,59 @@ router.post("/projects", async (req, res) => {
     console.error("[IR API] POST /projects error:", error);
     res.status(500).json({ error: "프로젝트 등록에 실패했습니다." });
   }
+});
+
+// DELETE /api/ir/projects/:id (Delete project)
+router.delete("/projects/:id", (req, res) => {
+  const { id } = req.params;
+  let deleted = false;
+  db.update("irProjects", (projects) => {
+    const nextList = (projects || []).filter((p) => p.id !== id);
+    if (nextList.length !== (projects || []).length) {
+      deleted = true;
+    }
+    return nextList;
+  });
+  if (!deleted) {
+    return res.status(404).json({ error: "프로젝트를 찾을 수 없습니다." });
+  }
+  res.json({ success: true, message: "프로젝트가 삭제되었습니다." });
+});
+
+// POST /api/ir/projects/:id/upvote (Toggle '나도 쓸래요')
+router.post("/projects/:id/upvote", (req, res) => {
+  const { id } = req.params;
+  const { userId = "u-student-1" } = req.body;
+
+  let updatedProject: IRProject | null = null;
+  let isUpvoted = false;
+
+  db.update("irProjects", (list) =>
+    (list || []).map((p) => {
+      if (p.id === id) {
+        const upvotes = p.upvotes || [];
+        const exists = upvotes.includes(userId);
+        let newUpvotes: string[];
+        if (exists) {
+          newUpvotes = upvotes.filter((u) => u !== userId);
+          isUpvoted = false;
+        } else {
+          newUpvotes = [...upvotes, userId];
+          isUpvoted = true;
+        }
+        const count = newUpvotes.length;
+        updatedProject = { ...p, upvotes: newUpvotes, upvoteCount: count };
+        return updatedProject;
+      }
+      return p;
+    })
+  );
+
+  if (!updatedProject) {
+    return res.status(404).json({ error: "프로젝트를 찾을 수 없습니다." });
+  }
+
+  res.json({ success: true, isUpvoted, project: updatedProject });
 });
 
 // PUT /api/ir/projects/:id (Update)

@@ -31,12 +31,14 @@ import {
   Globe,
   Check,
   CheckCircle2,
+  Trash2,
+  Edit3,
 } from "lucide-react";
 import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal, IdeaRequest, IdeaProposal } from "../types";
 import Pagination from "./common/Pagination";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
-import ProjectCreateEditModal from "./ProjectCreateEditModal";
+import ProjectCreateEditModal, { convertToEmbedUrl } from "./ProjectCreateEditModal";
 import IdeaRequestModal from "./IdeaRequestModal";
 import IdeaProposalModal from "./IdeaProposalModal";
 import { useToast } from "./common/Toast";
@@ -113,6 +115,11 @@ export default function IRPage({
   const toast = useToast();
   const [activeTab, setActiveTab] = React.useState<"browse" | "ideas">("browse");
 
+  const [localProjects, setLocalProjects] = React.useState<IRProject[]>(projects);
+  React.useEffect(() => {
+    setLocalProjects(projects);
+  }, [projects]);
+
   const [selectedProject, setSelectedProject] = React.useState<IRProject | null>(() => {
     if (initialProjectId) {
       return projects.find((p) => p.id === initialProjectId) || null;
@@ -148,6 +155,7 @@ export default function IRPage({
   const [selectedHiringRole, setSelectedHiringRole] = React.useState<HiringRoleDetail | null>(null);
   const [showApplyModal, setShowApplyModal] = React.useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
+  const [editingProject, setEditingProject] = React.useState<IRProject | null>(null);
 
   // ── Reverse Proposal (아이디어 제작 요청소) State ──
   const [ideaRequests, setIdeaRequests] = React.useState<IdeaRequest[]>([]);
@@ -156,7 +164,7 @@ export default function IRPage({
   const [showIdeaRequestModal, setShowIdeaRequestModal] = React.useState(false);
   const [showIdeaProposalModal, setShowIdeaProposalModal] = React.useState(false);
   const [proposalTargetIdea, setProposalTargetIdea] = React.useState<IdeaRequest | null>(null);
-  const [ideaSort, setIdeaSort] = React.useState<"popular" | "recent">("popular");
+  const [ideaSort, setIdeaSort] = React.useState<"deadline" | "popular" | "recent">("deadline");
   const [ideaStatusFilter, setIdeaStatusFilter] = React.useState<string>("전체");
   const [ideaPage, setIdeaPage] = React.useState(1);
   const ideasPerPage = 6;
@@ -170,13 +178,20 @@ export default function IRPage({
         sort: ideaSort,
         status: ideaStatusFilter === "전체" ? undefined : ideaStatusFilter,
       });
-      setIdeaRequests(res?.requests || []);
+      const fetched = res?.requests || [];
+      setIdeaRequests(fetched);
+      if (selectedIdeaRequest) {
+        const found = fetched.find((r) => r.id === selectedIdeaRequest.id);
+        if (found) {
+          setSelectedIdeaRequest(found);
+        }
+      }
     } catch (e) {
       console.error("Failed to fetch idea requests", e);
     } finally {
       setRequestsLoading(false);
     }
-  }, [activeField, searchText, ideaSort, ideaStatusFilter]);
+  }, [activeField, searchText, ideaSort, ideaStatusFilter, selectedIdeaRequest]);
 
   React.useEffect(() => {
     if (activeTab === "ideas") {
@@ -200,6 +215,75 @@ export default function IRPage({
       }
     } catch (err) {
       console.error("Upvote failed", err);
+    }
+  };
+
+  const handleUpvoteProject = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      onLoginClick();
+      return;
+    }
+    try {
+      const res = await api.upvoteIRProject(projectId, userName || "u-student-1");
+      setLocalProjects((prev) =>
+        prev.map((p) => (p.id === projectId ? res.project : p))
+      );
+      if (selectedProject?.id === projectId) {
+        setSelectedProject(res.project);
+      }
+      if (onSaveProject) {
+        onSaveProject(res.project);
+      }
+    } catch (err) {
+      console.error("Upvote project failed", err);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    const confirmed = await toast.confirm({
+      title: "프로젝트 삭제",
+      message: "정말 이 스타트업 프로젝트를 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.deleteIRProject(projectId);
+      toast.success("삭제 완료", "프로젝트가 성공적으로 삭제되었습니다.");
+      setLocalProjects((prev) => prev.filter((p) => p.id !== projectId));
+      if (selectedProject?.id === projectId) {
+        setSelectedProject(null);
+        onClearSelectedProject?.();
+      }
+    } catch (err) {
+      console.error("Delete project failed", err);
+      toast.error("삭제 실패", "일시적인 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDeleteIdeaRequest = async (reqId: string) => {
+    const confirmed = await toast.confirm({
+      title: "아이디어 의뢰서 삭제",
+      message: "정말 이 아이디어 의뢰서를 삭제하시겠습니까?\n제출된 빌더 팀 제안서도 함께 정리됩니다.",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.deleteIdeaRequest(reqId);
+      toast.success("삭제 완료", "아이디어 제작 의뢰서가 삭제되었습니다.");
+      setIdeaRequests((prev) => prev.filter((r) => r.id !== reqId));
+      if (selectedIdeaRequest?.id === reqId) {
+        setSelectedIdeaRequest(null);
+      }
+    } catch (err) {
+      console.error("Delete idea request failed", err);
+      toast.error("삭제 실패", "일시적인 오류가 발생했습니다.");
     }
   };
 
@@ -298,21 +382,29 @@ export default function IRPage({
     return Object.keys(tagCount).sort((a, b) => tagCount[b] - tagCount[a]).slice(0, 8);
   }, [projects]);
 
-  // Filter projects
-  const filtered = projects.filter((p) => {
-    const matchField = activeField === "전체" || p.field === activeField;
-    const matchTag = !activeTag || p.tags?.includes(activeTag);
-    const q = searchText.toLowerCase();
-    const matchSearch =
-      !searchText ||
-      p.teamName.toLowerCase().includes(q) ||
-      p.title.toLowerCase().includes(q) ||
-      p.oneLiner.toLowerCase().includes(q) ||
-      p.solution.toLowerCase().includes(q) ||
-      p.field?.toLowerCase().includes(q) ||
-      p.tags?.some((t) => t.toLowerCase().includes(q));
-    return matchField && matchTag && matchSearch;
-  });
+  // Filter and sort projects (생성일 역순)
+  const filtered = React.useMemo(() => {
+    return localProjects
+      .filter((p) => {
+        const matchField = activeField === "전체" || p.field === activeField;
+        const matchTag = !activeTag || p.tags?.includes(activeTag);
+        const q = searchText.toLowerCase();
+        const matchSearch =
+          !searchText ||
+          p.teamName.toLowerCase().includes(q) ||
+          p.title.toLowerCase().includes(q) ||
+          p.oneLiner.toLowerCase().includes(q) ||
+          p.solution.toLowerCase().includes(q) ||
+          p.field?.toLowerCase().includes(q) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q));
+        return matchField && matchTag && matchSearch;
+      })
+      .sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : (parseInt((a.id || "").replace(/\D/g, ""), 10) || 0);
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : (parseInt((b.id || "").replace(/\D/g, ""), 10) || 0);
+        return timeB - timeA;
+      });
+  }, [localProjects, activeField, activeTag, searchText]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -419,9 +511,40 @@ export default function IRPage({
               <div className="p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
-                    <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
-                      {currentTeamName}
-                    </h1>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
+                        {currentTeamName}
+                      </h1>
+                      {/* 작성자 / 관리자 수정·삭제 액션 버튼 */}
+                      {isLoggedIn &&
+                        (selectedProject.authorName === userName ||
+                          selectedProject.authorId === "u-current" ||
+                          selectedProject.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
+                          userRoles.includes("admin") ||
+                          userRoles.includes("manager")) && (
+                          <div className="inline-flex items-center gap-1.5 ml-1">
+                            <button
+                              onClick={() => {
+                                setEditingProject(selectedProject);
+                                setShowCreateProjectModal(true);
+                              }}
+                              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer"
+                              title="프로젝트 정보 수정"
+                            >
+                              <Edit3 size={12} />
+                              <span>수정</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProject(selectedProject.id)}
+                              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 transition-colors cursor-pointer"
+                              title="프로젝트 삭제"
+                            >
+                              <Trash2 size={12} />
+                              <span>삭제</span>
+                            </button>
+                          </div>
+                        )}
+                    </div>
                     <p className="text-sm font-semibold text-brand-primary mt-1">
                       {selectedProject.title}
                     </p>
@@ -485,36 +608,36 @@ export default function IRPage({
                     </button>
                   </div>
                 )}
-
-                {/* 프로토타입 / 데모 사이트 바로가기 버튼 */}
-                {selectedProject.prototypeUrl && (
-                  <div className="mt-3">
-                    <a
-                      href={selectedProject.prototypeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-xl bg-brand-surface-low text-brand-tertiary border border-brand-tertiary/40 hover:bg-brand-tertiary/20 transition-colors cursor-pointer"
-                    >
-                      <Globe size={14} /> 프로토타입 / 배포 사이트 방문 <ExternalLink size={12} />
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
 
             {/* ── Demo / Operational Video Player Section ── */}
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                   <Video size={18} className="text-brand-primary" />
                   서비스 동작 및 피칭 영상
                 </h2>
-                <button
-                  onClick={() => setShowEditVideoModal(true)}
-                  className="text-xs text-brand-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                >
-                  <Link size={12} /> 영상 링크 설정/변경
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedProject.prototypeUrl && (
+                    <a
+                      href={selectedProject.prototypeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors cursor-pointer shadow-sm"
+                    >
+                      <Globe size={13} />
+                      <span>[프로토타입 / 배포 사이트 방문]</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setShowEditVideoModal(true)}
+                    className="text-xs text-brand-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border/40"
+                  >
+                    <Link size={12} /> 영상 링크 설정/변경
+                  </button>
+                </div>
               </div>
 
               {selectedProject.demoVideoUrl ? (
@@ -804,7 +927,7 @@ export default function IRPage({
               <div className="aspect-video bg-black rounded-xl overflow-hidden border border-brand-border/40 flex items-center justify-center relative">
                 {/* Embed video or placeholder playback demo */}
                 <iframe
-                  src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0"
+                  src={convertToEmbedUrl(selectedProject.demoVideoUrl) || "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0"}
                   title="Demo Video"
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -813,7 +936,7 @@ export default function IRPage({
               </div>
 
               <div className="mt-3 flex justify-between items-center text-xs text-brand-on-surface-variant">
-                <span>동영상 원본 링크: {selectedProject.demoVideoUrl}</span>
+                <span className="truncate max-w-[70%]">동영상 원본 링크: {selectedProject.demoVideoUrl}</span>
                 <button
                   onClick={() => setShowVideoModal(false)}
                   className="px-4 py-1.5 rounded-lg bg-brand-surface-high text-white hover:bg-brand-primary-container text-xs cursor-pointer"
@@ -831,7 +954,7 @@ export default function IRPage({
             <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
               <h3 className="font-display text-base font-bold text-white mb-2">동작/시연 영상 링크 등록</h3>
               <p className="text-xs text-brand-on-surface-variant mb-4">
-                YouTube, Vimeo, Loom 등의 영상 URL을 입력하세요.
+                YouTube, Vimeo, Loom 등의 영상 URL을 입력하세요. 자동으로 플레이어 임베드 형식으로 변환됩니다.
               </p>
 
               <input
@@ -850,8 +973,17 @@ export default function IRPage({
                   취소
                 </button>
                 <button
-                  onClick={() => {
-                    setSelectedProject({ ...selectedProject, demoVideoUrl: videoUrlInput });
+                  onClick={async () => {
+                    const finalVideoUrl = convertToEmbedUrl(videoUrlInput);
+                    const updatedProj = { ...selectedProject, demoVideoUrl: finalVideoUrl };
+                    setSelectedProject(updatedProj);
+                    setLocalProjects((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
+                    if (onSaveProject) onSaveProject(updatedProj);
+                    try {
+                      await api.saveIRProject(updatedProj);
+                    } catch (e) {
+                      console.warn("Save video url error", e);
+                    }
                     setShowEditVideoModal(false);
                     toast.success("영상 링크 저장 완료", "데모 영상 링크가 업데이트되었습니다.");
                   }}
@@ -1117,20 +1249,44 @@ export default function IRPage({
 
                 <div className="p-5 pt-0">
                   <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80">
-                    <div className="flex -space-x-2">
-                      {project.members.slice(0, 3).map((m, i) => (
-                        <div
-                          key={i}
-                          className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold text-brand-primary"
-                        >
-                          {m.name.charAt(0)}
-                        </div>
-                      ))}
-                      {project.members.length > 3 && (
-                        <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] text-slate-400">
-                          +{project.members.length - 3}
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-2">
+                        {project.members.slice(0, 3).map((m, i) => (
+                          <div
+                            key={i}
+                            className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold text-brand-primary"
+                          >
+                            {m.name.charAt(0)}
+                          </div>
+                        ))}
+                        {project.members.length > 3 && (
+                          <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] text-slate-400">
+                            +{project.members.length - 3}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* '나도 쓸래요!' 투표 버튼 */}
+                      {(() => {
+                        const isUpvoted = project.upvotes?.includes(userName || "u-student-1");
+                        const count = project.upvoteCount || project.upvotes?.length || 0;
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => handleUpvoteProject(e, project.id)}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+                              isUpvoted
+                                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
+                            }`}
+                            title="이 스타트업을 응원하고 싶다면 클릭하세요!"
+                          >
+                            <ThumbsUp size={11} className={isUpvoted ? "fill-cyan-300" : ""} />
+                            <span>나도 쓸래요</span>
+                            {count > 0 && <span className="font-bold text-cyan-300">({count})</span>}
+                          </button>
+                        );
+                      })()}
                     </div>
                     <span className={`text-xs px-2.5 py-1 rounded border font-semibold ${getInvestmentStageBadgeClass(project.investmentStage)}`}>
                       {project.investmentStage}
@@ -1206,6 +1362,16 @@ export default function IRPage({
 
               {/* Sort Switch */}
               <div className="flex items-center gap-1 bg-brand-surface-low p-1 rounded-xl border border-brand-border text-xs shrink-0 self-start sm:self-auto">
+                <button
+                  onClick={() => setIdeaSort("deadline")}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    ideaSort === "deadline"
+                      ? "bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30"
+                      : "text-white/50 hover:text-white"
+                  }`}
+                >
+                  📅 마감일순
+                </button>
                 <button
                   onClick={() => setIdeaSort("popular")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
@@ -1371,18 +1537,9 @@ export default function IRPage({
 
                         {/* Footer */}
                         <div className="mt-4 pt-3.5 border-t border-white/10 flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={(e) => handleUpvoteIdea(e, req.id)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                              isUpvoted
-                                ? "bg-cyan-500 text-black border-cyan-500 shadow-sm"
-                                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
-                            }`}
-                          >
-                            <ThumbsUp className={`w-3.5 h-3.5 ${isUpvoted ? "fill-black" : ""}`} />
-                            {isUpvoted ? "공감 완료" : "나도 쓸래요!"} ({req.upvoteCount})
-                          </button>
+                          <span className="text-[11px] text-white/50">
+                            발제자: <b className="text-white/80">{req.requestedBy.userName}</b>
+                          </span>
 
                           <div className="text-[11px] text-cyan-300 font-medium">
                             제안 {req.proposals?.length || 0}팀
@@ -1419,12 +1576,30 @@ export default function IRPage({
                     </span>
                     <span className="text-xs text-white/50">{selectedIdeaRequest.category}</span>
                   </div>
-                  <button
-                    onClick={() => setSelectedIdeaRequest(null)}
-                    className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {/* 발제자 또는 관리자 의뢰서 삭제 버튼 */}
+                    {isLoggedIn &&
+                      (userRoles.includes("admin") ||
+                        userRoles.includes("manager") ||
+                        selectedIdeaRequest.requestedBy.userName === userName ||
+                        selectedIdeaRequest.requestedBy.userId === "u-current" ||
+                        selectedIdeaRequest.requestedBy.userId === "u-student-1") && (
+                        <button
+                          onClick={() => handleDeleteIdeaRequest(selectedIdeaRequest.id)}
+                          className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors cursor-pointer text-xs flex items-center gap-1 mr-1"
+                          title="의뢰서 삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">삭제</span>
+                        </button>
+                      )}
+                    <button
+                      onClick={() => setSelectedIdeaRequest(null)}
+                      className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Idea Info */}
@@ -1710,11 +1885,27 @@ export default function IRPage({
       {/* ────────────────────────────────────────────────────────── */}
       {/* Modals                                                     */}
       {/* ────────────────────────────────────────────────────────── */}
-      {/* 스타트업 IR 프로젝트 등록 모달 */}
+      {/* 스타트업 IR 프로젝트 등록/수정 모달 */}
       <ProjectCreateEditModal
         isOpen={showCreateProjectModal}
-        onClose={() => setShowCreateProjectModal(false)}
+        initialProject={editingProject || undefined}
+        onClose={() => {
+          setShowCreateProjectModal(false);
+          setEditingProject(null);
+        }}
         onSave={(newProject) => {
+          setLocalProjects((prev) => {
+            const idx = prev.findIndex((p) => p.id === newProject.id);
+            if (idx >= 0) {
+              const copy = [...prev];
+              copy[idx] = newProject;
+              return copy;
+            }
+            return [newProject, ...prev];
+          });
+          if (selectedProject?.id === newProject.id) {
+            setSelectedProject(newProject);
+          }
           if (onSaveProject) {
             onSaveProject(newProject);
           }
@@ -1742,8 +1933,18 @@ export default function IRPage({
         }}
         proposerName={userName || "오승환"}
         proposerId="u-builder-1"
-        onProposalSubmitted={() => {
+        onProposalSubmitted={(newProp) => {
           fetchIdeaRequests();
+          if (proposalTargetIdea) {
+            setSelectedIdeaRequest((prev) => {
+              if (!prev || prev.id !== proposalTargetIdea.id) return prev;
+              const existingProps = prev.proposals || [];
+              return {
+                ...prev,
+                proposals: [newProp, ...existingProps.filter((p) => p.id !== newProp.id)],
+              };
+            });
+          }
         }}
       />
     </div>

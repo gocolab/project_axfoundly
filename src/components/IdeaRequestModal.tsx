@@ -34,6 +34,9 @@ interface IdeaDraft {
   tags?: string[];
   rewardType?: string;
   rewardDetail?: string;
+  submissionDeadline?: string;
+  selectionDate?: string;
+  requiredRoles?: string[];
 }
 
 const getFutureDate = (days: number) => {
@@ -56,6 +59,7 @@ export default function IdeaRequestModal({
 
   // AI Chat States
   const [aiPrompt, setAiPrompt] = React.useState("");
+  const [currentDraftState, setCurrentDraftState] = React.useState<IdeaDraft | null>(null);
   const [aiChatMessages, setAiChatMessages] = React.useState<
     {
       sender: "user" | "ai";
@@ -65,7 +69,7 @@ export default function IdeaRequestModal({
   >([
     {
       sender: "ai",
-      text: "안녕하세요! 어떤 스타트업 아이디어나 해결하고 싶은 시장 문제가 있으신가요?\n\n핵심 아이템, 타깃 고객이 겪는 불편함, 생각하시는 솔루션 방향을 편하게 말씀해 주시면 맞춤형 PRD 제작 의뢰서 초안을 즉시 기획해 드립니다.",
+      text: "안녕하세요! 어떤 스타트업 아이디어나 해결하고 싶은 시장 문제가 있으신가요?\n\n핵심 서비스 아이템을 편하게 말씀해 주시면, 제가 인터뷰 질문을 통해 맞춤형 창업 PRD 의뢰서 초안을 단계별로 완성해 드리겠습니다.",
     },
   ]);
   const [isAiGenerating, setIsAiGenerating] = React.useState(false);
@@ -84,75 +88,97 @@ export default function IdeaRequestModal({
   const [submitting, setSubmitting] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
 
-  // Reset modal state when closed / opened
+  // Reset modal state completely when opened
   React.useEffect(() => {
     if (isOpen) {
       setInlineError(null);
+      setAiPrompt("");
+      setCreateStep("ai_chat");
+      setCurrentDraftState(null);
+      setAiChatMessages([
+        {
+          sender: "ai",
+          text: "안녕하세요! 어떤 스타트업 아이디어나 해결하고 싶은 시장 문제가 있으신가요?\n\n핵심 서비스 아이템을 편하게 말씀해 주시면, 제가 인터뷰 질문을 통해 맞춤형 창업 PRD 의뢰서 초안을 단계별로 완성해 드리겠습니다.",
+        },
+      ]);
+      setTitle("");
+      setProblem("");
+      setSolutionConcept("");
+      setCategory("AI/SaaS");
+      setRewardType("지분공유(코파운더)");
+      setRewardDetail("지분 15~25% 협의 + 코파운더 영입");
+      setSubmissionDeadline(getFutureDate(14));
+      setSelectionDate(getFutureDate(21));
+      setTagInput("");
+      setTags([]);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // ── AI Chat Draft Generation Handler ──
+  // ── AI Interactive Interview Chat Generation Handler ──
   const handleGenerateFromAi = async () => {
     if (!aiPrompt.trim()) return;
 
     const userText = aiPrompt.trim();
     setAiPrompt("");
-    setAiChatMessages((prev) => [...prev, { sender: "user", text: userText }]);
+    const newHistory = [...aiChatMessages, { sender: "user" as const, text: userText }];
+    setAiChatMessages(newHistory);
     setIsAiGenerating(true);
 
     try {
-      const res = await api.aiAutoFill({
-        type: "idea_request",
-        prompt: userText,
-        context: { category: category || "AI / SaaS" },
+      const res = await api.ideaInterview({
+        message: userText,
+        history: newHistory.map((m) => ({ sender: m.sender, text: m.text })),
+        currentDraft: currentDraftState || undefined,
       });
 
-      const draftResult = res?.result || {};
-      const generatedDraft: IdeaDraft = {
-        refinedTitle: draftResult.refinedTitle || `[AI 혁신] ${userText.slice(0, 20)} 솔루션`,
-        naturalCategory: draftResult.naturalCategory || "AI / SaaS 플랫폼",
-        problem:
-          draftResult.problem ||
-          `현재 시장에서는 ${userText} 관련 업무에서 많은 수작업과 높은 비용이 발생하며, 실무자들이 실시간으로 적절한 솔루션을 찾지 못해 비효율을 겪고 있습니다.`,
-        solutionConcept:
-          draftResult.solutionConcept ||
-          `최신 AI 자동화 엔진과 사용자 친화적인 웹/앱 UI를 결합하여 ${userText} 문제를 10배 빠르게 해결하는 MVP를 구축하고자 합니다.`,
-        tags:
-          draftResult.tags && Array.isArray(draftResult.tags) && draftResult.tags.length > 0
-            ? draftResult.tags
-            : ["AI스타트업", "MVP제작", "SaaS"],
+      const updatedDraft: IdeaDraft = res?.draft || currentDraftState || {
+        refinedTitle: userText.replace(/^(나에게|우리의|새로운|내)\s*/, "").slice(0, 25).trim() + " 솔루션",
+        naturalCategory: "AI / SaaS 플랫폼",
+        problem: `시장 내 실무자들이 ${userText} 관련 업무에서 많은 수작업과 높은 비용을 지출하고 있습니다.`,
+        solutionConcept: `자체 최적화 AI 파이프라인과 직관적인 대시보드를 결합한 MVP 솔루션`,
         rewardType: "지분공유(코파운더)",
-        rewardDetail: draftResult.rewardDetail || "지분 15~25% 협의 + MVP 런칭 인센티브",
+        rewardDetail: "지분 15~25% 협의 + MVP 런칭 인센티브",
+        submissionDeadline: getFutureDate(14),
+        selectionDate: getFutureDate(21),
+        tags: ["AI스타트업", "MVP제작", "SaaS"],
+        requiredRoles: ["풀스택 개발자", "AI 엔지니어"],
       };
+
+      setCurrentDraftState(updatedDraft);
 
       setAiChatMessages((prev) => [
         ...prev,
         {
           sender: "ai",
-          text: `요청하신 아이디어를 분석하여 **"${generatedDraft.refinedTitle}"** (분야: ${generatedDraft.naturalCategory}) PRD 초안을 기획했습니다!\n\n아래 '상세 의뢰서로 적용 & 일정 설정' 버튼을 누르시면 마감일, 보상 조건, 세부 페인포인트를 자유롭게 보완하여 등록하실 수 있습니다.`,
-          generatedDraft,
+          text: res.reply || "아이디어가 접수되었습니다. 다음 단계로 안내해 드리겠습니다.",
+          generatedDraft: updatedDraft,
         },
       ]);
     } catch (err) {
-      console.warn("AI Idea Request generation fallback:", err);
-      const generatedDraft: IdeaDraft = {
-        refinedTitle: `AI 기반 ${userText.slice(0, 20)} 혁신 플랫폼`,
+      console.warn("AI Idea Interview fallback:", err);
+      const cleaned = userText.replace(/^(나에게|우리의|새로운|내)\s*/, "").slice(0, 25).trim();
+      const fallbackDraft: IdeaDraft = {
+        refinedTitle: cleaned.endsWith("솔루션") || cleaned.endsWith("플랫폼") ? cleaned : `${cleaned} 솔루션`,
         naturalCategory: "AI / SaaS 플랫폼",
-        problem: `현재 시장에서는 ${userText} 관련 업무에서 높은 수작업 비용과 비효율이 지속되고 있으며, 기존 솔루션들의 복잡성과 높은 도입 장벽으로 인해 실무자들의 만족도가 낮습니다.`,
-        solutionConcept: `최신 생성형 AI 에이전트와 맞춤형 워크플로우를 결합하여 손쉽게 문제를 해결하는 경량 SaaS MVP를 구축하고자 합니다.`,
+        problem: `현재 시장에서는 ${userText} 관련 업무에서 높은 수작업 비용과 비효율이 지속되고 있으며, 실무자들의 만족도가 낮습니다.`,
+        solutionConcept: `최신 생성형 AI 에이전트와 맞춤형 워크플로우를 결합하여 문제를 해결하는 경량 SaaS MVP를 구축하고자 합니다.`,
         tags: ["AI스타트업", "MVP제작", "SaaS"],
         rewardType: "지분공유(코파운더)",
         rewardDetail: "지분 15~25% 협의 + 코파운더 영입",
+        submissionDeadline: getFutureDate(14),
+        selectionDate: getFutureDate(21),
+        requiredRoles: ["풀스택 개발자", "AI 엔지니어"],
       };
+      setCurrentDraftState(fallbackDraft);
 
       setAiChatMessages((prev) => [
         ...prev,
         {
           sender: "ai",
-          text: `요청하신 아이디어를 기반으로 **"${generatedDraft.refinedTitle}"** PRD 초안을 생성했습니다.\n\n아래 '상세 의뢰서로 적용 & 일정 설정' 버튼을 클릭하여 확인해보세요!`,
-          generatedDraft,
+          text: `좋은 아이디어입니다! 이 서비스를 통해 해결하려는 **타깃 고객의 가장 핵심적인 문제(Pain Point)**는 무엇인가요?\n\n현재까지의 내용을 바탕으로 PRD 초안을 계속 갱신 중입니다.`,
+          generatedDraft: fallbackDraft,
         },
       ]);
     } finally {
@@ -168,6 +194,8 @@ export default function IdeaRequestModal({
     if (draft.solutionConcept) setSolutionConcept(draft.solutionConcept);
     if (draft.rewardType) setRewardType(draft.rewardType);
     if (draft.rewardDetail) setRewardDetail(draft.rewardDetail);
+    if (draft.submissionDeadline) setSubmissionDeadline(draft.submissionDeadline);
+    if (draft.selectionDate) setSelectionDate(draft.selectionDate);
     if (draft.tags && Array.isArray(draft.tags)) {
       setTags(Array.from(new Set(draft.tags)));
     }
@@ -214,8 +242,8 @@ export default function IdeaRequestModal({
       }
     } catch (err) {
       console.warn("AI Auto-fill fallback:", err);
-      const prefix = title.split(" ")[0] || "AI";
-      setTitle(`${prefix}Mind: ${title} 전문 플랫폼`);
+      const cleaned = title.replace(/^(나에게|우리의|새로운|내)\s*/, "").slice(0, 25).trim();
+      setTitle(cleaned.endsWith("솔루션") || cleaned.endsWith("플랫폼") ? cleaned : `${cleaned} 솔루션`);
       setCategory(title.includes("법률") ? "B2B LegalTech SaaS" : "AI / SaaS 플랫폼");
       setProblem(
         `현재 시장에서는 ${title} 관련 업무에서 많은 수작업과 높은 비용이 발생하며, 실무자들이 실시간으로 적절한 솔루션을 찾지 못해 비효율을 겪고 있습니다.`
@@ -479,23 +507,31 @@ export default function IdeaRequestModal({
             </div>
 
             {/* Chat Input */}
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <div className="flex gap-2 items-end">
+              <textarea
+                rows={2}
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !isAiGenerating && handleGenerateFromAi()}
-                placeholder="예: '초기 스타트업을 위해 AI 계약서 독소조항을 1분 만에 자동 분석해주는 B2B SaaS 만들고 싶어'"
-                className="flex-1 bg-brand-surface-low border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-blue-500 transition-colors"
+                onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isAiGenerating && aiPrompt.trim()) {
+                      handleGenerateFromAi();
+                    }
+                  }
+                }}
+                placeholder="인터뷰 답변을 입력해 주세요. (Shift+Enter로 줄바꿈, Enter로 전송)"
+                className="flex-1 bg-brand-surface-low border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-blue-500 transition-colors resize-none leading-relaxed"
               />
               <button
                 type="button"
                 onClick={handleGenerateFromAi}
                 disabled={isAiGenerating || !aiPrompt.trim()}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center gap-1.5 disabled:opacity-50"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-4 py-3 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-xs flex items-center gap-1.5 disabled:opacity-50 shrink-0 h-[46px]"
               >
                 <Send size={13} />
-                기획 생성
+                답변 전송
               </button>
             </div>
 

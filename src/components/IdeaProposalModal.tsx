@@ -3,6 +3,7 @@ import { X, Send, Wrench, Calendar, Code2, Link2, Mail, Users, AlertCircle, Vide
 import type { IdeaRequest, IdeaProposal } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
+import { convertToEmbedUrl } from "./ProjectCreateEditModal";
 
 interface IdeaProposalModalProps {
   request: IdeaRequest | null;
@@ -112,7 +113,7 @@ export default function IdeaProposalModal({
       planSummary: planSummary.trim(),
       estimatedWeeks: Number(estimatedWeeks) || 4,
       portfolioUrl: portfolioUrl.trim(),
-      demoVideoUrl: demoVideoUrl.trim() || undefined,
+      demoVideoUrl: convertToEmbedUrl(demoVideoUrl.trim()) || undefined,
       prototypeUrl: prototypeUrl.trim() || undefined,
       visibility,
       contactEmail: contactEmail.trim(),
@@ -266,27 +267,27 @@ export default function IdeaProposalModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1 flex items-center gap-1">
-                  <Video className="w-3 h-3 text-red-400" /> 시연 영상 링크 (YouTube / Loom)
+                  <Video className="w-3 h-3 text-brand-primary" /> 동작 / 피칭 시연 영상 URL (YouTube / Vimeo / Loom)
                 </label>
                 <input
                   type="url"
                   value={demoVideoUrl}
                   onChange={(e) => setDemoVideoUrl(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-brand-primary"
+                  placeholder="https://www.youtube.com/watch?v=... 또는 https://youtu.be/..."
+                  className="w-full px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-brand-primary font-mono text-[11px]"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1 flex items-center gap-1">
-                  <Globe className="w-3 h-3 text-brand-tertiary" /> 프로토타입 / 사이트 링크 (Figma / Web)
+                  <Globe className="w-3 h-3 text-brand-tertiary" /> 프로토타입 / 배포 사이트 방문 URL (사이트 링크)
                 </label>
                 <input
                   type="url"
                   value={prototypeUrl}
                   onChange={(e) => setPrototypeUrl(e.target.value)}
-                  placeholder="https://www.figma.com/@demo 또는 배포 URL"
-                  className="w-full px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-brand-tertiary"
+                  placeholder="https://my-service.com 또는 Figma 프로토타입 링크"
+                  className="w-full px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-brand-tertiary font-mono text-[11px]"
                 />
               </div>
             </div>

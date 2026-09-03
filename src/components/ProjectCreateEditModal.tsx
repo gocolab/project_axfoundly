@@ -1,9 +1,30 @@
 import React from "react";
-import { X, Rocket, Video, Shield, Plus, Trash2, Send, Sparkles } from "lucide-react";
+import { X, Rocket, Video, Shield, Plus, Trash2, Send, Sparkles, Globe } from "lucide-react";
 import type { IRProject, HiringRoleDetail } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
 import { useCommonCodes } from "../hooks/useCommonCodes";
+
+export function convertToEmbedUrl(url?: string): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  // YouTube watch?v=... or youtu.be/...
+  const ytMatch = trimmed.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}`;
+  }
+  // Vimeo
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)/i);
+  if (vimeoMatch && vimeoMatch[3]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[3]}`;
+  }
+  // Loom
+  const loomMatch = trimmed.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/i);
+  if (loomMatch && loomMatch[1]) {
+    return `https://www.loom.com/embed/${loomMatch[1]}`;
+  }
+  return trimmed;
+}
 
 interface ProjectCreateEditModalProps {
   isOpen: boolean;
@@ -35,6 +56,7 @@ export default function ProjectCreateEditModal({
     initialProject?.investmentStage || "Pre-Seed"
   );
   const [demoVideoUrl, setDemoVideoUrl] = React.useState(initialProject?.demoVideoUrl || "");
+  const [prototypeUrl, setPrototypeUrl] = React.useState(initialProject?.prototypeUrl || "");
   const [isAnonymous, setIsAnonymous] = React.useState(initialProject?.isAnonymous || false);
   const [businessModel, setBusinessModel] = React.useState(initialProject?.businessModel || "");
   const [problem, setProblem] = React.useState(initialProject?.problem || "");
@@ -110,6 +132,7 @@ export default function ProjectCreateEditModal({
       setField(initialProject.field);
       setInvestmentStage(initialProject.investmentStage);
       setDemoVideoUrl(initialProject.demoVideoUrl || "");
+      setPrototypeUrl(initialProject.prototypeUrl || "");
       setIsAnonymous(initialProject.isAnonymous || false);
       setBusinessModel(initialProject.businessModel);
       setProblem(initialProject.problem);
@@ -127,6 +150,7 @@ export default function ProjectCreateEditModal({
       setField("AI/ML");
       setInvestmentStage("Pre-Seed");
       setDemoVideoUrl("");
+      setPrototypeUrl("");
       setIsAnonymous(false);
       setBusinessModel("");
       setProblem("");
@@ -152,7 +176,8 @@ export default function ProjectCreateEditModal({
         role: roleName,
         type: roleType,
         applyMethod: "internal",
-        skills: [],
+        skills: ["협업", "열정"],
+        description: `${roleName} 포지션 팀원을 모집합니다.`,
       },
     ]);
     setHiringRoleInput("");
@@ -172,6 +197,23 @@ export default function ProjectCreateEditModal({
 
     setSaving(true);
     try {
+      // isHiring이 켜져있는데 hiringDetails가 비어있으면 hiringRoles로부터 자동 생성
+      const finalHiringDetails: HiringRoleDetail[] = hiringDetails.length > 0
+        ? hiringDetails
+        : hiringRoles.map((r, idx) => {
+            const match = r.match(/^(.*?)(?:\s*\((.*?)\))?$/);
+            const roleName = match ? match[1].trim() : r;
+            const typeName = match && match[2] ? match[2].trim() : "풀타임";
+            return {
+              id: `role-${Date.now()}-${idx}`,
+              role: roleName,
+              type: typeName,
+              applyMethod: "internal" as const,
+              skills: ["협업", "열정"],
+              description: `${roleName} 포지션 팀원을 모집합니다.`,
+            };
+          });
+
       const projectPayload: Partial<IRProject> = {
         id: initialProject?.id,
         teamName,
@@ -181,14 +223,15 @@ export default function ProjectCreateEditModal({
         description,
         field,
         investmentStage,
-        demoVideoUrl,
+        demoVideoUrl: convertToEmbedUrl(demoVideoUrl),
+        prototypeUrl: prototypeUrl.trim(),
         isAnonymous,
         businessModel: businessModel || "B2B SaaS 구독 모델",
         problem: problem || "시장 내 페인포인트",
         solution: solution || "자체 AI 엔진 기반 해결책",
         isHiring,
         hiringRoles,
-        hiringDetails,
+        hiringDetails: isHiring ? finalHiringDetails : [],
         members: initialProject?.members || [
           {
             name: "김수강생",
@@ -378,15 +421,36 @@ export default function ProjectCreateEditModal({
           <div>
             <label className="font-semibold text-white block mb-1 flex items-center gap-1.5">
               <Video size={14} className="text-brand-primary" />
-              동작 / 피칭 시연 영상 임베드 URL (YouTube / Vimeo / Loom)
+              동작 / 피칭 시연 영상 URL (YouTube / Vimeo / Loom)
             </label>
             <input
               type="text"
               value={demoVideoUrl}
               onChange={(e) => setDemoVideoUrl(e.target.value)}
-              placeholder="예: https://www.youtube.com/embed/..."
+              placeholder="예: https://www.youtube.com/watch?v=... 또는 https://youtu.be/..."
               className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary font-mono text-[11px]"
             />
+            <p className="text-[10px] text-brand-on-surface-variant mt-1">
+              일반 YouTube, Vimeo, Loom 링크를 입력하시면 자동으로 임베드 플레이어로 변환됩니다.
+            </p>
+          </div>
+
+          {/* Prototype / Website URL */}
+          <div>
+            <label className="font-semibold text-white block mb-1 flex items-center gap-1.5">
+              <Globe size={14} className="text-brand-tertiary" />
+              프로토타입 / 배포 사이트 방문 URL (사이트 링크)
+            </label>
+            <input
+              type="url"
+              value={prototypeUrl}
+              onChange={(e) => setPrototypeUrl(e.target.value)}
+              placeholder="예: https://my-service.com 또는 Figma 프로토타입 링크"
+              className="w-full bg-brand-surface-low border border-brand-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-brand-primary font-mono text-[11px]"
+            />
+            <p className="text-[10px] text-brand-on-surface-variant mt-1">
+              등록 시 상세 페이지 및 영상 섹션 상단에 [프로토타입 / 배포 사이트 방문] 버튼이 노출됩니다.
+            </p>
           </div>
 
           {/* Problem, Solution, BM */}

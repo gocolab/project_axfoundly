@@ -280,9 +280,28 @@ export default function AdminDashboard({
                     toast.warning("IR 프로젝트 숨김 처리", "해당 프로젝트가 탐색 목록에서 숨김 처리되었습니다.");
                     setSelectedPanelItem(null);
                   }}
-                  className="flex-1 py-2 bg-error/20 text-error font-bold rounded-xl border border-error/30 hover:bg-error/30 transition-colors cursor-pointer text-xs"
+                  className="flex-1 py-2 bg-amber-500/20 text-amber-300 font-bold rounded-xl border border-amber-500/30 hover:bg-amber-500/30 transition-colors cursor-pointer text-xs"
                 >
-                  숨김 / 블라인드
+                  숨김
+                </button>
+                <button
+                  onClick={async () => {
+                    const confirmed = await toast.confirm({
+                      title: "프로젝트 영구 삭제",
+                      message: "관리자 권한으로 이 프로젝트를 영구 삭제하시겠습니까?",
+                      confirmText: "삭제",
+                      cancelText: "취소",
+                      type: "danger",
+                    });
+                    if (!confirmed) return;
+                    await api.deleteIRProject(selectedPanelItem.data.id);
+                    setAdminProjects((prev) => prev.filter((p) => p.id !== selectedPanelItem.data.id));
+                    toast.success("삭제 완료", "IR 프로젝트가 영구 삭제되었습니다.");
+                    setSelectedPanelItem(null);
+                  }}
+                  className="py-2 px-3 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer text-xs flex items-center gap-1"
+                >
+                  <Trash2 size={12} /> 삭제
                 </button>
               </div>
             </div>
@@ -302,6 +321,27 @@ export default function AdminDashboard({
                 <p className="text-xs text-white/70">{selectedPanelItem.data.problem}</p>
                 <p className="font-semibold text-white text-xs pt-2 border-t border-white/10">솔루션 컨셉</p>
                 <p className="text-xs text-white/70">{selectedPanelItem.data.solutionConcept}</p>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={async () => {
+                    const confirmed = await toast.confirm({
+                      title: "아이디어 의뢰 영구 삭제",
+                      message: "관리자 권한으로 이 아이디어 의뢰 및 제안서를 영구 삭제하시겠습니까?",
+                      confirmText: "삭제",
+                      cancelText: "취소",
+                      type: "danger",
+                    });
+                    if (!confirmed) return;
+                    await api.deleteIdeaRequest(selectedPanelItem.data.id);
+                    setAdminIdeaRequests((prev) => prev.filter((i) => i.id !== selectedPanelItem.data.id));
+                    toast.success("삭제 완료", "아이디어 의뢰서가 삭제되었습니다.");
+                    setSelectedPanelItem(null);
+                  }}
+                  className="w-full py-2 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer text-xs flex items-center justify-center gap-1"
+                >
+                  <Trash2 size={12} /> 관리자 의뢰서 삭제
+                </button>
               </div>
             </div>
           )}

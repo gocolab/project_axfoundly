@@ -241,6 +241,11 @@ export interface IRProject {
   hiringDetails?: HiringRoleDetail[];
   bookmarked?: boolean;
   investmentStage: "Pre-Seed" | "Seed" | "Pre-A" | "Series A" | string;
+  createdAt?: string; // 등록/생성일 (정렬용)
+  upvotes?: string[]; // '나도 쓸래요' 투표 유저 ID 목록
+  upvoteCount?: number; // '나도 쓸래요' 카운트
+  authorId?: string; // 등록 작성자 ID
+  authorName?: string; // 등록 작성자명
   // 아이디어 제작 요청 연계 필드
   originIdeaRequestId?: string;
   originIdeaTitle?: string;

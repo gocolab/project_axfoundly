@@ -239,6 +239,19 @@ export const api = {
     );
   },
 
+  deleteIRProject: async (id: string) => {
+    return fetchJson<{ success: boolean; message?: string }>(`/api/ir/projects/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  upvoteIRProject: async (id: string, userId?: string) => {
+    return fetchJson<{ success: boolean; isUpvoted: boolean; project: IRProject }>(`/api/ir/projects/${id}/upvote`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  },
+
   applyForJob: async (projectId: string, application: { roleId?: string; applicantName: string; applicantEmail: string; portfolioUrl?: string; coverLetter: string }) => {
     return fetchJson<{ success: boolean; application: any }>(`/api/ir/projects/${projectId}/apply`, {
       method: "POST",
@@ -306,6 +319,22 @@ export const api = {
   deleteIdeaRequest: async (id: string) => {
     return fetchJson<{ success: boolean }>(`/api/ir/idea-requests/${id}`, {
       method: "DELETE",
+    });
+  },
+
+  ideaInterview: async (data: {
+    message: string;
+    history?: { sender: "user" | "ai"; text: string }[];
+    currentDraft?: any;
+  }) => {
+    return fetchJson<{
+      reply: string;
+      interviewStep: number;
+      isReady: boolean;
+      draft?: any;
+    }>("/api/ai/idea-interview", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   },
 
