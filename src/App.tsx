@@ -412,6 +412,17 @@ export default function App() {
     }
   };
 
+  const handleForceDeleteCourse = async (courseId: string) => {
+    try {
+      await api.deleteCourse(courseId);
+      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      refreshData();
+    } catch (error) {
+      console.error("Force delete course failed:", error);
+      toast.error("삭제 실패", "강의 강제 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleSaveProject = async (project: IRProject) => {
     try {
       const res = await api.saveIRProject(project);
@@ -593,10 +604,11 @@ export default function App() {
             }
             members={adminMembers}
             boards={adminBoards}
-            pendingCourses={pendingCourses.slice(0, 2)}
+            courses={courses}
             onChangeRole={handleAdminChangeRole}
             onApproveCourse={handleApproveCourse}
             onRejectCourse={handleRejectCourse}
+            onForceDeleteCourse={handleForceDeleteCourse}
             onViewCourse={handleViewCourse}
             onBoardCreated={(newBoard) => {
               setAdminBoards((prev) => [newBoard, ...prev]);

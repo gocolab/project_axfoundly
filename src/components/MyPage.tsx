@@ -17,6 +17,7 @@ import {
   Receipt,
   Heart,
   Settings,
+  Bell,
 } from "lucide-react";
 import type {
   UserRole,
@@ -37,6 +38,7 @@ import MyStartupView from "./MyStartupView";
 import InstructorDashboard from "./InstructorDashboard";
 import InvestorDashboard from "./InvestorDashboard";
 import AccountSettingsView from "./AccountSettingsView";
+import NotificationCenterView from "./NotificationCenterView";
 import IdeaRequestModal from "./IdeaRequestModal";
 
 export type MyPageTabId =
@@ -45,6 +47,7 @@ export type MyPageTabId =
   | "startup"
   | "instructor"
   | "investor"
+  | "notifications"
   | "settings";
 
 interface MyPageProps {
@@ -99,7 +102,7 @@ export default function MyPage({
   const getInitialTab = (): MyPageTabId => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
-    if (tabParam && ["overview", "courses", "startup", "instructor", "investor", "settings"].includes(tabParam)) {
+    if (tabParam && ["overview", "courses", "startup", "instructor", "investor", "notifications", "settings"].includes(tabParam)) {
       return tabParam as MyPageTabId;
     }
     return "overview";
@@ -151,7 +154,21 @@ export default function MyPage({
     );
   }
 
-  // 6대 통합 메뉴 (수강생, 강사, 투자자 역할 분리 없는 기능 중심 메뉴)
+  // 내 프로젝트 & 내가 개설한 강의 & 팀 빌딩 제안
+  const myProjects = irProjects
+    .filter((p) => !deletedProjectIds.includes(p.id))
+    .filter(
+      (p) =>
+        p.authorName === userName ||
+        p.members?.some((m) => m.name === userName || m.anonymousName === userName)
+    );
+  const myCreatedCourses = courses.filter((c) => c.instructor.includes(userName));
+  const bookmarkedProjects = irProjects.filter((p) => p.bookmarked);
+  const myTeamRequests = teamRequests.filter(
+    (req) => req.fromUser === userName || req.toUser === userName
+  );
+
+  // 7대 통합 메뉴 (수강생, 강사, 투자자 역할 분리 없는 기능 중심 메뉴)
   const tabs: { id: MyPageTabId; label: string; icon: React.ReactNode; badge?: string | number }[] = [
     {
       id: "overview",
@@ -168,40 +185,33 @@ export default function MyPage({
       id: "startup",
       label: "내 스타트업",
       icon: <Briefcase size={16} />,
-      badge:
-        teamRequests.filter((r) => r.type === "received" && r.status === "대기중").length ||
-        undefined,
+      badge: myProjects.length || undefined,
     },
     {
       id: "instructor",
       label: "강의 개설 & 운영",
       icon: <Sparkles size={16} />,
+      badge: myCreatedCourses.length || undefined,
     },
     {
       id: "investor",
       label: "관심 스타트업 & 투자",
       icon: <Heart size={16} />,
+      badge: bookmarkedProjects.length || undefined,
+    },
+    {
+      id: "notifications",
+      label: "알림 센터",
+      icon: <Bell size={16} />,
+      badge: notifications.filter((n) => !n.isRead).length || undefined,
     },
     {
       id: "settings",
       label: "결제 및 계정 설정",
       icon: <Settings size={16} />,
+      badge: payments.length || undefined,
     },
   ];
-
-  // 내 프로젝트 & 내가 개설한 강의 & 팀 빌딩 제안
-  const myProjects = irProjects
-    .filter((p) => !deletedProjectIds.includes(p.id))
-    .filter(
-      (p) =>
-        p.authorName === userName ||
-        p.members?.some((m) => m.name === userName || m.anonymousName === userName)
-    );
-  const myCreatedCourses = courses.filter((c) => c.instructor.includes(userName));
-  const bookmarkedProjects = irProjects.filter((p) => p.bookmarked);
-  const myTeamRequests = teamRequests.filter(
-    (req) => req.fromUser === userName || req.toUser === userName
-  );
 
   const handleOpenProjectModal = () => {
     setActiveTab("startup");
@@ -325,6 +335,7 @@ export default function MyPage({
           {activeTab === "instructor" && (
             <div className="animate-fadeIn">
               <InstructorDashboard
+                userName={userName}
                 myCourses={myCreatedCourses}
                 settlements={settlements}
                 onSaveCourse={handleSaveCourse}
@@ -349,7 +360,16 @@ export default function MyPage({
             </div>
           )}
 
-          {/* 6. 결제 및 계정 설정 (관리) */}
+          {/* 6. 알림 센터 (보관함 & 수신 설정) */}
+          {activeTab === "notifications" && (
+            <NotificationCenterView
+              userName={userName}
+              notifications={notifications}
+              onNavigate={onNavigate}
+            />
+          )}
+
+          {/* 7. 결제 및 계정 설정 (관리) */}
           {activeTab === "settings" && (
             <AccountSettingsView
               userName={userName}

@@ -313,7 +313,7 @@ export default function MyStartupView({
               : "text-brand-on-surface-variant hover:text-white"
           }`}
         >
-          <Sparkles size={14} className="text-cyan-400" /> 내가 의뢰한 아이디어
+          <Sparkles size={14} className="text-cyan-400" /> 내가 의뢰한 아이디어 ({myIdeas.length})
         </button>
       </div>
 
@@ -807,7 +807,7 @@ export default function MyStartupView({
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+            <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
                 <input
@@ -827,6 +827,18 @@ export default function MyStartupView({
                   </button>
                 )}
               </div>
+
+              {ideaTotalPages > 1 && (
+                <div className="ml-auto">
+                  <Pagination
+                    currentPage={ideaPage}
+                    totalPages={ideaTotalPages}
+                    onPageChange={setIdeaPage}
+                    totalItems={filteredIdeas.length}
+                    itemsPerPage={ideaItemsPerPage}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -932,18 +944,6 @@ export default function MyStartupView({
                   </div>
                 ))}
               </div>
-
-              {ideaTotalPages > 1 && (
-                <div className="pt-2">
-                  <Pagination
-                    currentPage={ideaPage}
-                    totalPages={ideaTotalPages}
-                    onPageChange={setIdeaPage}
-                    totalItems={filteredIdeas.length}
-                    itemsPerPage={ideaItemsPerPage}
-                  />
-                </div>
-              )}
             </>
           )}
         </div>

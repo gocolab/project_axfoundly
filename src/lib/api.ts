@@ -12,6 +12,8 @@ import type {
   AIRecommendation,
   DashboardStats,
   AdminMember,
+  MemberStatus,
+  MemberActivity,
   AdminBoard,
   CRMMessage,
   UserRole,
@@ -114,6 +116,16 @@ export const api = {
       {
         method: "POST",
         body: JSON.stringify({ paymentMethod }),
+      }
+    );
+  },
+
+  cancelCourseEnrollment: async (id: string, userName?: string) => {
+    return fetchJson<{ success: boolean; course: Course }>(
+      `/api/courses/${id}/cancel-enrollment`,
+      {
+        method: "POST",
+        body: JSON.stringify({ userName }),
       }
     );
   },
@@ -584,11 +596,22 @@ export const api = {
     });
   },
 
-  changeMemberStatus: async (id: string, status: "활성" | "정지" | "탈퇴") => {
+  changeMemberStatus: async (id: string, status: MemberStatus, withdrawalReason?: string) => {
     return fetchJson<{ member: AdminMember }>(`/api/admin/members/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, withdrawalReason }),
     });
+  },
+
+  forceWithdrawMember: async (id: string, reason: string) => {
+    return fetchJson<{ member: AdminMember; notification: any }>(`/api/admin/members/${id}/force-withdraw`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  getAdminMemberActivity: async (id: string) => {
+    return fetchJson<{ activity: MemberActivity }>(`/api/admin/members/${id}/activity`);
   },
 
   getAdminBoards: async () => {

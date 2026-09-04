@@ -335,25 +335,27 @@ router.post("/auto-fill", async (req, res) => {
 }`;
       } else if (type === "course") {
         promptBody += `
-출력 JSON 스키마:
+출력 JSON 스키마 (마크다운 백틱 없이 반드시 순수 JSON 객체만 반환):
 {
-  "refinedTitle": "공식 강의 마스터클래스 제목",
-  "naturalCategory": "자연어 교육 분야",
-  "description": "2~3문장의 핵심 강의 소개 및 학습 효과",
+  "refinedTitle": "공식 강의 마스터클래스 제목 (예: [실전] 법률 AI 어시스턴트 & RAG 구축 마스터클래스)",
+  "naturalCategory": "자연어 교육 분야 (예: B2B LegalTech SaaS & 실전 LLM)",
+  "description": "강의 핵심 목표, 대상, 학습 효과를 담은 2~3문장의 완성도 높은 소개문",
   "price": 590000,
   "discountedPrice": 390000,
-  "deliveryType": "online 또는 offline 또는 hybrid",
+  "deliveryType": "online" | "offline" | "hybrid",
+  "location": "오프라인/혼합 시 강의장 주소 (예: 서울시 강남구 테헤란로 123), 온라인이면 빈 문자열",
   "daysOfWeek": ["화", "목"],
-  "startDate": "YYYY-MM-DD (대화에서 언급된 시작일, 없으면 빈 문자열)",
-  "timeSlot": "19:30 ~ 21:30 (대화에서 언급된 시간대)",
-  "tags": ["키워드1", "키워드2", "키워드3"],
+  "startDate": "YYYY-MM-DD (대화에서 언급된 시작일, 미언급 시 2주 후 평일 날짜)",
+  "timeSlot": "19:30 ~ 21:30 (대화에서 언급된 시간대, 미언급 시 19:30 ~ 21:30)",
+  "tags": ["키워드1", "키워드2", "키워드3", "키워드4"],
   "curriculum": [
-    { "week": 1, "sessionNumber": 1, "title": "1회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
-    { "week": 1, "sessionNumber": 2, "title": "2회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
-    { "week": 2, "sessionNumber": 3, "title": "3회차 주제", "description": "상세 실습 내용", "duration": "2시간" },
-    { "week": 2, "sessionNumber": 4, "title": "4회차 주제", "description": "상세 실습 내용", "duration": "2시간" }
+    { "week": 1, "sessionNumber": 1, "title": "1회차 주제", "description": "상세 실습 내용", "duration": "2시간", "deliveryType": "online" },
+    { "week": 1, "sessionNumber": 2, "title": "2회차 주제", "description": "상세 실습 내용", "duration": "2시간", "deliveryType": "online" },
+    { "week": 2, "sessionNumber": 3, "title": "3회차 주제", "description": "상세 실습 내용", "duration": "2시간", "deliveryType": "online" },
+    { "week": 2, "sessionNumber": 4, "title": "4회차 주제", "description": "상세 실습 내용", "duration": "2시간", "deliveryType": "online" }
   ]
-}`;
+}
+중요: 사용자가 대화 중에 요일, 시간, 시작일, 온/오프라인 여부, 가격 등을 언급했다면 해당 값을 JSON 필드에 정확하게 반영하세요.`;
 
       } else if (type === "course_proposal") {
         promptBody += `
@@ -439,14 +441,68 @@ router.post("/auto-fill", async (req, res) => {
 
 // Smart Rule-based Fallback Generator
 function generateAutoFillFallback(type: string, input: string, context: any) {
-  const clean = input.trim();
-  const shortName = clean.length > 25 ? `${clean.slice(0, 22)}...` : clean;
+  let topic = input.trim();
+  let days: string[] = ["화", "목"];
+  let deliveryType: "online" | "offline" | "hybrid" = "online";
+  let location = "";
+  let extractedStartDate = "";
+  let timeSlot = "19:30 ~ 21:30";
+
+  // If conversation format, extract actual user utterances
+  const userLines = input
+    .split("\n")
+    .filter((l) => l.trim().startsWith("사용자:") || l.trim().startsWith("- 사용자:"))
+    .map((l) => l.replace(/^[-*]?\s*사용자:\s*/, "").trim())
+    .filter(Boolean);
+
+  if (userLines.length > 0) {
+    topic = userLines[0];
+    const fullText = userLines.join(" ");
+
+    // Detect delivery type
+    if (fullText.includes("오프라인") && fullText.includes("온라인")) {
+      deliveryType = "hybrid";
+      location = "서울시 강남구 테헤란로 (세부 강의장 공지)";
+    } else if (fullText.includes("오프라인")) {
+      deliveryType = "offline";
+      location = "서울시 강남구 테헤란로 (세부 강의장 공지)";
+    } else if (fullText.includes("온라인")) {
+      deliveryType = "online";
+    }
+
+    // Detect days
+    const foundDays: string[] = [];
+    ["월", "화", "수", "목", "금", "토", "일"].forEach((d) => {
+      if (fullText.includes(`${d}요일`) || fullText.includes(`${d}/`)) {
+        foundDays.push(d);
+      }
+    });
+    if (foundDays.length > 0) days = foundDays;
+
+    // Detect start date
+    const dateMatch = fullText.match(/\b(202\d[-.][01]?\d[-.][0-3]?\d)\b/);
+    if (dateMatch) {
+      extractedStartDate = dateMatch[1].replace(/\./g, "-");
+    } else {
+      const future = new Date();
+      future.setDate(future.getDate() + 14);
+      extractedStartDate = future.toISOString().split("T")[0];
+    }
+  }
+
+  const cleanTopic = topic
+    .replace(/^\[.*?\]\s*/, "")
+    .replace(/^(나에게|우리의|새로운|내|실전)\s*/, "")
+    .replace(/만들어줘|기획해줘|해줘|원해|필요해/g, "")
+    .trim() || "AI 실전 스타트업";
+  const shortName = cleanTopic.length > 20 ? `${cleanTopic.slice(0, 18)}...` : cleanTopic;
+  const clean = cleanTopic;
 
   // Derive Natural Category
   let naturalCategory = "AI/딥테크 SaaS";
-  const lower = clean.toLowerCase();
+  const lower = (topic + " " + input).toLowerCase();
   if (lower.includes("법률") || lower.includes("계약") || lower.includes("규제")) {
-    naturalCategory = "B2B LegalTech SaaS";
+    naturalCategory = "B2B LegalTech SaaS & 실전 LLM";
   } else if (lower.includes("의료") || lower.includes("바이오") || lower.includes("헬스") || lower.includes("진료")) {
     naturalCategory = "디지털 헬스케어 & AI 진단";
   } else if (lower.includes("금융") || lower.includes("결제") || lower.includes("투자") || lower.includes("핀테크")) {
@@ -464,15 +520,14 @@ function generateAutoFillFallback(type: string, input: string, context: any) {
   }
 
   // Derive Refined Title
-  let refinedTitle = clean;
-  if (!clean.startsWith("[") && !clean.includes(":")) {
+  let refinedTitle = cleanTopic;
+  if (!cleanTopic.startsWith("[") && !cleanTopic.includes(":")) {
     if (type.startsWith("course")) {
-      refinedTitle = `[실전] ${shortName} 핵심 마스터클래스`;
+      refinedTitle = `[실전] ${cleanTopic} 핵심 마스터클래스`;
     } else if (type === "idea_request" || type === "ir_project") {
-      const cleaned = clean.replace(/^(나에게|우리의|새로운|내)\s*/, "").trim();
-      refinedTitle = cleaned.endsWith("플랫폼") || cleaned.endsWith("솔루션") || cleaned.endsWith("서비스")
-        ? cleaned
-        : `${cleaned} 솔루션`;
+      refinedTitle = cleanTopic.endsWith("플랫폼") || cleanTopic.endsWith("솔루션") || cleanTopic.endsWith("서비스")
+        ? cleanTopic
+        : `${cleanTopic} 솔루션`;
     }
   }
 
@@ -480,7 +535,7 @@ function generateAutoFillFallback(type: string, input: string, context: any) {
     return {
       refinedTitle,
       naturalCategory,
-      description: `[학습 목표]\n- ${clean}의 핵심 파이프라인 이해 및 실전 개발 환경 셋업\n- 비즈니스 상용화 수준의 MVP 완성 및 코드 레벨 최적화\n\n[희망 커리큘럼 구성]\n1. 기초 개념 및 도메인 데이터 파이프라인 구축\n2. 핵심 알고리즘/에이전트 구현 및 실무 연동 실습\n3. 실전 프로덕트 배포 및 성능 최적화\n4. 1:1 코드 리뷰 및 질의응답 피드백`,
+      description: `[학습 목표]\n- ${cleanTopic}의 핵심 파이프라인 이해 및 실전 개발 환경 셋업\n- 비즈니스 상용화 수준의 MVP 완성 및 코드 레벨 최적화\n\n[희망 커리큘럼 구성]\n1. 기초 개념 및 도메인 데이터 파이프라인 구축\n2. 핵심 알고리즘/에이전트 구현 및 실무 연동 실습\n3. 실전 프로덕트 배포 및 성능 최적화\n4. 1:1 코드 리뷰 및 질의응답 피드백`,
       tags: ["실전프로젝트", naturalCategory.split(" ")[0] || "AI", "MVP개발"],
       targetLevel: "중급",
       preferredSchedule: "평일 저녁 (19:30~21:30)",
@@ -492,19 +547,20 @@ function generateAutoFillFallback(type: string, input: string, context: any) {
     return {
       refinedTitle,
       naturalCategory,
-      description: `${clean}의 원리부터 실전 MVP 런칭까지 체계적으로 학습하는 집중 실습 마스터클래스입니다.`,
+      description: `${cleanTopic}의 핵심 원리부터 실무 비즈니스 파이프라인 연동까지 실전으로 완성하는 마스터클래스입니다.`,
       price: 590000,
       discountedPrice: 390000,
-      deliveryType: "online",
-      daysOfWeek: ["화", "목"],
-      startDate: "",
-      timeSlot: "19:30 ~ 21:30",
-      tags: ["AI실전", naturalCategory.split(" ")[0] || "AI모델링", "MVP"],
+      deliveryType,
+      location,
+      daysOfWeek: days,
+      startDate: extractedStartDate,
+      timeSlot,
+      tags: ["실전AI", naturalCategory.split(" ")[0] || "AI모델링", "MVP제작", "창업실습"],
       curriculum: [
-        { week: 1, sessionNumber: 1, title: `${shortName} 기초 환경 및 가설 수립`, description: "핵심 라이브러리 셋업 및 기본 아키텍처 실습", duration: "2시간" },
-        { week: 1, sessionNumber: 2, title: `${shortName} 파이프라인 설계`, description: "데이터 연동 및 모델 인퍼런스 파이프라인 구축", duration: "2시간" },
-        { week: 2, sessionNumber: 3, title: "실전 에이전트 연계 프로토타이핑", description: "상용 연동 API 및 예외 처리 로직 구현", duration: "2시간" },
-        { week: 2, sessionNumber: 4, title: "클라우드 배포 및 최종 포트폴리오 완성", description: "배포 최적화 및 1:1 피드백", duration: "2시간" },
+        { week: 1, sessionNumber: 1, title: `${shortName} 개발 환경 셋업 및 기본 개념`, description: "핵심 라이브러리 연동 및 아키텍처 설계", duration: "2시간", deliveryType },
+        { week: 1, sessionNumber: 2, title: `${shortName} 데이터 파이프라인 구축`, description: "실무 데이터 인제스천 및 파이프라인 구축 실습", duration: "2시간", deliveryType },
+        { week: 2, sessionNumber: 3, title: "실전 비즈니스 로직 & API 연동", description: "상용 연동 API 및 예외 처리 로직 구현", duration: "2시간", deliveryType },
+        { week: 2, sessionNumber: 4, title: "배포 최적화 및 최종 포트폴리오 완성", description: "서비스 런칭 준비 및 1:1 코드 피드백", duration: "2시간", deliveryType },
       ],
     };
   }

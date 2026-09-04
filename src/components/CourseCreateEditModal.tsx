@@ -236,9 +236,13 @@ export default function CourseCreateEditModal({
       const draft = res?.result || {};
 
       // ── 즉시 폼 상태에 반영 (draft → state 동기화) ──
-      const resolvedTitle = draft.refinedTitle || `[실전] ${userText.slice(0, 18)} 마스터클래스`;
+      const resolvedTitle =
+        draft.refinedTitle ||
+        (courseTitle.trim() ? courseTitle : `[실전] ${userText.slice(0, 18)} 마스터클래스`);
       const resolvedCategory = (draft.naturalCategory as Course["category"]) || courseCategory || "실전 AI 모델링 / LLM";
-      const resolvedDesc = draft.description || `${userText} 핵심 역량 집중 실전 코스`;
+      const resolvedDesc =
+        draft.description ||
+        (courseDesc.trim() ? courseDesc : `${userText} 핵심 역량 집중 실전 코스`);
       const resolvedPrice = draft.price || coursePrice;
       const resolvedDiscounted = draft.discountedPrice || courseDiscountedPrice;
       const resolvedDeliveryType = draft.deliveryType === "offline" ? "offline" : draft.deliveryType === "hybrid" ? "hybrid" : (deliveryType as "online" | "offline" | "hybrid");
@@ -383,30 +387,33 @@ export default function CourseCreateEditModal({
   const handleTransitionToDetail = async () => {
     const userInputs = aiChatMessages.filter((m) => m.sender === "user").map((m) => m.text);
 
-    // If user has chatted but hasn't explicitly applied a draft yet and courseTitle is still empty
-    if (userInputs.length > 0 && !courseTitle.trim() && !isAutoMatching) {
+    // If user has chatted with AI, ensure detailed auto-matching is triggered
+    if (userInputs.length > 0 && !isAutoMatching) {
       setIsAutoMatching(true);
       toast.info("AI 자동 매칭 진행 중", "지금까지의 대화 내용을 바탕으로 상세 항목을 자동 구성합니다...");
 
       try {
-        const promptContext = userInputs.join("\n");
+        const fullConversation = aiChatMessages
+          .map((m) => `${m.sender === "user" ? "사용자" : "AI 디렉터"}: ${m.text}`)
+          .join("\n");
         const res = await api.aiAutoFill({
           type: "course",
-          prompt: `사용자와의 인터뷰 대화 요약:\n${promptContext}\n\n위 내용을 바탕으로 강의 제목, 카테고리, 설명, 추천 수강료, 추천 태그, 회차별 커리큘럼을 즉시 매칭 생성해 주세요.`,
+          prompt: `사용자와의 인터뷰 대화 전체 맥락:\n${fullConversation}\n\n위 전체 대화 맥락을 면밀히 분석하여 강의 제목(refinedTitle), 자연어 분야(naturalCategory), 상세 소개(description), 수강료(price, discountedPrice), 추천 태그(tags), 진행방식(deliveryType: online/offline/hybrid), 희망 요일(daysOfWeek), 시작일(startDate: YYYY-MM-DD), 시간대(timeSlot), 4회차 이상의 체계적인 실전 커리큘럼(curriculum)을 JSON으로 매칭 생성하세요.`,
         });
 
         const draft = res?.result || {};
         if (draft.refinedTitle) setCourseTitle(draft.refinedTitle);
-        else setCourseTitle(`[실전] ${userInputs[0]?.slice(0, 16) || "맞춤형"} 마스터클래스`);
+        else if (!courseTitle.trim()) setCourseTitle(`[실전] ${userInputs[0]?.slice(0, 16) || "맞춤형"} 마스터클래스`);
 
         if (draft.naturalCategory) setCourseCategory(draft.naturalCategory as Course["category"]);
         if (draft.description) setCourseDesc(draft.description);
         if (draft.price) setCoursePrice(draft.price);
         if (draft.discountedPrice) setCourseDiscountedPrice(draft.discountedPrice);
-        if (draft.tags) setCourseTags(draft.tags);
+        if (draft.tags && draft.tags.length > 0) setCourseTags(draft.tags);
         if (draft.deliveryType && draft.deliveryType !== "vod") {
           setDeliveryType(draft.deliveryType as "online" | "offline" | "hybrid");
         }
+        if (draft.location) setCourseLocation(draft.location);
         if (draft.startDate || draft.schedule?.startDate) setStartDate(draft.startDate || draft.schedule.startDate);
         if (draft.daysOfWeek || draft.schedule?.daysOfWeek) setSelectedDays(draft.daysOfWeek || draft.schedule.daysOfWeek);
         if (draft.timeSlot || draft.schedule?.timeSlot) setTimeSlot(draft.timeSlot || draft.schedule.timeSlot);

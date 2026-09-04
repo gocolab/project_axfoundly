@@ -376,7 +376,7 @@ export default function MyOverview({
                 <Bell size={14} className="text-brand-accent-orange" /> 실시간 알림 & 메시지
               </h3>
               <button
-                onClick={() => onNavigateTab("settings")}
+                onClick={() => onNavigateTab("notifications")}
                 className="text-xs text-brand-on-surface-variant hover:text-white transition-colors"
               >
                 전체보기

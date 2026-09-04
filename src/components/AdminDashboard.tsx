@@ -32,6 +32,8 @@ import type {
   AdminMember,
   AdminBoard,
   UserRole,
+  MemberStatus,
+  MemberActivity,
   Course,
   IRProject,
   IdeaRequest,
@@ -44,16 +46,18 @@ import type {
 import AdminBoardCreateModal from "./AdminBoardCreateModal";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
-import { clearCommonCodesCache } from "../hooks/useCommonCodes";
+import { useCommonCodes, clearCommonCodesCache } from "../hooks/useCommonCodes";
 
 interface AdminDashboardProps {
   stats: DashboardStats;
   members: AdminMember[];
   boards: AdminBoard[];
-  pendingCourses: Course[];
+  courses?: Course[];
+  pendingCourses?: Course[];
   onChangeRole: (memberId: string, newRoles: UserRole[]) => void;
-  onApproveCourse: (courseId: string) => void;
-  onRejectCourse: (courseId: string) => void;
+  onApproveCourse?: (courseId: string) => void;
+  onRejectCourse?: (courseId: string) => void;
+  onForceDeleteCourse?: (courseId: string) => void;
   onViewCourse?: (courseId: string) => void;
   onBoardCreated?: (board: AdminBoard) => void;
   onBoardDeleted?: (boardId: string) => void;
@@ -64,10 +68,12 @@ export default function AdminDashboard({
   stats,
   members,
   boards,
+  courses,
   pendingCourses,
   onChangeRole,
   onApproveCourse,
   onRejectCourse,
+  onForceDeleteCourse,
   onViewCourse,
   onBoardCreated,
   onBoardDeleted,
@@ -103,7 +109,10 @@ export default function AdminDashboard({
   }, []);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
+  const allCourses = courses || pendingCourses || [];
   const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);
+  const [localMembers, setLocalMembers] = React.useState<AdminMember[]>(members);
+  const [localCourses, setLocalCourses] = React.useState<Course[]>(allCourses);
   const [showCreateBoardModal, setShowCreateBoardModal] = React.useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = React.useState(false);
   const [newBoardName, setNewBoardName] = React.useState("");
@@ -116,6 +125,20 @@ export default function AdminDashboard({
   const [adminCategoryInsights, setAdminCategoryInsights] = React.useState<AdminCategoryInsight[]>([]);
   const [irSubFilter, setIrSubFilter] = React.useState<"all" | "stealth" | "hiring">("all");
   const [dataLoading, setDataLoading] = React.useState(false);
+
+  // 공통 코드 훅
+  const { getDisplayName: getCommonDisplayName, getBadgeClass: getCommonBadgeClass } = useCommonCodes(["USER_STATUS", "USER_ROLE"]);
+
+  // 회원 상세 서브탭 및 개인 활동 내역 상태
+  const [memberDetailTab, setMemberDetailTab] = React.useState<"info" | "courses" | "startup">("info");
+  const [memberActivity, setMemberActivity] = React.useState<MemberActivity | null>(null);
+  const [activityLoading, setActivityLoading] = React.useState(false);
+
+  // 회원 직권 강제 탈퇴 모달 상태
+  const [showWithdrawModal, setShowWithdrawModal] = React.useState(false);
+  const [withdrawTargetMember, setWithdrawTargetMember] = React.useState<AdminMember | null>(null);
+  const [withdrawReason, setWithdrawReason] = React.useState("");
+  const [isSubmittingWithdraw, setIsSubmittingWithdraw] = React.useState(false);
 
   // 공통 코드 관리 상태
   const [codeGroups, setCodeGroups] = React.useState<CodeGroup[]>([]);
@@ -180,6 +203,135 @@ export default function AdminDashboard({
   }, [boards]);
 
   React.useEffect(() => {
+    setLocalMembers(members);
+  }, [members]);
+
+  React.useEffect(() => {
+    setLocalCourses(courses || pendingCourses || []);
+  }, [courses, pendingCourses]);
+
+  // 회원 상세 패널 열람 시 개인 활동 내역 로드
+  React.useEffect(() => {
+    if (selectedPanelItem?.type === "member") {
+      setMemberDetailTab("info");
+      setActivityLoading(true);
+      api.getAdminMemberActivity(selectedPanelItem.data.id)
+        .then((res) => {
+          setMemberActivity(res.activity);
+        })
+        .catch((err) => {
+          console.error("Failed to load member activity", err);
+          setMemberActivity(null);
+        })
+        .finally(() => setActivityLoading(false));
+    } else {
+      setMemberActivity(null);
+    }
+  }, [selectedPanelItem?.type === "member" ? selectedPanelItem.data.id : null]);
+
+  // 회원 상태 변경 처리
+  const handleMemberStatusChange = async (member: AdminMember, newStatus: MemberStatus) => {
+    if (newStatus === "탈퇴") {
+      setWithdrawTargetMember(member);
+      setWithdrawReason("");
+      setShowWithdrawModal(true);
+      return;
+    }
+
+    try {
+      await api.changeMemberStatus(member.id, newStatus);
+      setLocalMembers((prev) =>
+        prev.map((m) => (m.id === member.id ? { ...m, status: newStatus } : m))
+      );
+      if (selectedPanelItem?.type === "member" && selectedPanelItem.data.id === member.id) {
+        setSelectedPanelItem({
+          type: "member",
+          data: { ...selectedPanelItem.data, status: newStatus },
+        });
+      }
+      toast.success("계정 상태 변경", `${member.name} 님의 계정 상태가 '${newStatus}'(으)로 변경되었습니다.`);
+    } catch (err) {
+      console.error("Failed to change member status:", err);
+      toast.error("상태 변경 실패", "회원 상태 변경 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 회원 직권 강제 탈퇴 처리 확정
+  const handleConfirmForceWithdraw = async () => {
+    if (!withdrawTargetMember) return;
+    if (!withdrawReason.trim()) {
+      toast.warning("사유 입력 필요", "강제 탈퇴 사유 및 안내 메시지를 입력해주세요.");
+      return;
+    }
+
+    setIsSubmittingWithdraw(true);
+    try {
+      const nowIso = new Date().toISOString();
+      await api.forceWithdrawMember(withdrawTargetMember.id, withdrawReason.trim());
+      setLocalMembers((prev) =>
+        prev.map((m) =>
+          m.id === withdrawTargetMember.id
+            ? {
+                ...m,
+                status: "탈퇴",
+                withdrawalReason: withdrawReason.trim(),
+                withdrawnAt: nowIso,
+              }
+            : m
+        )
+      );
+      if (selectedPanelItem?.type === "member" && selectedPanelItem.data.id === withdrawTargetMember.id) {
+        setSelectedPanelItem({
+          type: "member",
+          data: {
+            ...selectedPanelItem.data,
+            status: "탈퇴",
+            withdrawalReason: withdrawReason.trim(),
+            withdrawnAt: nowIso,
+          },
+        });
+      }
+      toast.success("회원 강제 탈퇴 완료", `${withdrawTargetMember.name} 님이 강제 탈퇴 처리되었습니다.`);
+      setShowWithdrawModal(false);
+      setWithdrawTargetMember(null);
+      setWithdrawReason("");
+    } catch (err) {
+      console.error("Failed to force withdraw member:", err);
+      toast.error("강제 탈퇴 실패", "회원 탈퇴 처리 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmittingWithdraw(false);
+    }
+  };
+
+  // 강의 직권 강제 삭제 처리
+  const handleForceDeleteCourse = async (courseId: string, courseTitle: string) => {
+    const confirmed = await toast.confirm({
+      title: "강의 직권 강제 삭제",
+      message: `관리자 권한으로 "${courseTitle}" 강의를 즉시 강제 삭제하시겠습니까? 등록된 강의 및 수강 데이터가 플랫폼에서 완전히 제거됩니다.`,
+      confirmText: "강제 삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      if (onForceDeleteCourse) {
+        await onForceDeleteCourse(courseId);
+      } else {
+        await api.deleteCourse(courseId);
+      }
+      setLocalCourses((prev) => prev.filter((c) => c.id !== courseId));
+      if (selectedPanelItem?.type === "course" && selectedPanelItem.data.id === courseId) {
+        setSelectedPanelItem(null);
+      }
+      toast.success("강의 삭제 완료", `"${courseTitle}" 강의가 직권 삭제되었습니다.`);
+    } catch (err) {
+      console.error("Failed to delete course:", err);
+      toast.error("강의 삭제 실패", "강의 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  React.useEffect(() => {
     setSearchQuery("");
     setCurrentPage(1);
     if (selectedPanelItem) {
@@ -228,7 +380,7 @@ export default function AdminDashboard({
               <span className="w-2.5 h-2.5 rounded-full bg-brand-primary animate-pulse" />
               <h3 className="font-display font-bold text-white text-sm">
                 {selectedPanelItem.type === "member" && "회원 상세 정보 & 활동 이력"}
-                {selectedPanelItem.type === "course" && "강의 검수 & 승인"}
+                {selectedPanelItem.type === "course" && "강의 상세 정보 및 관리"}
                 {selectedPanelItem.type === "ir" && "스타트업 IR 프로젝트 검수"}
                 {selectedPanelItem.type === "idea" && "아이디어 의뢰 & 제안 검수"}
                 {selectedPanelItem.type === "category" && "자연어 카테고리 인사이트"}
@@ -364,52 +516,383 @@ export default function AdminDashboard({
           )}
           {selectedPanelItem.type === 'member' && (
             <div className="space-y-4 text-sm text-brand-on-surface-variant">
-              <div className="w-16 h-16 rounded-full bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-4 border-2 border-brand-primary/30 shadow-inner">
-                {selectedPanelItem.data.name.charAt(0)}
+              {/* Account restriction warning banner if status !== '활성' */}
+              {selectedPanelItem.data.status !== "활성" && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-400" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 font-bold">
+                      <span>활동 제한 계정 ({selectedPanelItem.data.status})</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200">읽기 전용</span>
+                    </div>
+                    <p className="text-amber-200/80 mt-1">
+                      강의 개설, 수강 신청, 스타트업/IR 등록, 의뢰서 및 제안서 작성 등 모든 활동이 차단되며 조회(읽기)만 가능합니다.
+                    </p>
+                    {selectedPanelItem.data.withdrawalReason && (
+                      <div className="mt-2 text-xs bg-black/40 p-2.5 rounded-lg border border-white/10">
+                        <span className="font-semibold text-white">탈퇴/제재 사유: </span>
+                        <span className="text-red-300 font-medium">{selectedPanelItem.data.withdrawalReason}</span>
+                        {selectedPanelItem.data.withdrawnAt && (
+                          <span className="text-[10px] text-brand-on-surface-variant ml-2">
+                            ({new Date(selectedPanelItem.data.withdrawnAt).toLocaleString()})
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 3 Subtabs Header */}
+              <div className="flex border-b border-brand-border/40 gap-1 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setMemberDetailTab("info")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                    memberDetailTab === "info"
+                      ? "bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30"
+                      : "text-brand-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  기본 정보
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMemberDetailTab("courses")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    memberDetailTab === "courses"
+                      ? "bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30"
+                      : "text-brand-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  <BookOpen size={13} />
+                  교육/강의 활동
+                  {memberActivity && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 font-mono">
+                      {memberActivity.createdCourses.length + memberActivity.enrolledCourses.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMemberDetailTab("startup")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    memberDetailTab === "startup"
+                      ? "bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30"
+                      : "text-brand-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  <TrendingUp size={13} />
+                  스타트업/IR 활동
+                  {memberActivity && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 font-mono">
+                      {memberActivity.irProjects.length + memberActivity.ideaRequests.length + memberActivity.teamRequests.length + memberActivity.proposals.length}
+                    </span>
+                  )}
+                </button>
               </div>
-              <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
-                <p><span className="font-semibold text-white">이름:</span> {selectedPanelItem.data.name}</p>
-                <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
-                <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
-                <p><span className="font-semibold text-white">상태:</span> {selectedPanelItem.data.status}</p>
-                <p>
-                  <span className="font-semibold text-white">권한:</span>{" "}
-                  {selectedPanelItem.data.roles
-                    .map((r) => (r === "admin" ? "관리자" : r === "manager" ? "manager" : "member"))
-                    .join(", ")}
-                </p>
-              </div>
+
+              {/* Subtab 1: 기본 정보 */}
+              {memberDetailTab === "info" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="w-16 h-16 rounded-full bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-2 border-2 border-brand-primary/30 shadow-inner">
+                    {selectedPanelItem.data.name.charAt(0)}
+                  </div>
+                  <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2.5 border border-brand-border/30">
+                    <p><span className="font-semibold text-white">이름:</span> {selectedPanelItem.data.name}</p>
+                    <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
+                    <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="font-semibold text-white">계정 상태:</span>
+                      <select
+                        value={selectedPanelItem.data.status}
+                        onChange={(e) => handleMemberStatusChange(selectedPanelItem.data, e.target.value as MemberStatus)}
+                        className={`text-xs font-bold rounded-lg px-2.5 py-1 border cursor-pointer focus:outline-none ${
+                          selectedPanelItem.data.status === "활성"
+                            ? "bg-brand-tertiary/15 text-brand-tertiary border-brand-tertiary/30"
+                            : selectedPanelItem.data.status === "정지"
+                            ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                            : selectedPanelItem.data.status === "탈퇴"
+                            ? "bg-error/15 text-error border-error/30"
+                            : "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                        }`}
+                      >
+                        <option value="활성" className="bg-brand-surface text-white">활성 (모든 활동 가능)</option>
+                        <option value="정지" className="bg-brand-surface text-white">정지 (읽기 전용)</option>
+                        <option value="가상활성" className="bg-brand-surface text-white">가상활성 (읽기 전용)</option>
+                        <option value="탈퇴" className="bg-brand-surface text-white">탈퇴 (강제 탈퇴/사유 필수)</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="font-semibold text-white">권한:</span>
+                      <select
+                        value={
+                          selectedPanelItem.data.roles.includes("admin") && selectedPanelItem.data.roles.includes("member")
+                            ? "admin,member"
+                            : selectedPanelItem.data.roles.includes("admin")
+                            ? "admin"
+                            : "member"
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "admin,member") {
+                            onChangeRole(selectedPanelItem.data.id, ["admin", "member"]);
+                          } else {
+                            onChangeRole(selectedPanelItem.data.id, [val as UserRole]);
+                          }
+                        }}
+                        className="text-xs bg-brand-surface-low border border-brand-border rounded-lg px-2.5 py-1 text-white cursor-pointer focus:outline-none"
+                      >
+                        <option value="member" className="bg-brand-surface text-white">일반회원 (member)</option>
+                        <option value="admin" className="bg-brand-surface text-white">관리자 (admin)</option>
+                        <option value="admin,member" className="bg-brand-surface text-white">관리자+일반 (admin,member)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {selectedPanelItem.data.status !== "탈퇴" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWithdrawTargetMember(selectedPanelItem.data);
+                        setWithdrawReason("");
+                        setShowWithdrawModal(true);
+                      }}
+                      className="w-full py-2.5 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <AlertTriangle size={13} /> 회원 직권 강제 탈퇴 처리
+                    </button>
+                  ) : (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-300">
+                      <p className="font-bold mb-1">강제 탈퇴 완료된 회원입니다.</p>
+                      <p className="text-white/80">사유: {selectedPanelItem.data.withdrawalReason || "사유 미입력"}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Subtab 2: 교육/강의 활동 */}
+              {memberDetailTab === "courses" && (
+                <div className="space-y-4 animate-fadeIn">
+                  {activityLoading ? (
+                    <div className="p-8 text-center text-xs text-brand-on-surface-variant">
+                      <RefreshCw className="animate-spin mx-auto mb-2 text-brand-primary" size={20} />
+                      활동 데이터를 불러오는 중...
+                    </div>
+                  ) : (
+                    <>
+                      {/* 개설 강의 */}
+                      <div>
+                        <h5 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                          <BookOpen size={13} className="text-brand-primary" />
+                          개설한 강의 ({memberActivity?.createdCourses?.length || 0}건)
+                        </h5>
+                        {(!memberActivity?.createdCourses || memberActivity.createdCourses.length === 0) ? (
+                          <div className="p-3 text-center text-xs text-brand-on-surface-variant/70 bg-brand-surface-low/40 rounded-xl border border-brand-border/20">
+                            개설한 강의 이력이 없습니다.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {memberActivity.createdCourses.map((c) => (
+                              <div key={c.id} className="p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30 text-xs flex justify-between items-center">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-white truncate">{c.title}</p>
+                                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5">{c.category} · ₩{c.price.toLocaleString()}</p>
+                                </div>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-brand-tertiary/15 text-brand-tertiary font-bold ml-2 shrink-0">
+                                  {c.status || "모집중"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 수강 신청 / 수강 중 강의 */}
+                      <div>
+                        <h5 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                          <CheckCircle size={13} className="text-brand-accent-orange" />
+                          수강 신청 강의 ({memberActivity?.enrolledCourses?.length || 0}건)
+                        </h5>
+                        {(!memberActivity?.enrolledCourses || memberActivity.enrolledCourses.length === 0) ? (
+                          <div className="p-3 text-center text-xs text-brand-on-surface-variant/70 bg-brand-surface-low/40 rounded-xl border border-brand-border/20">
+                            수강 신청 내역이 없습니다.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {memberActivity.enrolledCourses.map((c) => (
+                              <div key={c.id} className="p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30 text-xs flex justify-between items-center">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-white truncate">{c.title}</p>
+                                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5">강사: {c.instructor}</p>
+                                </div>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-brand-primary/15 text-brand-primary font-bold ml-2 shrink-0">
+                                  수강중
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 결제 내역 */}
+                      <div>
+                        <h5 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                          <DollarSign size={13} className="text-emerald-400" />
+                          결제 이력 ({memberActivity?.payments?.length || 0}건)
+                        </h5>
+                        {(!memberActivity?.payments || memberActivity.payments.length === 0) ? (
+                          <div className="p-3 text-center text-xs text-brand-on-surface-variant/70 bg-brand-surface-low/40 rounded-xl border border-brand-border/20">
+                            결제 내역이 없습니다.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {memberActivity.payments.map((p) => (
+                              <div key={p.id} className="p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30 text-xs flex justify-between items-center">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-white truncate">{p.courseTitle || p.courseId}</p>
+                                  <p className="text-[10px] text-brand-on-surface-variant mt-0.5 font-mono">{p.paymentDate} · ₩{p.amount.toLocaleString()}</p>
+                                </div>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold ml-2 shrink-0">
+                                  {p.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Subtab 3: 스타트업/IR 활동 */}
+              {memberDetailTab === "startup" && (
+                <div className="space-y-4 animate-fadeIn">
+                  {activityLoading ? (
+                    <div className="p-8 text-center text-xs text-brand-on-surface-variant">
+                      <RefreshCw className="animate-spin mx-auto mb-2 text-brand-primary" size={20} />
+                      스타트업 활동 데이터를 불러오는 중...
+                    </div>
+                  ) : (
+                    <>
+                      {/* 등록 IR 프로젝트 */}
+                      <div>
+                        <h5 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                          <TrendingUp size={13} className="text-cyan-400" />
+                          등록 IR 프로젝트 ({memberActivity?.irProjects?.length || 0}건)
+                        </h5>
+                        {(!memberActivity?.irProjects || memberActivity.irProjects.length === 0) ? (
+                          <div className="p-3 text-center text-xs text-brand-on-surface-variant/70 bg-brand-surface-low/40 rounded-xl border border-brand-border/20">
+                            등록한 IR 프로젝트가 없습니다.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {memberActivity.irProjects.map((p) => (
+                              <div key={p.id} className="p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30 text-xs">
+                                <div className="flex justify-between items-start gap-2">
+                                  <p className="font-semibold text-white truncate">{p.teamName} - {p.title}</p>
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold shrink-0">
+                                    {p.investmentStage}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-brand-on-surface-variant mt-1">{p.field} · {p.oneLiner}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 의뢰한 아이디어 */}
+                      <div>
+                        <h5 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                          <Lightbulb size={13} className="text-amber-400" />
+                          아이디어 제작 의뢰 ({memberActivity?.ideaRequests?.length || 0}건)
+                        </h5>
+                        {(!memberActivity?.ideaRequests || memberActivity.ideaRequests.length === 0) ? (
+                          <div className="p-3 text-center text-xs text-brand-on-surface-variant/70 bg-brand-surface-low/40 rounded-xl border border-brand-border/20">
+                            등록한 아이디어 의뢰가 없습니다.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {memberActivity.ideaRequests.map((req) => (
+                              <div key={req.id} className="p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30 text-xs">
+                                <div className="flex justify-between items-start gap-2">
+                                  <p className="font-semibold text-white truncate">{req.title}</p>
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-bold shrink-0">
+                                    {req.status}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-brand-on-surface-variant mt-1">{req.category} · 보상: {req.rewardType}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 투자 및 협업 제안서 */}
+                      <div>
+                        <h5 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                          <Send size={13} className="text-brand-tertiary" />
+                          투자 및 협업 제안 ({memberActivity?.proposals?.length || 0}건)
+                        </h5>
+                        {(!memberActivity?.proposals || memberActivity.proposals.length === 0) ? (
+                          <div className="p-3 text-center text-xs text-brand-on-surface-variant/70 bg-brand-surface-low/40 rounded-xl border border-brand-border/20">
+                            제안 내역이 없습니다.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {memberActivity.proposals.map((prop) => (
+                              <div key={prop.id} className="p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/30 text-xs">
+                                <div className="flex justify-between items-start gap-2">
+                                  <p className="font-semibold text-white truncate">{prop.projectName}</p>
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-brand-tertiary/15 text-brand-tertiary font-bold shrink-0">
+                                    {prop.status}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-brand-on-surface-variant mt-1 line-clamp-1">{prop.message}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {selectedPanelItem.type === 'course' && (
             <div className="space-y-4 text-sm text-brand-on-surface-variant">
-              <h4 className="text-base font-bold text-white mb-2">{selectedPanelItem.data.title}</h4>
+              <div className="flex justify-between items-start gap-2 mb-2">
+                <h4 className="text-base font-bold text-white">{selectedPanelItem.data.title}</h4>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-tertiary/20 text-brand-tertiary font-bold border border-brand-tertiary/30 shrink-0">
+                  {selectedPanelItem.data.status || "모집중"}
+                </span>
+              </div>
               <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2 border border-brand-border/30">
                 <p><span className="font-semibold text-white">카테고리:</span> {selectedPanelItem.data.category}</p>
                 <p><span className="font-semibold text-white">강사:</span> {selectedPanelItem.data.instructor}</p>
-                <p><span className="font-semibold text-white">가격:</span> ₩{(selectedPanelItem.data.discountedPrice || selectedPanelItem.data.price).toLocaleString()}</p>
+                <p><span className="font-semibold text-white">수강료:</span> ₩{(selectedPanelItem.data.discountedPrice || selectedPanelItem.data.price).toLocaleString()}</p>
+                <p><span className="font-semibold text-white">수강 정원:</span> {selectedPanelItem.data.maxStudents || 30}명</p>
+                <p><span className="font-semibold text-white">강의 요약:</span> {selectedPanelItem.data.description}</p>
               </div>
               <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/30">
-                <p className="font-semibold text-white mb-2 text-xs">커리큘럼 요약</p>
+                <p className="font-semibold text-white mb-2 text-xs">커리큘럼 ({selectedPanelItem.data.curriculum.length}회차)</p>
                 <ul className="list-disc pl-5 space-y-1 text-xs">
-                  {selectedPanelItem.data.curriculum.slice(0, 5).map((curr: any, i: number) => (
+                  {selectedPanelItem.data.curriculum.slice(0, 8).map((curr: any, i: number) => (
                     <li key={i}>{curr.title}</li>
                   ))}
-                  {selectedPanelItem.data.curriculum.length > 5 && <li>...</li>}
+                  {selectedPanelItem.data.curriculum.length > 8 && <li>외 {selectedPanelItem.data.curriculum.length - 8}개 항목 더보기...</li>}
                 </ul>
               </div>
               <div className="flex gap-2 mt-4">
                 <button
-                  onClick={() => { onApproveCourse(selectedPanelItem.data.id); setSelectedPanelItem(null); }}
-                  className="flex-1 py-2 bg-brand-tertiary/20 text-brand-tertiary font-bold rounded-xl border border-brand-tertiary/30 hover:bg-brand-tertiary/30 transition-colors cursor-pointer text-xs"
+                  type="button"
+                  onClick={() => handleForceDeleteCourse(selectedPanelItem.data.id, selectedPanelItem.data.title)}
+                  className="w-full py-2.5 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5"
                 >
-                  강의 승인
-                </button>
-                <button
-                  onClick={() => { onRejectCourse(selectedPanelItem.data.id); setSelectedPanelItem(null); }}
-                  className="flex-1 py-2 bg-error/20 text-error font-bold rounded-xl border border-error/30 hover:bg-error/30 transition-colors cursor-pointer text-xs"
-                >
-                  강의 반려
+                  <Trash2 size={13} /> 강의 직권 강제 삭제
                 </button>
               </div>
             </div>
@@ -501,7 +984,7 @@ export default function AdminDashboard({
   const tabs = [
     { id: "stats" as const, label: "통계 홈", icon: <BarChart3 size={16} /> },
     { id: "members" as const, label: "회원 관리", icon: <Users size={16} /> },
-    { id: "courses" as const, label: "강의 검수 & 승인", icon: <BookOpen size={16} /> },
+    { id: "courses" as const, label: "강의 리스트 관리", icon: <BookOpen size={16} /> },
     { id: "startup" as const, label: "스타트업 & IR 관리", icon: <TrendingUp size={16} /> },
     { id: "categories" as const, label: "자연어 분야 인사이트", icon: <Sparkles size={16} /> },
     { id: "boards" as const, label: "게시판 관리", icon: <MessageSquare size={16} /> },
@@ -525,11 +1008,11 @@ export default function AdminDashboard({
   const itemsPerPage = 8;
   const lcSearch = searchQuery.toLowerCase();
 
-  const filteredMembers = members.filter(m => m.name.toLowerCase().includes(lcSearch) || m.email.toLowerCase().includes(lcSearch));
+  const filteredMembers = localMembers.filter(m => m.name.toLowerCase().includes(lcSearch) || m.email.toLowerCase().includes(lcSearch));
   const totalMemberPages = Math.max(1, Math.ceil(filteredMembers.length / itemsPerPage));
   const paginatedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const filteredCourses = pendingCourses.filter(c => c.title.toLowerCase().includes(lcSearch) || c.instructor.toLowerCase().includes(lcSearch));
+  const filteredCourses = localCourses.filter(c => c.title.toLowerCase().includes(lcSearch) || c.instructor.toLowerCase().includes(lcSearch));
   const totalCoursePages = Math.max(1, Math.ceil(filteredCourses.length / itemsPerPage));
   const paginatedCourses = filteredCourses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -758,14 +1241,14 @@ export default function AdminDashboard({
                           className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
                             selectedPanelItem
                               ? "w-0 opacity-0 pointer-events-none overflow-hidden"
-                              : "w-56 sm:w-72 opacity-100"
+                              : "w-64 sm:w-80 opacity-100"
                           }`}
                         >
                           <span className="flex-1 min-w-0">이메일</span>
                           <span className="w-20 text-center font-mono">가입일</span>
-                          <span className="w-12 text-center">상태</span>
+                          <span className="w-20 text-center">상태 (공통코드)</span>
                         </div>
-                        <span className="w-12 text-right shrink-0">액션</span>
+                        <span className="w-16 text-right shrink-0">액션</span>
                       </div>
 
                       {paginatedMembers.map((member) => (
@@ -790,7 +1273,7 @@ export default function AdminDashboard({
                           </div>
 
                           {/* Role Select */}
-                          <div className="w-20 shrink-0">
+                          <div className="w-20 shrink-0" onClick={(e) => e.stopPropagation()}>
                             <select
                               value={
                                 member.roles.includes("admin") && member.roles.includes("member")
@@ -799,7 +1282,6 @@ export default function AdminDashboard({
                                   ? "admin"
                                   : "member"
                               }
-                              onClick={(e) => e.stopPropagation()}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === "admin,member") {
@@ -821,29 +1303,59 @@ export default function AdminDashboard({
                             className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
                               selectedPanelItem
                                 ? "w-0 opacity-0 pointer-events-none overflow-hidden"
-                                : "w-56 sm:w-72 opacity-100"
+                                : "w-64 sm:w-80 opacity-100"
                             }`}
                           >
                             <span className="flex-1 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>
                             <span className="w-20 text-[10px] text-brand-on-surface-variant text-center font-mono">{member.joinDate}</span>
-                            <span className="w-12 text-center">
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                member.status === "활성" ? "text-brand-tertiary bg-brand-tertiary/10" :
-                                member.status === "정지" ? "text-brand-accent-orange bg-brand-accent-orange/10" : "text-error bg-error/10"
-                              }`}>
-                                {member.status}
-                              </span>
-                            </span>
+                            <div className="w-20 text-center shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <select
+                                value={member.status}
+                                onChange={(e) => handleMemberStatusChange(member, e.target.value as MemberStatus)}
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded border cursor-pointer focus:outline-none ${
+                                  member.status === "활성"
+                                    ? "text-brand-tertiary bg-brand-tertiary/10 border-brand-tertiary/30"
+                                    : member.status === "정지"
+                                    ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+                                    : member.status === "탈퇴"
+                                    ? "text-error bg-error/10 border-error/30"
+                                    : "text-purple-400 bg-purple-500/10 border-purple-500/30"
+                                }`}
+                              >
+                                <option value="활성" className="bg-brand-surface text-white">활성</option>
+                                <option value="정지" className="bg-brand-surface text-white">정지</option>
+                                <option value="가상활성" className="bg-brand-surface text-white">가상활성</option>
+                                <option value="탈퇴" className="bg-brand-surface text-white">탈퇴</option>
+                              </select>
+                            </div>
                           </div>
 
                           {/* Actions */}
-                          <div className="w-12 flex justify-end gap-1 shrink-0">
-                            <button className="text-[9px] text-brand-on-surface-variant hover:text-white cursor-pointer p-0.5" title="상세">
-                              <Eye size={11} />
+                          <div className="w-16 flex justify-end gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPanelItem({ type: 'member', data: member })}
+                              className="text-brand-on-surface-variant hover:text-white cursor-pointer p-1 rounded hover:bg-brand-surface-high transition-colors"
+                              title="상세 보기"
+                            >
+                              <Eye size={12} />
                             </button>
-                            <button className="text-[9px] text-brand-accent-orange hover:text-brand-accent-rose cursor-pointer p-0.5" title="제재">
-                              <AlertTriangle size={11} />
-                            </button>
+                            {member.status !== "탈퇴" ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWithdrawTargetMember(member);
+                                  setWithdrawReason("");
+                                  setShowWithdrawModal(true);
+                                }}
+                                className="text-red-400 hover:text-red-300 cursor-pointer p-1 rounded hover:bg-red-500/20 transition-colors"
+                                title="직권 강제 탈퇴"
+                              >
+                                <AlertTriangle size={12} />
+                              </button>
+                            ) : (
+                              <span className="text-[9px] text-error/60 font-mono self-center px-1">탈퇴</span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -854,16 +1366,18 @@ export default function AdminDashboard({
               </div>
             )}
 
-            {/* ── 강의/콘텐츠 관리 ── */}
+            {/* ── 강의 리스트 관리 ── */}
             {activeTab === "courses" && (
               <div className="flex flex-col gap-4 animate-fadeIn">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
                   <div>
                     <h2 className="text-sm font-bold text-white flex items-center gap-2">
                       <BookOpen size={14} className="text-brand-accent-orange" />
-                      신청/등록된 강의 커리큘럼 검수 & 승인
+                      강의 리스트 관리
                     </h2>
-                    <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 강의 커리큘럼을 검수하고 승인/반려합니다.</p>
+                    <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                      개설 및 모집 승인 절차가 폐지되어 자유롭게 개설됩니다. 부적격 강의는 관리자 권한으로 직권 강제 삭제할 수 있습니다.
+                    </p>
                   </div>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
                     <div className="relative w-full xl:w-60">
@@ -881,21 +1395,21 @@ export default function AdminDashboard({
                         <Pagination
                           currentPage={currentPage}
                           totalPages={totalCoursePages}
-                        onPageChange={setCurrentPage}
-                        totalItems={filteredCourses.length}
-                        itemsPerPage={itemsPerPage}
-                      />
-                    </div>
-                  )}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredCourses.length}
+                          itemsPerPage={itemsPerPage}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
                   <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
                     {filteredCourses.length === 0 ? (
                       <div className="bg-brand-card border border-brand-border/60 rounded-xl p-8 text-center shadow-md">
-                        <CheckCircle size={32} className="text-brand-tertiary mx-auto mb-3" />
-                        <p className="text-sm text-brand-on-surface-variant">검수 대기 중인 강의가 없습니다</p>
+                        <BookOpen size={32} className="text-brand-on-surface-variant/40 mx-auto mb-3" />
+                        <p className="text-sm text-brand-on-surface-variant">등록된 강의가 없습니다</p>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-3">
@@ -914,32 +1428,33 @@ export default function AdminDashboard({
                                 <BookOpen size={20} className="text-white/60" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h3 className="text-xs font-bold text-white truncate">{course.title}</h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-xs font-bold text-white truncate">{course.title}</h3>
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-tertiary/15 text-brand-tertiary font-bold shrink-0">
+                                    {course.status || "모집중"}
+                                  </span>
+                                </div>
                                 <p className="text-[10px] text-brand-on-surface-variant mt-0.5 truncate">
-                                  {course.instructor} · {course.category} · {course.curriculum.length}주 과정
+                                  {course.instructor} · {course.category} · {course.curriculum.length}회차 과정
                                 </p>
                                 <p className="text-[10px] text-brand-on-surface-variant font-mono">
                                   수강료: ₩{(course.discountedPrice || course.price).toLocaleString()}
                                 </p>
                               </div>
-                              <div className="flex gap-1.5 flex-shrink-0">
+                              <div className="flex gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); onApproveCourse(course.id); }}
-                                  className="text-[10px] bg-brand-tertiary/15 text-brand-tertiary py-1 px-2.5 rounded-lg border border-brand-tertiary/25 hover:bg-brand-tertiary/25 transition-colors cursor-pointer flex items-center gap-1 font-bold"
-                                >
-                                  <CheckCircle size={11} /> 승인
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onRejectCourse(course.id); }}
-                                  className="text-[10px] bg-error/10 text-error py-1 px-2.5 rounded-lg border border-error/20 hover:bg-error/20 transition-colors cursor-pointer flex items-center gap-1 font-bold"
-                                >
-                                  <XCircle size={11} /> 반려
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setSelectedPanelItem({ type: 'course', data: course }); }}
+                                  type="button"
+                                  onClick={() => setSelectedPanelItem({ type: 'course', data: course })}
                                   className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                                 >
                                   <Eye size={11} /> 상세
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleForceDeleteCourse(course.id, course.title)}
+                                  className="text-[10px] bg-red-500/15 text-red-300 py-1 px-2.5 rounded-lg border border-red-500/30 hover:bg-red-500/25 transition-colors cursor-pointer flex items-center gap-1 font-bold"
+                                >
+                                  <Trash2 size={11} /> 강제 삭제
                                 </button>
                               </div>
                             </div>
@@ -947,16 +1462,6 @@ export default function AdminDashboard({
                         ))}
                       </div>
                     )}
-
-                    <div className="border-t border-brand-border/30 pt-4 mt-4">
-                      <h2 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
-                        <RefreshCw size={14} className="text-brand-primary" />
-                        환불 처리
-                      </h2>
-                      <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center">
-                        <p className="text-xs text-brand-on-surface-variant">처리 대기 중인 환불 요청이 없습니다</p>
-                      </div>
-                    </div>
                   </div>
                   {renderDetailPanel()}
                 </div>
@@ -1378,7 +1883,7 @@ export default function AdminDashboard({
                     <p className="text-sm font-semibold text-white">카카오페이 테스트 연동
                       <span className="ml-2 text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/30">연동됨</span>
                     </p>
-                    <p className="text-[10px] text-brand-on-surface-variant mt-0.5">CID: TC0ONETIME (테스트 일회성 카드결제)</p>
+                    <p className="text-[10px] text-brand-on-surface-variant mt-0.5">CID: TC0ONETIME (카카오페이 단건 결제 테스트)</p>
                   </div>
                 </div>
 
@@ -2120,6 +2625,72 @@ export default function AdminDashboard({
                         className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm"
                       >
                         발송
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 회원 직권 강제 탈퇴 모달 */}
+            {showWithdrawModal && withdrawTargetMember && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+                <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-red-500/30">
+                  <div className="flex items-center gap-2.5 mb-4 text-red-400">
+                    <AlertTriangle size={22} className="text-red-400" />
+                    <h3 className="font-display text-lg font-bold text-white">회원 직권 강제 탈퇴</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-brand-surface-low/80 rounded-xl p-3.5 border border-brand-border/40 text-xs">
+                      <p><span className="text-brand-on-surface-variant">대상 회원:</span> <strong className="text-white font-bold">{withdrawTargetMember.name}</strong> ({withdrawTargetMember.email})</p>
+                      <p className="text-brand-on-surface-variant mt-1.5 leading-relaxed">
+                        강제 탈퇴 시 계정이 즉시 <span className="text-red-400 font-bold">'탈퇴'</span> 상태로 전환되며, 신규 강의 개설, 수강 신청, IR 등록, 아이디어 의뢰 및 제안서 작성 등 모든 활동이 영구 차단(읽기 전용)됩니다.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-brand-on-surface-variant block mb-1.5">
+                        강제 탈퇴 사유 및 회원 안내 메시지 <span className="text-red-400">*</span>
+                      </label>
+                      <textarea
+                        value={withdrawReason}
+                        onChange={(e) => setWithdrawReason(e.target.value)}
+                        placeholder="예: 운영정책 위반(허위 정보 게시 및 부적격 활동)에 따른 관리자 직권 탈퇴 처리"
+                        className="w-full bg-brand-surface-low border border-brand-border rounded-xl p-3 text-xs text-white placeholder:text-brand-on-surface-variant/50 focus:outline-none focus:border-red-500/60 transition-colors h-24 resize-none"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowWithdrawModal(false);
+                          setWithdrawTargetMember(null);
+                          setWithdrawReason("");
+                        }}
+                        disabled={isSubmittingWithdraw}
+                        className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmForceWithdraw}
+                        disabled={isSubmittingWithdraw}
+                        className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-red-900/30"
+                      >
+                        {isSubmittingWithdraw ? (
+                          <>
+                            <RefreshCw className="animate-spin" size={13} />
+                            처리 중...
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle size={13} />
+                            직권 강제 탈퇴 확정
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

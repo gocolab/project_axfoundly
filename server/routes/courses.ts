@@ -424,6 +424,15 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Course title is required" });
     }
 
+    // 활성 회원 검증 (정지/탈퇴/가상활성=읽기 전용)
+    if (newCourseData.instructor) {
+      const members = db.get("members") || [];
+      const member = members.find((m) => m.name === newCourseData.instructor);
+      if (member && member.status !== "활성") {
+        return res.status(403).json({ error: `해당 계정은 현재 '${member.status}' 상태로 활동이 제한되어 읽기만 가능합니다.` });
+      }
+    }
+
     const curriculumSummary = (newCourseData.curriculum || [])
       .map((item) => `${item.title}: ${item.description}`)
       .join("\n");
@@ -500,6 +509,15 @@ router.post("/:id/enroll", (req, res) => {
   const targetCourse = db.get("courses").find((c) => c.id === id);
   if (!targetCourse) {
     return res.status(404).json({ error: "Course not found" });
+  }
+
+  // 활성 회원 검증 (정지/탈퇴/가상활성=읽기 전용)
+  if (userName || userEmail) {
+    const members = db.get("members") || [];
+    const member = members.find((m) => m.name === userName || m.email === userEmail);
+    if (member && member.status !== "활성") {
+      return res.status(403).json({ error: `해당 계정은 현재 '${member.status}' 상태로 수강 신청이 제한되어 읽기만 가능합니다.` });
+    }
   }
 
   if (targetCourse.status === "종료") {
@@ -600,6 +618,88 @@ router.post("/:id/enroll", (req, res) => {
     course: enrolledCourse,
     payment: newPayment,
   });
+});
+
+// POST /api/courses/:id/cancel-enrollment (Cancel Enrollment & Refund)
+router.post("/:id/cancel-enrollment", (req, res) => {
+  const { id } = req.params;
+  const { userName = "김수강생" } = req.body;
+
+  let updatedCourse: Course | null = null;
+
+  db.update("courses", (courses) =>
+    courses.map((c) => {
+      if (c.id === id) {
+        updatedCourse = {
+          ...c,
+          isEnrolled: false,
+          studentCount: Math.max(0, c.studentCount - 1),
+          progress: 0,
+        };
+        return updatedCourse;
+      }
+      return c;
+    })
+  );
+
+  if (!updatedCourse) {
+    return res.status(404).json({ error: "Course not found" });
+  }
+
+  // Update payments record to "환불"
+  let refundAmount = 0;
+  db.update("payments", (payments) =>
+    payments.map((p) => {
+      if (p.courseId === id && p.status === "완료") {
+        refundAmount = p.amount;
+        return {
+          ...p,
+          status: "환불" as const,
+        };
+      }
+      return p;
+    })
+  );
+
+  // Update CourseStudent record to "환불"
+  db.update("courseStudents", (students) =>
+    (students || []).map((s) => {
+      if (s.courseId === id && (s.name === userName || s.email.includes("student") || s.userId === "m1")) {
+        return {
+          ...s,
+          paymentStatus: "환불" as const,
+          completed: false,
+        };
+      }
+      return s;
+    })
+  );
+
+  // Update Revenue stats if refundAmount > 0
+  if (refundAmount > 0) {
+    db.update("stats", (stats) => ({
+      ...stats,
+      totalRevenue: Math.max(0, stats.totalRevenue - refundAmount),
+      monthlyRevenue: Math.max(0, stats.monthlyRevenue - refundAmount),
+    }));
+  }
+
+  // Notification for refund
+  notificationService.sendNotification({
+    templateCode: "COURSE_REFUND_COMPLETED",
+    category: "course",
+    type: "course",
+    title: `[수강 취소 완료] ${(updatedCourse as Course).title}`,
+    message: `'${(updatedCourse as Course).title}' 수강 취소 및 결제 금액 환불이 정상 처리되었습니다.`,
+    targetUrl: `/courses/${(updatedCourse as Course).id}`,
+    data: {
+      courseId: (updatedCourse as Course).id,
+      courseTitle: (updatedCourse as Course).title,
+      refundAmount,
+    },
+  });
+
+  res.json({ success: true, course: updatedCourse });
 });
 
 // PATCH /api/courses/:id/approve (Admin Approve)

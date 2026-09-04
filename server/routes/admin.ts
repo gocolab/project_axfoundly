@@ -5,6 +5,8 @@ import type {
   AdminMember,
   AdminBoard,
   UserRole,
+  MemberStatus,
+  MemberActivity,
   IRProject,
   IdeaRequest,
   IdeaProposal,
@@ -85,13 +87,17 @@ router.patch(["/members/:id/roles", "/members/:id/role"], (req, res) => {
 // PATCH /api/admin/members/:id/status
 router.patch("/members/:id/status", (req, res) => {
   const { id } = req.params;
-  const { status } = req.body as { status: "활성" | "정지" | "탈퇴" };
+  const { status, withdrawalReason } = req.body as { status: MemberStatus; withdrawalReason?: string };
 
   let updatedMember: AdminMember | null = null;
   db.update("members", (members) =>
     members.map((m) => {
       if (m.id === id) {
-        updatedMember = { ...m, status };
+        updatedMember = {
+          ...m,
+          status,
+          ...(withdrawalReason ? { withdrawalReason, withdrawnAt: new Date().toISOString() } : {}),
+        };
         return updatedMember;
       }
       return m;
@@ -103,6 +109,118 @@ router.patch("/members/:id/status", (req, res) => {
   }
 
   res.json({ member: updatedMember });
+});
+
+// POST /api/admin/members/:id/force-withdraw (회원 강제 탈퇴)
+router.post("/members/:id/force-withdraw", (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body as { reason?: string };
+
+  const withdrawalReason = (reason && reason.trim()) || "운영 정책 위반으로 인한 관리자 직권 강제 탈퇴 조치";
+  const withdrawnAt = new Date().toISOString();
+
+  let updatedMember: AdminMember | null = null;
+  db.update("members", (members) =>
+    members.map((m) => {
+      if (m.id === id) {
+        updatedMember = {
+          ...m,
+          status: "탈퇴",
+          withdrawalReason,
+          withdrawnAt,
+        };
+        return updatedMember;
+      }
+      return m;
+    })
+  );
+
+  if (!updatedMember) {
+    return res.status(404).json({ error: "Member not found" });
+  }
+
+  // 강제 탈퇴 사유 인앱 알림 발송
+  const notif = {
+    id: `notif-fw-${Date.now()}`,
+    userId: (updatedMember as AdminMember).name,
+    title: "⚠️ [계정 제재] 관리자 직권 강제 탈퇴 처리 안내",
+    message: `회원님의 계정이 다음과 같은 사유로 관리자에 의해 강제 탈퇴 처리되었습니다:\n\n사유: ${withdrawalReason}\n\n탈퇴 상태에서는 모든 작성 및 신청 활동이 제한되며 읽기 전용으로 전환됩니다.`,
+    time: "방금 전",
+    type: "system" as const,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+  };
+  db.update("notifications", (notifs) => [notif, ...(notifs || [])]);
+
+  res.json({ member: updatedMember, notification: notif });
+});
+
+// GET /api/admin/members/:id/activity (회원 개인 활동 정보 집계: 교육/강의, 스타트업/IR)
+router.get("/members/:id/activity", (req, res) => {
+  const { id } = req.params;
+  const members = db.get("members") || [];
+  const member = members.find((m) => m.id === id);
+
+  if (!member) {
+    return res.status(404).json({ error: "Member not found" });
+  }
+
+  const memberName = member.name;
+  const memberEmail = member.email;
+
+  // 1. 강의 활동
+  const allCourses = db.get("courses") || [];
+  const createdCourses = allCourses.filter((c) => c.instructor && c.instructor.includes(memberName));
+  const enrolledCourses = allCourses.filter((c) => c.isEnrolled);
+
+  // 결제 내역
+  const allPayments = db.get("payments") || [];
+  const payments = allPayments.filter(
+    (p) => p.userId === memberName || p.userId === id || (p as any).userEmail === memberEmail
+  );
+
+  // 2. 스타트업 & IR 활동
+  const allProjects = db.get("irProjects") || [];
+  const irProjects = allProjects.filter(
+    (p) =>
+      p.authorName === memberName ||
+      p.members?.some((m) => m.name === memberName || m.anonymousName === memberName)
+  );
+
+  // 아이디어 의뢰
+  const allIdeas = db.get("ideaRequests") || [];
+  const ideaRequests = allIdeas.filter(
+    (i) => i.requestedBy?.userId === id || i.requestedBy?.userName === memberName
+  );
+
+  // 팀 빌딩 제안
+  const allTeamRequests = db.get("teamRequests") || [];
+  const teamRequests = allTeamRequests.filter(
+    (t) => t.fromUser === memberName || t.toUser === memberName
+  );
+
+  // 투자 제안
+  const allProposals = db.get("proposals") || [];
+  const proposals = allProposals.filter(
+    (p) =>
+      p.projectName &&
+      (irProjects.some((pr) => pr.title === p.projectName || pr.id === p.projectId) ||
+        (p as any).fromUser === memberName)
+  );
+
+  res.json({
+    activity: {
+      memberId: member.id,
+      memberName: member.name,
+      createdCourses,
+      enrolledCourses,
+      payments,
+      irProjects,
+      ideaRequests,
+      teamRequests,
+      proposals,
+    },
+  });
 });
 
 // ── IR & Startup Management ──

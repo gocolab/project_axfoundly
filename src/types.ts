@@ -537,6 +537,8 @@ export interface AdminBoard {
 }
 
 // ── Admin Member Management ──
+export type MemberStatus = "활성" | "정지" | "탈퇴" | "가상활성";
+
 export interface AdminMember {
   id: string;
   name: string;
@@ -544,8 +546,22 @@ export interface AdminMember {
   roles: UserRole[];
   joinDate: string;
   lastLogin: string;
-  status: "활성" | "정지" | "탈퇴";
+  status: MemberStatus;
   courseCount: number;
+  withdrawalReason?: string;
+  withdrawnAt?: string;
+}
+
+export interface MemberActivity {
+  memberId: string;
+  memberName: string;
+  createdCourses: Course[];
+  enrolledCourses: (Course & { enrolledAt?: string; progress?: number })[];
+  payments: PaymentRecord[];
+  irProjects: IRProject[];
+  ideaRequests: IdeaRequest[];
+  teamRequests: TeamBuildingRequest[];
+  proposals: InvestmentProposal[];
 }
 
 // ── AI Startup Tutor ──

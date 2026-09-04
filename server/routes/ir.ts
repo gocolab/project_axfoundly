@@ -582,6 +582,15 @@ router.post("/projects", async (req, res) => {
       return res.status(400).json({ error: "Team name and title are required" });
     }
 
+    // 활성 회원 검증 (정지/탈퇴/가상활성=읽기 전용)
+    if (projectData.authorName) {
+      const members = db.get("members") || [];
+      const member = members.find((m) => m.name === projectData.authorName);
+      if (member && member.status !== "활성") {
+        return res.status(403).json({ error: `해당 계정은 현재 '${member.status}' 상태로 스타트업 프로젝트 등록이 제한되어 읽기만 가능합니다.` });
+      }
+    }
+
     // 🤖 AI 본문 기반 자동 카테고리/태그/요약 생성 (100% 자동)
     const aiResult = await classifyContent("ir", {
       title: projectData.title,

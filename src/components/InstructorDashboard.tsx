@@ -37,6 +37,7 @@ import { useToast } from "./common/Toast";
 import CourseCreateEditModal from "./CourseCreateEditModal";
 
 interface InstructorDashboardProps {
+  userName?: string;
   myCourses: Course[];
   settlements: SettlementRecord[];
   onSaveCourse?: (course: Course) => void;
@@ -47,6 +48,7 @@ interface InstructorDashboardProps {
 }
 
 export default function InstructorDashboard({
+  userName,
   myCourses,
   settlements,
   onSaveCourse,
@@ -98,6 +100,23 @@ export default function InstructorDashboard({
   const [refundTargetStudent, setRefundTargetStudent] = React.useState<CourseStudent | null>(null);
   const [refundReason, setRefundReason] = React.useState("수강생 요청에 따른 직권 환불");
   const [isProcessingRefund, setIsProcessingRefund] = React.useState(false);
+
+  // Settlement & Withdrawal States
+  const [localSettlements, setLocalSettlements] = React.useState<SettlementRecord[]>(settlements);
+  React.useEffect(() => {
+    setLocalSettlements(settlements);
+  }, [settlements]);
+
+  const [showCourseSearchModal, setShowCourseSearchModal] = React.useState(false);
+  const [courseSearchQuery, setCourseSearchQuery] = React.useState("");
+
+  const [showWithdrawModal, setShowWithdrawModal] = React.useState(false);
+  const [withdrawAmount, setWithdrawAmount] = React.useState<number>(0);
+  const [withdrawBank, setWithdrawBank] = React.useState("신한은행");
+  const [withdrawAccount, setWithdrawAccount] = React.useState("");
+  const [withdrawHolder, setWithdrawHolder] = React.useState("김소현");
+  const [withdrawType, setWithdrawType] = React.useState<"individual" | "business">("individual");
+  const [withdrawSaveToProfile, setWithdrawSaveToProfile] = React.useState(true);
 
   // CRM Messaging States
   const [showMessageModal, setShowMessageModal] = React.useState(false);
@@ -200,7 +219,7 @@ export default function InstructorDashboard({
   }, [studentFilter, searchStudent]);
 
   // 3. Filtered Settlements
-  const filteredSettlements = settlements.filter((record) => {
+  const filteredSettlements = localSettlements.filter((record) => {
     const matchStatus = settlementFilter === "all" ? true : record.status === settlementFilter;
     const query = searchSettlement.toLowerCase().trim();
     const matchSearch =
@@ -218,7 +237,61 @@ export default function InstructorDashboard({
     setSettlementPage(1);
   }, [settlementFilter, searchSettlement]);
 
-  const totalRevenue = settlements.reduce((sum, s) => sum + s.netAmount, 0);
+  const totalRevenue = localSettlements.reduce((sum, s) => sum + s.netAmount, 0);
+  const availableWithdrawAmount = localSettlements
+    .filter((s) => s.status === "정산완료")
+    .reduce((sum, s) => sum + s.netAmount, 0);
+
+  const handleConfirmWithdrawal = () => {
+    if (withdrawAmount <= 0) {
+      toast.warning("출금 금액 확인", "출금할 금액을 0원보다 크게 입력해주세요.");
+      return;
+    }
+    if (withdrawAmount > availableWithdrawAmount) {
+      toast.error("잔액 부족", "출금 가능 정산액을 초과하여 신청할 수 없습니다.");
+      return;
+    }
+    if (!withdrawAccount.trim() || !withdrawHolder.trim()) {
+      toast.warning("계좌 정보 입력", "입금받으실 계좌번호와 예금주명을 입력해주세요.");
+      return;
+    }
+
+    if (withdrawSaveToProfile) {
+      const savedData = {
+        bank: withdrawBank,
+        account: withdrawAccount,
+        holder: withdrawHolder,
+        type: withdrawType,
+        updatedAt: new Date().toISOString(),
+      };
+      const userKey = `withdrawal_payout_account_${userName || "김소현"}`;
+      localStorage.setItem(userKey, JSON.stringify(savedData));
+      localStorage.setItem("withdrawal_payout_account_default", JSON.stringify(savedData));
+    }
+
+    let remainingToWithdraw = withdrawAmount;
+    setLocalSettlements((prev) =>
+      prev.map((item) => {
+        if (item.status === "정산완료" && remainingToWithdraw > 0) {
+          remainingToWithdraw -= item.netAmount;
+          return {
+            ...item,
+            status: "출금신청" as const,
+          };
+        }
+        return item;
+      })
+    );
+
+    const feeAmount = Math.round(withdrawAmount * 0.033);
+    const netPayout = withdrawAmount - feeAmount;
+
+    toast.success(
+      "출금 신청 완료",
+      `₩${withdrawAmount.toLocaleString()} 출금 신청이 완료되었습니다. (실수령액: ₩${netPayout.toLocaleString()}, 2~3영업일 내 입금)`
+    );
+    setShowWithdrawModal(false);
+  };
 
   // ── 강사 권한 1: 수료 완료 처리 핸들러 ──
   const handleCompleteStudent = async (student: CourseStudent) => {
@@ -359,7 +432,7 @@ export default function InstructorDashboard({
       </div>
 
       {/* Tabs Header */}
-      <div className="flex gap-2 mb-6 border-b border-brand-border/30 pb-px overflow-x-auto">
+      <nav aria-label="강사 대시보드 탭" className="flex gap-2 mb-6 border-b border-brand-border/30 pb-px overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -374,7 +447,7 @@ export default function InstructorDashboard({
             {tab.label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* ──────────────── 1. 강의 관리 탭 ──────────────── */}
       {activeTab === "courses" && (
@@ -555,6 +628,17 @@ export default function InstructorDashboard({
                   </div>
 
                   <div className="flex gap-2 flex-shrink-0 self-end md:self-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCourseForCRM(course.id);
+                        setActiveTab("students");
+                      }}
+                      className="text-xs bg-indigo-600/20 text-indigo-300 py-2 px-3 rounded-lg border border-indigo-500/30 hover:bg-indigo-600/30 transition-colors cursor-pointer flex items-center gap-1 font-semibold"
+                      title="수강생 명단 및 진도 관리로 이동"
+                    >
+                      <Users size={12} /> 수강생 관리
+                    </button>
                     {onViewCourse && (
                       <button
                         onClick={() => onViewCourse(course.id)}
@@ -603,10 +687,10 @@ export default function InstructorDashboard({
             </button>
           </div>
 
-          {/* Top Bar: Course Selector */}
+          {/* Top Bar: Course Selector (최근 5개 퀵 선택 + 전체 검색 모달) */}
           <div className="flex items-center gap-2 flex-wrap bg-brand-surface-low p-3.5 rounded-xl border border-brand-border/40">
             <span className="text-xs font-semibold text-brand-on-surface-variant">강의 선택:</span>
-            {myCourses.map((c) => (
+            {myCourses.slice(0, 5).map((c) => (
               <button
                 key={c.id}
                 onClick={() => {
@@ -622,6 +706,22 @@ export default function InstructorDashboard({
                 {c.title}
               </button>
             ))}
+
+            {selectedCourseForCRM && !myCourses.slice(0, 5).some((c) => c.id === selectedCourseForCRM) && (
+              <button
+                className="text-xs px-3 py-1.5 rounded-lg border bg-brand-primary-container/20 border-brand-primary text-brand-primary font-bold shadow-sm cursor-pointer"
+              >
+                {myCourses.find((c) => c.id === selectedCourseForCRM)?.title || "선택된 강의"}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowCourseSearchModal(true)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-brand-border/70 text-brand-on-surface-variant hover:text-white hover:border-brand-primary/50 transition-all cursor-pointer flex items-center gap-1.5 ml-auto"
+            >
+              <Search size={11} /> 기타 강의 검색 ({myCourses.length}개 전체)
+            </button>
           </div>
 
           {/* Filter Pills & Search Bar */}
@@ -894,9 +994,32 @@ export default function InstructorDashboard({
       {/* ──────────────── 3. 정산 관리 탭 ──────────────── */}
       {activeTab === "settlement" && (
         <div className="flex flex-col gap-4 animate-fadeIn">
-          <div>
-            <h2 className="text-sm font-bold text-white">매출 및 정산 통계</h2>
-            <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 정산 내역 및 출금 신청 현황을 투명하게 확인하세요.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-white">매출 및 정산 통계</h2>
+              <p className="text-xs text-brand-on-surface-variant mt-0.5">강의별 정산 내역 및 출금 신청 현황을 투명하게 확인하세요.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const userKey = `withdrawal_payout_account_${userName || "김소현"}`;
+                const saved = localStorage.getItem(userKey) || localStorage.getItem("withdrawal_payout_account_default");
+                if (saved) {
+                  try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.bank) setWithdrawBank(parsed.bank);
+                    if (parsed.account) setWithdrawAccount(parsed.account);
+                    if (parsed.holder) setWithdrawHolder(parsed.holder);
+                    if (parsed.type) setWithdrawType(parsed.type);
+                  } catch (e) {}
+                }
+                setWithdrawAmount(availableWithdrawAmount);
+                setShowWithdrawModal(true);
+              }}
+              className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 px-4 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-md"
+            >
+              <ArrowUpRight size={14} /> 출금 신청
+            </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center stat-shimmer">
@@ -906,13 +1029,13 @@ export default function InstructorDashboard({
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center stat-shimmer">
               <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">수수료 공제</p>
               <p className="text-2xl font-bold text-error font-display mt-1">
-                -₩{settlements.reduce((s, r) => s + r.pgFee + r.platformFee, 0).toLocaleString()}
+                -₩{localSettlements.reduce((s, r) => s + r.pgFee + r.platformFee, 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-5 text-center stat-shimmer">
               <p className="text-[10px] text-brand-on-surface-variant font-mono uppercase">출금 가능 정산액</p>
               <p className="text-2xl font-bold text-brand-tertiary font-display mt-1">
-                ₩{settlements.filter((s) => s.status === "정산완료").reduce((sum, s) => sum + s.netAmount, 0).toLocaleString()}
+                ₩{availableWithdrawAmount.toLocaleString()}
               </p>
             </div>
           </div>
@@ -1028,10 +1151,6 @@ export default function InstructorDashboard({
               ))
             )}
           </div>
-
-          <button className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 px-5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 self-start shadow-md">
-            <ArrowUpRight size={14} /> 출금 신청
-          </button>
         </div>
       )}
 
@@ -1251,6 +1370,244 @@ export default function InstructorDashboard({
                 >
                   <Send size={13} />
                   발송하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── Modal 4: 강의 검색 모달 ──────────────── */}
+      {showCourseSearchModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Search size={16} className="text-brand-primary" />
+                수강생 관리 대상 강의 검색
+              </h3>
+              <button
+                onClick={() => setShowCourseSearchModal(false)}
+                className="text-white/50 hover:text-white cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="relative mb-3">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+              <input
+                type="text"
+                value={courseSearchQuery}
+                onChange={(e) => setCourseSearchQuery(e.target.value)}
+                placeholder="강의명 또는 카테고리 검색..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white focus:outline-none focus:border-brand-primary"
+              />
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+              {myCourses
+                .filter(
+                  (c) =>
+                    courseSearchQuery.trim() === "" ||
+                    c.title.toLowerCase().includes(courseSearchQuery.toLowerCase()) ||
+                    c.category.toLowerCase().includes(courseSearchQuery.toLowerCase())
+                )
+                .map((course) => (
+                  <div
+                    key={course.id}
+                    onClick={() => {
+                      setSelectedCourseForCRM(course.id);
+                      setSelectedStudentIds([]);
+                      setShowCourseSearchModal(false);
+                      setCourseSearchQuery("");
+                    }}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      selectedCourseForCRM === course.id
+                        ? "bg-brand-primary-container/20 border-brand-primary text-white"
+                        : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white line-clamp-1">{course.title}</p>
+                      <p className="text-[10px] text-white/50 mt-0.5">
+                        {course.category} · 수강생 {course.studentCount}명 · {course.status}
+                      </p>
+                    </div>
+                    {selectedCourseForCRM === course.id && (
+                      <span className="text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full">
+                        선택중
+                      </span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── Modal 5: 강사 출금 신청 모달 (수수료 정책 & 계좌 관리) ──────────────── */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <ArrowUpRight size={16} className="text-brand-primary" />
+                강사 정산금 출금 신청
+              </h3>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="text-white/50 hover:text-white cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* 잔액 요약 */}
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between mb-4">
+              <div>
+                <span className="text-[10px] text-white/50">출금 가능 정산액</span>
+                <p className="text-base font-bold text-brand-tertiary">
+                  ₩{availableWithdrawAmount.toLocaleString()}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWithdrawAmount(availableWithdrawAmount)}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-brand-primary/20 text-brand-primary hover:bg-brand-primary/30 transition-colors cursor-pointer"
+              >
+                전액 입력
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              {/* 출금 희망 금액 */}
+              <div>
+                <label className="block text-white/70 mb-1 font-semibold">출금 신청 금액</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">₩</span>
+                  <input
+                    type="number"
+                    min={10000}
+                    max={availableWithdrawAmount}
+                    value={withdrawAmount || ""}
+                    onChange={(e) => setWithdrawAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-7 pr-3 text-white font-mono text-sm focus:outline-none focus:border-brand-primary"
+                  />
+                </div>
+              </div>
+
+              {/* 수수료 정책 안내 */}
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5 text-[11px]">
+                <div className="flex justify-between text-white/60">
+                  <span>출금 신청액</span>
+                  <span className="font-mono text-white">₩{withdrawAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-red-400">
+                  <span>플랫폼 수수료 및 원천징수 (3.3%)</span>
+                  <span className="font-mono">-₩{Math.round(withdrawAmount * 0.033).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between pt-1.5 border-t border-slate-800 text-brand-tertiary font-bold">
+                  <span>최종 입금 예정액</span>
+                  <span className="font-mono text-sm">
+                    ₩{(withdrawAmount - Math.round(withdrawAmount * 0.033)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* 입금 계좌 정보 */}
+              <div className="pt-2 border-t border-white/10 space-y-2.5">
+                <span className="block text-white/80 font-semibold text-[11px]">입금 계좌 정보</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-white/50 mb-0.5">은행명</label>
+                    <select
+                      value={withdrawBank}
+                      onChange={(e) => setWithdrawBank(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-brand-primary"
+                    >
+                      {["신한은행", "국민은행", "카카오뱅크", "토스뱅크", "우리은행", "하나은행", "NH농협", "IBK기업"].map((b) => (
+                        <option key={b} value={b} className="bg-slate-900 text-white">
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-white/50 mb-0.5">예금주</label>
+                    <input
+                      type="text"
+                      value={withdrawHolder}
+                      onChange={(e) => setWithdrawHolder(e.target.value)}
+                      placeholder="예금주명"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-brand-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-white/50 mb-0.5">계좌번호 (숫자만 입력)</label>
+                  <input
+                    type="text"
+                    value={withdrawAccount}
+                    onChange={(e) => setWithdrawAccount(e.target.value)}
+                    placeholder="110-xxx-xxxxxx"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white text-xs font-mono focus:outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4 pt-1">
+                  <label className="flex items-center gap-1.5 text-[11px] text-white/70 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="withdrawType"
+                      value="individual"
+                      checked={withdrawType === "individual"}
+                      onChange={() => setWithdrawType("individual")}
+                      className="text-brand-primary"
+                    />
+                    개인 (소득세 3.3% 원천징수)
+                  </label>
+                  <label className="flex items-center gap-1.5 text-[11px] text-white/70 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="withdrawType"
+                      value="business"
+                      checked={withdrawType === "business"}
+                      onChange={() => setWithdrawType("business")}
+                      className="text-brand-primary"
+                    />
+                    사업자 (세금계산서)
+                  </label>
+                </div>
+
+                <label className="flex items-center gap-2 pt-1 text-[11px] text-brand-on-surface-variant cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={withdrawSaveToProfile}
+                    onChange={(e) => setWithdrawSaveToProfile(e.target.checked)}
+                    className="rounded border-white/20 text-brand-primary"
+                  />
+                  이 계좌 정보를 프로필 기본 출금 계좌로 저장
+                </label>
+              </div>
+
+              <div className="flex gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowWithdrawModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmWithdrawal}
+                  disabled={availableWithdrawAmount <= 0 || withdrawAmount <= 0}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold text-xs hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer shadow-md"
+                >
+                  출금 신청 제출
                 </button>
               </div>
             </div>

@@ -61,9 +61,9 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     await page.locator('aside nav button', { hasText: '강의 개설 & 운영' }).click();
     // 강사 대시보드 타이틀 및 탭 확인
     await expect(page.locator('h1', { hasText: '강사 대시보드' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '내 강의 목록' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '수강생 관리 (CRM)' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '정산 관리' })).toBeVisible();
+    await expect(page.locator('nav').getByRole('button', { name: '내 강의 목록' })).toBeVisible();
+    await expect(page.locator('nav').getByRole('button', { name: '수강생 관리' })).toBeVisible();
+    await expect(page.locator('nav').getByRole('button', { name: '정산 관리' })).toBeVisible();
   });
 
   test('일반 회원 로그인 시 마이페이지에서 [관심 스타트업 & 투자] 메뉴를 제한 없이 이용할 수 있다', async ({ page }) => {

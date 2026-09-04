@@ -23,6 +23,7 @@ import {
   FileCheck,
   Edit,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
@@ -117,6 +118,23 @@ export default function CoursePage({
     } catch (err) {
       console.error("Delete course failed:", err);
       toast.error("강의 삭제 실패", "강의를 삭제하는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleCancelEnrollment = async (courseId: string) => {
+    if (!window.confirm("정말 이 강의의 수강을 취소하시겠습니까?\n취소 시 결제된 금액은 전액 환불 처리됩니다.")) return;
+    try {
+      const res = await api.cancelCourseEnrollment(courseId, userName);
+      if (res?.course) {
+        setSelectedCourse(res.course);
+        if (onSaveCourse) {
+          onSaveCourse(res.course);
+        }
+        toast.success("수강 취소 완료", `'${res.course.title}' 수강 취소 및 환불 처리가 완료되었습니다.`);
+      }
+    } catch (err) {
+      console.error("Cancel enrollment failed:", err);
+      toast.error("수강 취소 실패", "수강 취소 중 오류가 발생했습니다.");
     }
   };
 
@@ -774,6 +792,14 @@ export default function CoursePage({
                     <span className="text-[10px] text-slate-400">
                       학습 진도율 {selectedCourse.progress || 0}%
                     </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCancelEnrollment(selectedCourse.id)}
+                      className="mt-2 w-full py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <RotateCcw size={12} /> 수강 취소 / 환불 신청
+                    </button>
                   </div>
                 ) : isCourseClosed ? (
                   <button
