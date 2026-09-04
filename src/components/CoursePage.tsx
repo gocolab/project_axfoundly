@@ -227,6 +227,10 @@ export default function CoursePage({
   if (selectedCourse) {
     const schedule = selectedCourse.schedule;
     const instructorProfile = selectedCourse.instructorProfile;
+    const isCourseClosed =
+      selectedCourse.status === "종료" ||
+      (Boolean(schedule?.startDate) &&
+        new Date(schedule.startDate).getTime() < new Date().setHours(0, 0, 0, 0));
 
     // Build session dates map for calendar
     const sessionDatesMap: Record<string, { week: number; title: string; time: string; sessionNumber?: number }> = {};
@@ -578,18 +582,29 @@ export default function CoursePage({
                     </p>
                   </div>
                   {!selectedCourse.isEnrolled && (
-                    <button
-                      onClick={() => {
-                        if (!isLoggedIn) {
-                          onLoginClick();
-                          return;
-                        }
-                        setShowPaymentModal(true);
-                      }}
-                      className="text-xs bg-brand-primary-container text-white font-bold py-1.5 px-3 rounded-lg hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
-                    >
-                      이 일정으로 신청하기
-                    </button>
+                    isCourseClosed ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="text-xs bg-slate-800 text-slate-500 font-bold py-1.5 px-3 rounded-lg border border-slate-700 cursor-not-allowed whitespace-nowrap"
+                        title="모집이 마감되었습니다."
+                      >
+                        모집 마감
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            onLoginClick();
+                            return;
+                          }
+                          setShowPaymentModal(true);
+                        }}
+                        className="text-xs bg-brand-primary-container text-white font-bold py-1.5 px-3 rounded-lg hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
+                      >
+                        이 일정으로 신청하기
+                      </button>
+                    )
                   )}
                 </div>
               )}
@@ -760,6 +775,15 @@ export default function CoursePage({
                       학습 진도율 {selectedCourse.progress || 0}%
                     </span>
                   </div>
+                ) : isCourseClosed ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full bg-slate-800 text-slate-500 font-bold py-3.5 rounded-xl border border-slate-700 cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                  >
+                    <CreditCard size={16} />
+                    모집 마감
+                  </button>
                 ) : (
                   <button
                     onClick={() => {
@@ -1316,31 +1340,6 @@ export default function CoursePage({
                             {course.instructor} 강사
                           </span>
                         </div>
-                        {isAuthor && (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingCourse(course);
-                                setShowEditModal(true);
-                              }}
-                              className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-purple-300 border border-purple-500/30 flex items-center gap-1 transition-colors cursor-pointer"
-                            >
-                              <Edit size={11} /> 수정
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteCourseItem(course.id);
-                              }}
-                              className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1 transition-colors cursor-pointer"
-                            >
-                              <Trash2 size={11} /> 삭제
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

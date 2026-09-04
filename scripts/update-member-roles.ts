@@ -30,12 +30,12 @@ async function main() {
     );
     console.log(`✅ [김수강생] 업데이트 완료 (${kimRes.modifiedCount || kimRes.matchedCount}건 매칭) -> roles: ["member"]`);
 
-    // 2. 오승환 (otter.oh@gmail.com) -> ["admin", "member"]
-    const ohRes = await membersCollection.updateMany(
+    // 2. 오승환 & 마하우 -> ["admin", "member"]
+    const adminRes = await membersCollection.updateMany(
       {
         $or: [
-          { name: "오승환" },
-          { email: { $regex: /^otter\.oh@gmail\.com$/i } }
+          { name: { $in: ["오승환", "마하우", "goco lab"] } },
+          { email: { $regex: /^(otter\.oh@gmail\.com|mahau\.master@gmail\.com)$/i } }
         ]
       },
       {
@@ -43,14 +43,14 @@ async function main() {
         $unset: { role: "", assignedRoles: "", userAssignedRoles: "" }
       }
     );
-    console.log(`✅ [오승환] 업데이트 완료 (${ohRes.modifiedCount || ohRes.matchedCount}건 매칭) -> roles: ["admin", "member"]`);
+    console.log(`✅ [관리자 계정] 업데이트 완료 (${adminRes.modifiedCount || adminRes.matchedCount}건 매칭) -> roles: ["admin", "member"]`);
 
     // 3. 현재 members 컬렉션 상태 조회 및 출력
     const targetMembers = await membersCollection
       .find({
         $or: [
-          { name: { $in: ["김수강생", "오승환"] } },
-          { email: { $in: ["student@mail.com", "otter.oh@gmail.com"] } }
+          { name: { $in: ["김수강생", "오승환", "마하우", "goco lab"] } },
+          { email: { $in: ["student@mail.com", "otter.oh@gmail.com", "mahau.master@gmail.com"] } }
         ]
       })
       .project({ _id: 1, id: 1, name: 1, email: 1, roles: 1, status: 1 })

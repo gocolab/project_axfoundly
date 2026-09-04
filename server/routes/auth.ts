@@ -4,6 +4,12 @@ import type { UserRole, AdminMember } from "../../src/types.js";
 
 const router = Router();
 
+export const ADMIN_EMAILS = [
+  "otter.oh@gmail.com",
+  "mahau.master@gmail.com",
+  "admin@platform.com",
+];
+
 let currentUser = {
   id: "user-member",
   name: "김수강생",
@@ -89,19 +95,26 @@ router.get("/google/callback", async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
   const members = db.get("members") || [];
   let existingMember = members.find((m) => m.email.toLowerCase() === userEmail.toLowerCase());
-  const isOtter = userEmail.toLowerCase() === "otter.oh@gmail.com";
+  const isAdminEmail = ADMIN_EMAILS.includes(userEmail.toLowerCase());
 
-  let assignedRoles: UserRole[] = isOtter ? ["admin", "member"] : (existingMember ? existingMember.roles : ["member"]);
+  let assignedRoles: UserRole[] = isAdminEmail
+    ? ["admin", "member"]
+    : (existingMember && existingMember.roles && existingMember.roles.length > 0 ? existingMember.roles : ["member"]);
 
   if (existingMember) {
-    // 기존 회원 로그인 처리
+    // 기존 회원 로그인 처리 (관리자 이메일이면 roles에 admin 자동 보장)
+    const finalRoles = isAdminEmail
+      ? Array.from(new Set<UserRole>(["admin", "member", ...(existingMember.roles || [])]))
+      : assignedRoles;
+
     db.update("members", (mList) =>
       mList.map((m) =>
         m.email.toLowerCase() === userEmail.toLowerCase()
-          ? { ...m, roles: (isOtter ? ["admin", "member"] : assignedRoles) as UserRole[], lastLogin: today }
+          ? { ...m, roles: finalRoles, lastLogin: today }
           : m
       )
     );
+    assignedRoles = finalRoles;
   } else {
     // 신규 회원 자동 가입
     const newMember: AdminMember = {
@@ -201,14 +214,14 @@ router.get("/me", (req, res) => {
       const email = Buffer.from(emailBase64, 'base64').toString('utf-8');
       
       let member = db.get("members").find((m) => m.email.toLowerCase() === email.toLowerCase());
+      const isAdminEmail = ADMIN_EMAILS.includes(email.toLowerCase());
       if (!member) {
-        const isOtter = email.toLowerCase() === "otter.oh@gmail.com";
         const today = new Date().toISOString().split("T")[0];
         const newMember: AdminMember = {
           id: `m-google-${Date.now()}`,
           name: email.split("@")[0],
           email: email,
-          roles: isOtter ? ["admin", "member"] : ["member"],
+          roles: isAdminEmail ? ["admin", "member"] : ["member"],
           joinDate: today,
           lastLogin: today,
           status: "활성",
@@ -216,6 +229,12 @@ router.get("/me", (req, res) => {
         };
         db.update("members", (mList) => [newMember, ...mList]);
         member = newMember;
+      } else if (isAdminEmail && (!member.roles || !member.roles.includes("admin"))) {
+        const updatedRoles: UserRole[] = Array.from(new Set<UserRole>(["admin", "member", ...(member.roles || [])]));
+        db.update("members", (mList) =>
+          mList.map((m) => (m.email.toLowerCase() === email.toLowerCase() ? { ...m, roles: updatedRoles } : m))
+        );
+        member = { ...member, roles: updatedRoles };
       }
       return res.json({
         user: {

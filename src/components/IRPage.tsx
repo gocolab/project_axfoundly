@@ -1113,37 +1113,6 @@ export default function IRPage({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white/90">{project.teamName}</span>
                       <div className="flex items-center gap-1.5">
-                        {isLoggedIn &&
-                          (project.authorName === userName ||
-                            project.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
-                            userRoles.includes("admin") ||
-                            userRoles.includes("manager")) && (
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingProject(project);
-                                  setShowCreateProjectModal(true);
-                                }}
-                                className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center gap-0.5 transition-colors cursor-pointer"
-                                title="프로젝트 수정"
-                              >
-                                <Edit3 size={10} /> 수정
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteProject(project.id);
-                                }}
-                                className="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 flex items-center gap-0.5 transition-colors cursor-pointer"
-                                title="프로젝트 삭제"
-                              >
-                                <Trash2 size={10} /> 삭제
-                              </button>
-                            </div>
-                          )}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1617,19 +1586,42 @@ export default function IRPage({
                         복수 팀을 협의 대상으로 선발한 후 최종 제작 확정을 진행할 수 있습니다.
                       </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        if (!isLoggedIn) {
-                          onLoginClick();
-                          return;
-                        }
-                        setProposalTargetIdea(selectedIdeaRequest);
-                        setShowIdeaProposalModal(true);
-                      }}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors font-medium whitespace-nowrap cursor-pointer"
-                    >
-                      + 역제안서 등록
-                    </button>
+                    {(() => {
+                      const isIdeaDeadlinePassed =
+                        selectedIdeaRequest.status === "마감" ||
+                        selectedIdeaRequest.status === "매칭완료" ||
+                        (Boolean(selectedIdeaRequest.submissionDeadline) &&
+                          new Date(selectedIdeaRequest.submissionDeadline).getTime() < Date.now());
+
+                      if (isIdeaDeadlinePassed) {
+                        return (
+                          <button
+                            type="button"
+                            disabled
+                            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 font-medium whitespace-nowrap cursor-not-allowed"
+                            title="접수 기한이 마감되었습니다."
+                          >
+                            접수 마감
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => {
+                            if (!isLoggedIn) {
+                              onLoginClick();
+                              return;
+                            }
+                            setProposalTargetIdea(selectedIdeaRequest);
+                            setShowIdeaProposalModal(true);
+                          }}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors font-medium whitespace-nowrap cursor-pointer"
+                        >
+                          + 역제안서 등록
+                        </button>
+                      );
+                    })()}
                   </div>
 
                   {(!selectedIdeaRequest.proposals || selectedIdeaRequest.proposals.length === 0) ? (

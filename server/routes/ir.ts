@@ -252,6 +252,17 @@ router.post("/idea-requests/:id/proposals", (req, res) => {
     return res.status(404).json({ error: "아이디어 요청을 찾을 수 없습니다." });
   }
 
+  // Check deadline
+  if (request.submissionDeadline) {
+    const deadlineTime = new Date(request.submissionDeadline).setHours(23, 59, 59, 999);
+    if (Date.now() > deadlineTime) {
+      return res.status(400).json({ error: "제안서 접수 기한이 마감되었습니다." });
+    }
+  }
+  if (request.status === "마감" || request.status === "매칭완료") {
+    return res.status(400).json({ error: "모집이 마감된 의뢰입니다." });
+  }
+
   const proposalId = `ip-${Date.now()}`;
   const linkedProjectId = `ir-prop-${Date.now()}`;
 

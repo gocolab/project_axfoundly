@@ -89,8 +89,17 @@ export default function IdeaProposalModal({
 
   if (!isOpen || !request) return null;
 
+  const isDeadlinePassed = Boolean(
+    request?.submissionDeadline &&
+    new Date(request.submissionDeadline).getTime() < new Date().setHours(0, 0, 0, 0)
+  ) || request?.status === "마감" || request?.status === "매칭완료";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDeadlinePassed) {
+      toast.error("접수 마감", "제안서 접수 기한이 마감된 의뢰입니다.");
+      return;
+    }
     if (!teamSummary.trim() || !planSummary.trim()) {
       setInlineError("팀 소개와 MVP 제작 계획을 모두 입력해주세요.");
       toast.warning("필수 항목 확인", "팀 소개와 MVP 제작 계획을 입력해주세요.");
@@ -200,6 +209,14 @@ export default function IdeaProposalModal({
           <h4 className="text-sm font-bold text-white">{request.title}</h4>
           <p className="text-xs text-white/70 line-clamp-2">{request.problem}</p>
         </div>
+
+        {/* Deadline Passed Notice */}
+        {isDeadlinePassed && (
+          <div className="mt-3 p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center gap-2.5 text-xs text-amber-300">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>⚠️ 제안서 접수 기한이 마감되었거나 선발이 완료되어 더 이상 제안서를 제출할 수 없습니다.</span>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -326,6 +343,8 @@ export default function IdeaProposalModal({
 
               <label
                 className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                  isDeadlinePassed ? "opacity-50 cursor-not-allowed" : ""
+                } ${
                   visibility === "requester_only"
                     ? "bg-brand-secondary/20 border-brand-secondary text-white"
                     : "bg-brand-surface border-brand-border text-brand-on-surface-variant hover:bg-brand-surface-high"
@@ -335,6 +354,7 @@ export default function IdeaProposalModal({
                   type="radio"
                   name="visibility"
                   value="requester_only"
+                  disabled={isDeadlinePassed}
                   checked={visibility === "requester_only"}
                   onChange={() => setVisibility("requester_only")}
                   className="mt-0.5 text-brand-secondary focus:ring-0"
@@ -359,10 +379,11 @@ export default function IdeaProposalModal({
               </label>
               <input
                 type="url"
+                disabled={isDeadlinePassed}
                 value={portfolioUrl}
                 onChange={(e) => setPortfolioUrl(e.target.value)}
                 placeholder="https://github.com/..."
-                className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500"
+                className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500 disabled:opacity-50"
               />
             </div>
 
@@ -372,10 +393,11 @@ export default function IdeaProposalModal({
               </label>
               <input
                 type="email"
+                disabled={isDeadlinePassed}
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
                 placeholder="builder@gmail.com"
-                className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500"
+                className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500 disabled:opacity-50"
               />
             </div>
           </div>
@@ -388,10 +410,11 @@ export default function IdeaProposalModal({
             <textarea
               required
               rows={3}
+              disabled={isDeadlinePassed}
               value={planSummary}
               onChange={(e) => setPlanSummary(e.target.value)}
               placeholder="구체적인 개발 마일스톤, 팀의 강점, 제안 조건을 작성해주세요."
-              className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-cyan-500 text-xs leading-relaxed"
+              className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-cyan-500 text-xs leading-relaxed disabled:opacity-50"
             />
           </div>
 
@@ -414,11 +437,11 @@ export default function IdeaProposalModal({
             </button>
             <button
               type="submit"
-              disabled={submitting}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer"
+              disabled={submitting || isDeadlinePassed}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               <Send className="w-4 h-4" />
-              {submitting ? "제안서 전송 중..." : "제작 제안서 및 IR 등록하기"}
+              {submitting ? "제안서 전송 중..." : isDeadlinePassed ? "접수 마감된 의뢰" : "제작 제안서 및 IR 등록하기"}
             </button>
           </div>
         </form>

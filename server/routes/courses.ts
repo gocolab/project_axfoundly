@@ -497,6 +497,23 @@ router.post("/:id/enroll", (req, res) => {
   const { id } = req.params;
   const { paymentMethod = "카카오페이", userName = "김수강생", userEmail = "student@mail.com" } = req.body;
 
+  const targetCourse = db.get("courses").find((c) => c.id === id);
+  if (!targetCourse) {
+    return res.status(404).json({ error: "Course not found" });
+  }
+
+  if (targetCourse.status === "종료") {
+    return res.status(400).json({ error: "이미 종료된 강의는 수강 신청할 수 없습니다." });
+  }
+
+  if (targetCourse.schedule?.startDate) {
+    const startTimestamp = new Date(targetCourse.schedule.startDate).getTime();
+    const todayStart = new Date().setHours(0, 0, 0, 0);
+    if (startTimestamp < todayStart) {
+      return res.status(400).json({ error: "모집 기한이 지난 강의는 수강 신청할 수 없습니다." });
+    }
+  }
+
   let enrolledCourse: Course | null = null;
 
   db.update("courses", (courses) =>
