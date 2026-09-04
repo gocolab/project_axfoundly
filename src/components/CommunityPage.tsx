@@ -21,10 +21,13 @@ import HighlightText from "./common/HighlightText";
 import { multiMatch } from "../utils/searchUtils";
 import { useUrlPagination } from "../hooks/useUrlQueryState";
 import CommunityPostDetailModal from "./CommunityPostDetailModal";
+import { api } from "../lib/api";
+import { useToast } from "./common/Toast";
 
 interface CommunityPageProps {
   posts: BoardPost[];
   onAddPost: (post: Omit<BoardPost, "id" | "viewCount" | "commentCount" | "authorAvatar">) => void;
+  onUpdatePost?: (post: BoardPost) => void;
   onDeletePost?: (postId: string) => void;
   isLoggedIn: boolean;
   userRoles?: UserRole[];
@@ -38,6 +41,7 @@ interface CommunityPageProps {
 export default function CommunityPage({
   posts,
   onAddPost,
+  onUpdatePost,
   onDeletePost,
   isLoggedIn,
   userRoles = ["member"],
@@ -47,6 +51,7 @@ export default function CommunityPage({
   onClearSelectedPost,
   adminBoards = [],
 }: CommunityPageProps) {
+  const toast = useToast();
   const isAdmin = userRoles.includes("admin") || userRoles.includes("manager");
   const [activeBoard, setActiveBoard] = React.useState<string>("전체");
   const {
@@ -58,6 +63,7 @@ export default function CommunityPage({
   const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
   const [isClosing, setIsClosing] = React.useState(false);
+  const [editingPost, setEditingPost] = React.useState<BoardPost | null>(null);
   const [selectedPost, setSelectedPost] = React.useState<BoardPost | null>(() => {
     if (initialPostId) {
       return posts.find((p) => p.id === initialPostId) || null;
@@ -135,6 +141,9 @@ export default function CommunityPage({
       onLoginClick();
       return;
     }
+    setEditingPost(null);
+    setNewTitle("");
+    setNewContent("");
     const currentBoard = availableWriteBoards.find((b) => b.type === activeBoard);
     if (currentBoard) {
       setNewBoardType(currentBoard.type);
@@ -144,6 +153,15 @@ export default function CommunityPage({
       setNewBoardType("QnA");
     }
     setNewIsPinned(false);
+    setShowWriteModal(true);
+  };
+
+  const handleOpenEditModal = (post: BoardPost) => {
+    setEditingPost(post);
+    setNewTitle(post.title);
+    setNewContent(post.content);
+    setNewBoardType(post.boardType);
+    setNewIsPinned(!!post.isPinned);
     setShowWriteModal(true);
   };
 
@@ -213,8 +231,41 @@ export default function CommunityPage({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!newTitle.trim() || !newContent.trim()) return;
+
+    if (editingPost) {
+      try {
+        const res = await api.updatePost(editingPost.id, {
+          title: newTitle.trim(),
+          content: newContent.trim(),
+          boardType: newBoardType as BoardType,
+          isPinned: isAdmin ? newIsPinned : false,
+          author: userName,
+          userRoles,
+        });
+        if (res?.post) {
+          if (onUpdatePost) {
+            onUpdatePost(res.post);
+          }
+          if (selectedPost?.id === res.post.id) {
+            setSelectedPost(res.post);
+          }
+        }
+        toast.success("게시글 수정 완료", "게시글이 성공적으로 수정되었습니다.");
+      } catch (error) {
+        console.error("Failed to update post:", error);
+        toast.error("게시글 수정 실패", "게시글 수정 중 오류가 발생했습니다.");
+      } finally {
+        setEditingPost(null);
+        setNewTitle("");
+        setNewContent("");
+        setNewIsPinned(false);
+        setShowWriteModal(false);
+      }
+      return;
+    }
+
     onAddPost({
       boardType: newBoardType,
       title: newTitle.trim(),
@@ -439,6 +490,7 @@ export default function CommunityPage({
               userRoles={userRoles}
               userName={userName}
               onLoginClick={onLoginClick}
+              onEditPost={handleOpenEditModal}
               onDeletePost={(postId) => {
                 if (onDeletePost) onDeletePost(postId);
                 setSelectedPost(null);
@@ -451,15 +503,20 @@ export default function CommunityPage({
         )}
       </div>
 
-      {/* Write Post Modal */}
+      {/* Write / Edit Post Modal */}
       {showWriteModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
           <div className="glass-panel-heavy rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-brand-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-display text-lg font-bold text-white">게시글 작성</h3>
+              <h3 className="font-display text-lg font-bold text-white">
+                {editingPost ? "게시글 수정" : "게시글 작성"}
+              </h3>
               <button
                 type="button"
-                onClick={() => setShowWriteModal(false)}
+                onClick={() => {
+                  setShowWriteModal(false);
+                  setEditingPost(null);
+                }}
                 className="text-brand-on-surface-variant hover:text-white cursor-pointer"
               >
                 <X size={18} />
@@ -544,7 +601,10 @@ export default function CommunityPage({
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowWriteModal(false)}
+                  onClick={() => {
+                    setShowWriteModal(false);
+                    setEditingPost(null);
+                  }}
                   className="flex-1 border border-brand-border text-white py-2.5 rounded-xl hover:bg-brand-surface-high transition-colors cursor-pointer text-xs"
                 >
                   취소
@@ -557,7 +617,7 @@ export default function CommunityPage({
                   className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-md"
                 >
                   <Send size={13} />
-                  등록 완료
+                  {editingPost ? "수정 완료" : "등록 완료"}
                 </button>
               </div>
             </div>

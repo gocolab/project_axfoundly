@@ -22,6 +22,7 @@ interface IdeaRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRequestCreated: (request: IdeaRequest) => void;
+  initialRequest?: IdeaRequest | null;
   userName?: string;
   userId?: string;
 }
@@ -49,10 +50,12 @@ export default function IdeaRequestModal({
   isOpen,
   onClose,
   onRequestCreated,
+  initialRequest,
   userName = "김수강생",
   userId = "u-current",
 }: IdeaRequestModalProps) {
   const toast = useToast();
+  const isEditing = Boolean(initialRequest);
 
   // Wizard Step State: "ai_chat" (1단계 대화형 초벌) vs "detail_edit" (2단계 상세 의뢰서 작성)
   const [createStep, setCreateStep] = React.useState<"ai_chat" | "detail_edit">("ai_chat");
@@ -88,31 +91,45 @@ export default function IdeaRequestModal({
   const [submitting, setSubmitting] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
 
-  // Reset modal state completely when opened
+  // Reset modal state or prefill for edit mode when opened
   React.useEffect(() => {
     if (isOpen) {
       setInlineError(null);
-      setAiPrompt("");
-      setCreateStep("ai_chat");
-      setCurrentDraftState(null);
-      setAiChatMessages([
-        {
-          sender: "ai",
-          text: "안녕하세요! 어떤 스타트업 아이디어나 해결하고 싶은 시장 문제가 있으신가요?\n\n핵심 서비스 아이템을 편하게 말씀해 주시면, 제가 인터뷰 질문을 통해 맞춤형 창업 PRD 의뢰서 초안을 단계별로 완성해 드리겠습니다.",
-        },
-      ]);
-      setTitle("");
-      setProblem("");
-      setSolutionConcept("");
-      setCategory("AI/SaaS");
-      setRewardType("지분공유(코파운더)");
-      setRewardDetail("지분 15~25% 협의 + 코파운더 영입");
-      setSubmissionDeadline(getFutureDate(14));
-      setSelectionDate(getFutureDate(21));
-      setTagInput("");
-      setTags([]);
+      if (initialRequest) {
+        setCreateStep("detail_edit");
+        setTitle(initialRequest.title || "");
+        setProblem(initialRequest.problem || "");
+        setSolutionConcept(initialRequest.solutionConcept || "");
+        setCategory(initialRequest.category || "AI/SaaS");
+        setRewardType(initialRequest.rewardType || "지분공유(코파운더)");
+        setRewardDetail(initialRequest.rewardDetail || "지분 15~25% 협의 + 코파운더 영입");
+        setSubmissionDeadline(initialRequest.submissionDeadline || getFutureDate(14));
+        setSelectionDate(initialRequest.selectionDate || getFutureDate(21));
+        setTagInput("");
+        setTags(initialRequest.tags || []);
+      } else {
+        setAiPrompt("");
+        setCreateStep("ai_chat");
+        setCurrentDraftState(null);
+        setAiChatMessages([
+          {
+            sender: "ai",
+            text: "안녕하세요! 어떤 스타트업 아이디어나 해결하고 싶은 시장 문제가 있으신가요?\n\n핵심 서비스 아이템을 편하게 말씀해 주시면, 제가 인터뷰 질문을 통해 맞춤형 창업 PRD 의뢰서 초안을 단계별로 완성해 드리겠습니다.",
+          },
+        ]);
+        setTitle("");
+        setProblem("");
+        setSolutionConcept("");
+        setCategory("AI/SaaS");
+        setRewardType("지분공유(코파운더)");
+        setRewardDetail("지분 15~25% 협의 + 코파운더 영입");
+        setSubmissionDeadline(getFutureDate(14));
+        setSelectionDate(getFutureDate(21));
+        setTagInput("");
+        setTags([]);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialRequest]);
 
   if (!isOpen) return null;
 
@@ -303,6 +320,33 @@ export default function IdeaRequestModal({
       },
     };
 
+    if (isEditing && initialRequest) {
+      try {
+        const res = await api.updateIdeaRequest(initialRequest.id, payload);
+        if (res?.request) {
+          onRequestCreated(res.request);
+        } else {
+          throw new Error("Invalid response format");
+        }
+        toast.success("의뢰서 수정 완료", "아이디어 제작 의뢰서가 성공적으로 수정되었습니다.");
+        onClose();
+      } catch (error) {
+        console.warn("API update fallback to local state:", error);
+        const fallbackReq: IdeaRequest = {
+          ...initialRequest,
+          ...payload,
+          category: category.trim() || initialRequest.category,
+          tags: tags.length ? tags : initialRequest.tags,
+        };
+        onRequestCreated(fallbackReq);
+        toast.success("의뢰서 수정 완료", "아이디어 제작 의뢰서가 성공적으로 수정되었습니다.");
+        onClose();
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     try {
       const res = await api.createIdeaRequest(payload);
       if (res?.request) {
@@ -381,46 +425,50 @@ export default function IdeaRequestModal({
             </div>
             <div>
               <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                🚀 아이디어 제작 의뢰{" "}
+                {isEditing ? "✏️ 아이디어 제작 의뢰서 수정" : "🚀 아이디어 제작 의뢰"}{" "}
                 <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium">
-                  빌더 역제안 마법사
+                  {isEditing ? "내용 수정" : "빌더 역제안 마법사"}
                 </span>
               </h2>
               <p className="text-xs text-brand-on-surface-variant">
-                {createStep === "ai_chat"
+                {isEditing
+                  ? "의뢰서 세부 내용 및 공모 마감/선발 일정, 보상 조건을 수정합니다."
+                  : createStep === "ai_chat"
                   ? "1단계: AI 대화형 창업 PRD 초벌 기획"
                   : "2단계: 상세 의뢰서 작성 및 일정/보상 설정"}
               </p>
             </div>
           </div>
 
-          {/* Mode Switch Tabs */}
-          <div className="flex bg-brand-surface-low rounded-lg p-1 border border-brand-border/40 text-xs self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setCreateStep("ai_chat")}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
-                createStep === "ai_chat"
-                  ? "bg-blue-600 text-white font-bold shadow"
-                  : "text-brand-on-surface-variant hover:text-white"
-              }`}
-            >
-              <Bot size={13} />
-              AI 채팅 초벌
-            </button>
-            <button
-              type="button"
-              onClick={() => setCreateStep("detail_edit")}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
-                createStep === "detail_edit"
-                  ? "bg-blue-600 text-white font-bold shadow"
-                  : "text-brand-on-surface-variant hover:text-white"
-              }`}
-            >
-              <FileText size={13} />
-              상세 의뢰서 작성
-            </button>
-          </div>
+          {/* Mode Switch Tabs (수정 모드일 때는 숨김) */}
+          {!isEditing && (
+            <div className="flex bg-brand-surface-low rounded-lg p-1 border border-brand-border/40 text-xs self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setCreateStep("ai_chat")}
+                className={`px-3 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  createStep === "ai_chat"
+                    ? "bg-blue-600 text-white font-bold shadow"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                <Bot size={13} />
+                AI 채팅 초벌
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateStep("detail_edit")}
+                className={`px-3 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  createStep === "detail_edit"
+                    ? "bg-blue-600 text-white font-bold shadow"
+                    : "text-brand-on-surface-variant hover:text-white"
+                }`}
+              >
+                <FileText size={13} />
+                상세 의뢰서 작성
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── STEP 1: AI Chat Interface ── */}
@@ -726,13 +774,17 @@ export default function IdeaRequestModal({
 
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-4 border-t border-brand-border/30">
-              <button
-                type="button"
-                onClick={() => setCreateStep("ai_chat")}
-                className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
-              >
-                ← AI 채팅 초벌로 돌아가기
-              </button>
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setCreateStep("ai_chat")}
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                >
+                  ← AI 채팅 초벌로 돌아가기
+                </button>
+              ) : (
+                <div />
+              )}
 
               <div className="flex items-center space-x-3">
                 <button
@@ -748,7 +800,13 @@ export default function IdeaRequestModal({
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-blue-500/25 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  {submitting ? "등록 중..." : "아이디어 제작 의뢰서 등록하기"}
+                  {submitting
+                    ? isEditing
+                      ? "수정 중..."
+                      : "등록 중..."
+                    : isEditing
+                    ? "의뢰서 수정 완료"
+                    : "아이디어 제작 의뢰서 등록하기"}
                 </button>
               </div>
             </div>

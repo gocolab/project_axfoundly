@@ -147,6 +147,69 @@ router.post("/posts", (req, res) => {
   res.status(201).json({ post: newPost });
 });
 
+// PUT /api/community/posts/:id (Update post)
+router.put("/posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { title, content, boardType, isPinned, author, userRoles } = req.body || {};
+
+  const targetPost = db.get("posts").find((p) => p.id === id);
+  if (!targetPost) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  const isAdmin =
+    Array.isArray(userRoles) &&
+    (userRoles.includes("admin") || userRoles.includes("manager"));
+
+  if (author && targetPost.author !== author && !isAdmin) {
+    return res.status(403).json({ error: "게시글 수정 권한이 없습니다." });
+  }
+
+  // 공지사항 카테고리 또는 상단 고정은 관리자만 가능
+  if ((boardType === "공지사항" || isPinned) && !isAdmin) {
+    return res.status(403).json({
+      error: "공지사항 설정 및 상단 고정글 설정은 관리자 권한이 필요합니다.",
+    });
+  }
+
+  const oldBoardType = targetPost.boardType;
+  const newBoardType = boardType !== undefined ? boardType : targetPost.boardType;
+
+  let updatedPost: BoardPost = targetPost;
+  db.update("posts", (posts) =>
+    posts.map((p) => {
+      if (p.id === id) {
+        updatedPost = {
+          ...p,
+          title: title !== undefined ? title : p.title,
+          content: content !== undefined ? content : p.content,
+          boardType: newBoardType as BoardType,
+          isPinned: isPinned !== undefined ? !!isPinned : p.isPinned,
+        };
+        return updatedPost;
+      }
+      return p;
+    })
+  );
+
+  // 게시판이 변경된 경우 boards의 postCount 업데이트
+  if (oldBoardType !== newBoardType) {
+    db.update("boards", (boards) =>
+      boards.map((b) => {
+        if (b.name === oldBoardType) {
+          return { ...b, postCount: Math.max(0, b.postCount - 1) };
+        }
+        if (b.name === newBoardType) {
+          return { ...b, postCount: b.postCount + 1 };
+        }
+        return b;
+      })
+    );
+  }
+
+  res.json({ success: true, post: updatedPost });
+});
+
 // DELETE /api/community/posts/:id (Delete post)
 router.delete("/posts/:id", (req, res) => {
   const { id } = req.params;

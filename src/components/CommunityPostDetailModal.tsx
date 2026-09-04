@@ -10,6 +10,7 @@ import {
   CornerDownRight,
   Pin,
   Trash2,
+  Edit,
 } from "lucide-react";
 import type { BoardPost, Comment, UserRole } from "../types";
 import { api } from "../lib/api";
@@ -24,6 +25,7 @@ interface CommunityPostDetailModalProps {
   userName: string;
   onLoginClick: () => void;
   onCommentAdded?: (newComment: Comment) => void;
+  onEditPost?: (post: BoardPost) => void;
   onDeletePost?: (postId: string) => void;
   onDeleteComment?: (commentId: string) => void;
   onSendTeamRequest?: (projectName: string, message: string) => void;
@@ -38,6 +40,7 @@ export default function CommunityPostDetailModal({
   userName,
   onLoginClick,
   onCommentAdded,
+  onEditPost,
   onDeletePost,
   onDeleteComment,
   onSendTeamRequest,
@@ -53,6 +56,7 @@ export default function CommunityPostDetailModal({
   const isAdmin = userRoles.includes("admin") || userRoles.includes("manager");
   const isPostAuthor = isLoggedIn && post?.author === userName;
   const canDeletePost = isAdmin || isPostAuthor;
+  const canEditPost = isAdmin || isPostAuthor;
 
   // Team proposal inside post
   const [showTeamProposalInput, setShowTeamProposalInput] = React.useState(false);
@@ -201,6 +205,16 @@ export default function CommunityPostDetailModal({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {canEditPost && (
+              <button
+                onClick={() => onEditPost && onEditPost(post)}
+                className="p-1 px-2 rounded-lg text-brand-primary hover:text-white hover:bg-brand-primary/20 transition-colors cursor-pointer text-xs flex items-center gap-1 border border-brand-primary/30"
+                title="게시글 수정"
+              >
+                <Edit size={13} />
+                <span className="text-[11px] font-semibold">수정</span>
+              </button>
+            )}
             {canDeletePost && (
               <button
                 onClick={handleDeletePost}

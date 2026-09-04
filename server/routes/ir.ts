@@ -502,6 +502,56 @@ router.post("/idea-requests/:id/accept-proposal", (req, res) => {
   });
 });
 
+// PUT /api/ir/idea-requests/:id (Update idea request)
+router.put("/idea-requests/:id", (req, res) => {
+  const { id } = req.params;
+  const {
+    title,
+    problem,
+    solutionConcept,
+    category,
+    tags,
+    requiredRoles,
+    rewardType,
+    rewardDetail,
+    submissionDeadline,
+    selectionDate,
+    status,
+  } = req.body;
+
+  const list = db.get("ideaRequests") || [];
+  const target = list.find((r) => r.id === id);
+  if (!target) {
+    return res.status(404).json({ error: "아이디어 제작 의뢰서를 찾을 수 없습니다." });
+  }
+
+  let updatedRequest: IdeaRequest = target;
+  db.update("ideaRequests", (prevList) =>
+    (prevList || []).map((r) => {
+      if (r.id === id) {
+        updatedRequest = {
+          ...r,
+          title: title !== undefined ? title : r.title,
+          problem: problem !== undefined ? problem : r.problem,
+          solutionConcept: solutionConcept !== undefined ? solutionConcept : r.solutionConcept,
+          category: category !== undefined ? category : r.category,
+          tags: tags !== undefined ? tags : r.tags,
+          requiredRoles: requiredRoles !== undefined ? requiredRoles : r.requiredRoles,
+          rewardType: rewardType !== undefined ? rewardType : r.rewardType,
+          rewardDetail: rewardDetail !== undefined ? rewardDetail : r.rewardDetail,
+          submissionDeadline: submissionDeadline !== undefined ? submissionDeadline : r.submissionDeadline,
+          selectionDate: selectionDate !== undefined ? selectionDate : r.selectionDate,
+          status: status !== undefined ? status : r.status,
+        };
+        return updatedRequest;
+      }
+      return r;
+    })
+  );
+
+  res.json({ success: true, request: updatedRequest });
+});
+
 // DELETE /api/ir/idea-requests/:id
 router.delete("/idea-requests/:id", (req, res) => {
   const { id } = req.params;

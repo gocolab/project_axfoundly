@@ -167,6 +167,7 @@ export default function IRPage({
   const [requestsLoading, setRequestsLoading] = React.useState(false);
   const [selectedIdeaRequest, setSelectedIdeaRequest] = React.useState<IdeaRequest | null>(null);
   const [showIdeaRequestModal, setShowIdeaRequestModal] = React.useState(false);
+  const [editingIdeaRequest, setEditingIdeaRequest] = React.useState<IdeaRequest | null>(null);
   const [showIdeaProposalModal, setShowIdeaProposalModal] = React.useState(false);
   const [proposalTargetIdea, setProposalTargetIdea] = React.useState<IdeaRequest | null>(null);
   const [ideaSort, setIdeaSort] = React.useState<"deadline" | "popular" | "recent">("deadline");
@@ -931,6 +932,36 @@ export default function IRPage({
             if (onSendProposal) onSendProposal(proposal);
           }}
         />
+
+        {/* ── 스타트업 IR 프로젝트 수정 모달 (상세 화면) ── */}
+        {showCreateProjectModal && (
+          <ProjectCreateEditModal
+            isOpen={showCreateProjectModal}
+            initialProject={editingProject || selectedProject}
+            onClose={() => {
+              setShowCreateProjectModal(false);
+              setEditingProject(null);
+            }}
+            onSave={(newProject) => {
+              setLocalProjects((prev) => {
+                const idx = prev.findIndex((p) => p.id === newProject.id);
+                if (idx >= 0) {
+                  const copy = [...prev];
+                  copy[idx] = newProject;
+                  return copy;
+                }
+                return [newProject, ...prev];
+              });
+              setSelectedProject(newProject);
+              if (onSaveProject) {
+                onSaveProject(newProject);
+              }
+              setShowCreateProjectModal(false);
+              setEditingProject(null);
+              toast.success("프로젝트 수정 완료", "스타트업 프로젝트 정보가 성공적으로 업데이트되었습니다.");
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -1301,16 +1332,6 @@ export default function IRPage({
                   📅 마감일순
                 </button>
                 <button
-                  onClick={() => setIdeaSort("popular")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                    ideaSort === "popular"
-                      ? "bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30"
-                      : "text-white/50 hover:text-white"
-                  }`}
-                >
-                  🔥 공감순
-                </button>
-                <button
                   onClick={() => setIdeaSort("recent")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     ideaSort === "recent"
@@ -1505,19 +1526,32 @@ export default function IRPage({
                     <span className="text-xs text-white/50">{selectedIdeaRequest.category}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {/* 발제자 또는 관리자 의뢰서 삭제 버튼 */}
+                    {/* 발제자 또는 관리자 의뢰서 수정/삭제 버튼 */}
                     {isLoggedIn &&
                       (userRoles.includes("admin") ||
                         userRoles.includes("manager") ||
                         selectedIdeaRequest.requestedBy.userName === userName) && (
-                        <button
-                          onClick={() => handleDeleteIdeaRequest(selectedIdeaRequest.id)}
-                          className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors cursor-pointer text-xs flex items-center gap-1 mr-1"
-                          title="의뢰서 삭제"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">삭제</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingIdeaRequest(selectedIdeaRequest);
+                              setShowIdeaRequestModal(true);
+                            }}
+                            className="p-1.5 rounded-lg text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 transition-colors cursor-pointer text-xs flex items-center gap-1 mr-1"
+                            title="의뢰서 수정"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">수정</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteIdeaRequest(selectedIdeaRequest.id)}
+                            className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors cursor-pointer text-xs flex items-center gap-1 mr-1"
+                            title="의뢰서 삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">삭제</span>
+                          </button>
+                        </>
                       )}
                     <button
                       onClick={() => setSelectedIdeaRequest(null)}
@@ -1844,14 +1878,31 @@ export default function IRPage({
         }}
       />
 
-      {/* 아이디어 제작 의뢰 모달 */}
+      {/* 아이디어 제작 의뢰 / 수정 모달 */}
       <IdeaRequestModal
         isOpen={showIdeaRequestModal}
-        onClose={() => setShowIdeaRequestModal(false)}
+        initialRequest={editingIdeaRequest}
+        onClose={() => {
+          setShowIdeaRequestModal(false);
+          setEditingIdeaRequest(null);
+        }}
         userName={userName || "김수강생"}
         userId={userName || "u-student-1"}
-        onRequestCreated={(newReq) => {
-          setIdeaRequests((prev) => [newReq, ...prev]);
+        onRequestCreated={(savedReq) => {
+          setIdeaRequests((prev) => {
+            const idx = prev.findIndex((r) => r.id === savedReq.id);
+            if (idx >= 0) {
+              const copy = [...prev];
+              copy[idx] = savedReq;
+              return copy;
+            }
+            return [savedReq, ...prev];
+          });
+          if (selectedIdeaRequest?.id === savedReq.id) {
+            setSelectedIdeaRequest(savedReq);
+          }
+          setShowIdeaRequestModal(false);
+          setEditingIdeaRequest(null);
         }}
       />
 

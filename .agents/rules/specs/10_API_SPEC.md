@@ -34,6 +34,7 @@
 | API-REV-IR-05 | POST | `/api/ir/idea-requests/:id/accept-proposal` | 빌더 제안 최종 채택 및 정식 IR 프로젝트 승격 | IR | 회원 | ✅ 완료 |
 | API-REV-IR-06 | POST | `/api/ir/idea-requests/:id/select-proposals` | 아이디어 제안서 복수 선발 및 협의 대상 지정 | IR | 회원 | ✅ 완료 |
 | API-REV-IR-07 | DELETE | `/api/ir/idea-requests/:id` | 아이디어 제작 의뢰서 삭제 (연관 제안서 연쇄 삭제) | IR | 발제자/관리자 | ✅ 완료 |
+| API-REV-IR-08 | PUT | `/api/ir/idea-requests/:id` | 아이디어 제작 의뢰서 세부 내용 및 일정/보상 수정 | IR | 발제자/관리자 | ✅ 완료 |
 | API-AI-01 | POST | `/api/ai/course-draft` | AI 강의 초벌 커리큘럼 생성 | AI | 강사 | ✅ 완료 |
 | API-AI-02 | POST | `/api/ai/diagnosis` | 빌더 AI 아키텍트 페르소나 진단 | AI | 전체 | ✅ 완료 |
 | API-AI-03 | POST | `/api/ai/innovation-chat` | B2B 인큐베이터 멘토 챗 | AI | 전체 | ✅ 완료 |
@@ -46,6 +47,7 @@
 | API-COM-04 | POST | `/api/community/posts/:id/comments` | 댓글 등록 및 알림 발송 | Community | 회원 | ✅ 완료 |
 | API-COM-05 | DELETE | `/api/community/posts/:id` | 게시글 삭제 (연관 댓글 연쇄 삭제 및 postCount 감소) | Community | 작성자/관리자 | ✅ 완료 |
 | API-COM-06 | DELETE | `/api/community/posts/:postId/comments/:commentId` | 댓글 삭제 (post commentCount 감소) | Community | 작성자/관리자 | ✅ 완료 |
+| API-COM-07 | PUT | `/api/community/posts/:id` | 게시글 수정 (공지사항/상단고정 권한 검증 및 postCount 동기화) | Community | 작성자/관리자 | ✅ 완료 |
 | API-ADM-01 | GET | `/api/admin/stats` | 대시보드 KPI 통계 조회 | Admin | 관리자 | ✅ 완료 |
 | API-ADM-02 | GET | `/api/admin/members` | 회원 목록 및 상태 조회 | Admin | 관리자 | ✅ 완료 |
 | API-ADM-03 | PATCH | `/api/admin/members/:id/role` | 회원 권한 변경 | Admin | 관리자 | ✅ 완료 |

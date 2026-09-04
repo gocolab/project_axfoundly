@@ -303,6 +303,13 @@ export const api = {
     });
   },
 
+  updateIdeaRequest: async (id: string, data: Partial<IdeaRequest>) => {
+    return fetchJson<{ success: boolean; request: IdeaRequest }>(`/api/ir/idea-requests/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
   upvoteIdeaRequest: async (id: string, userId?: string) => {
     return fetchJson<{ success: boolean; isUpvoted: boolean; request: IdeaRequest }>(`/api/ir/idea-requests/${id}/upvote`, {
       method: "POST",
@@ -398,6 +405,16 @@ export const api = {
   createPost: async (postData: Partial<BoardPost>) => {
     return fetchJson<{ post: BoardPost }>("/api/community/posts", {
       method: "POST",
+      body: JSON.stringify(postData),
+    });
+  },
+
+  updatePost: async (
+    id: string,
+    postData: Partial<BoardPost> & { author?: string; userRoles?: UserRole[] }
+  ) => {
+    return fetchJson<{ success: boolean; post: BoardPost }>(`/api/community/posts/${id}`, {
+      method: "PUT",
       body: JSON.stringify(postData),
     });
   },

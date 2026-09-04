@@ -345,6 +345,13 @@ export default function App() {
     refreshData();
   };
 
+  const handleUpdatePost = (updatedPost: BoardPost) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+    );
+    refreshData();
+  };
+
   const handleMarkNotificationRead = async (id: string) => {
     try {
       await api.markNotificationRead(id);
@@ -539,6 +546,7 @@ export default function App() {
             courses={courses}
             onEnroll={handleEnroll}
             isLoggedIn={isLoggedIn}
+            userRoles={userRoles}
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
             onSaveCourse={handleSaveCourse}
@@ -567,6 +575,7 @@ export default function App() {
           <CommunityPage
             posts={posts}
             onAddPost={handleAddPost}
+            onUpdatePost={handleUpdatePost}
             onDeletePost={handleDeletePost}
             isLoggedIn={isLoggedIn}
             userRoles={userRoles}

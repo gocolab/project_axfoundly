@@ -1187,6 +1187,30 @@ export default function CoursePage({
             </div>
           </div>
         )}
+
+        {/* 강의 수정 모달 (상세 화면) */}
+        {showEditModal && editingCourse && (
+          <CourseCreateEditModal
+            isOpen={showEditModal}
+            initialCourse={editingCourse}
+            onClose={() => {
+              setShowEditModal(false);
+              setEditingCourse(null);
+            }}
+            instructorName={editingCourse.instructor || userName || "김수강생"}
+            onSave={(updatedCourse) => {
+              if (onSaveCourse) {
+                onSaveCourse(updatedCourse);
+              }
+              if (selectedCourse?.id === updatedCourse.id) {
+                setSelectedCourse(updatedCourse);
+              }
+              setShowEditModal(false);
+              setEditingCourse(null);
+              toast.success("강의 수정 완료", "강의 정보 및 커리큘럼 일정이 성공적으로 업데이트되었습니다.");
+            }}
+          />
+        )}
       </div>
     );
   }
