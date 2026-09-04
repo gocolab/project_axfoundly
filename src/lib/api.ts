@@ -102,7 +102,13 @@ export const api = {
     });
   },
 
-  enrollCourse: async (id: string, paymentMethod: "카드" | "계좌이체" = "카드") => {
+  deleteCourse: async (id: string) => {
+    return fetchJson<{ success: boolean; message: string }>(`/api/courses/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  enrollCourse: async (id: string, paymentMethod: "카카오페이" = "카카오페이") => {
     return fetchJson<{ success: boolean; course: Course; payment: PaymentRecord }>(
       `/api/courses/${id}/enroll`,
       {

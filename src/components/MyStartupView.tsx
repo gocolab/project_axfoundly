@@ -28,6 +28,7 @@ interface MyStartupViewProps {
   myProjects: IRProject[];
   teamRequests: TeamBuildingRequest[];
   receivedProposals?: InvestmentProposal[];
+  userName?: string;
   onViewIR: (id: string) => void;
   onSaveProject: (project: IRProject) => void;
   onDeleteProject?: (id: string) => void;
@@ -40,6 +41,7 @@ export default function MyStartupView({
   myProjects,
   teamRequests,
   receivedProposals = [],
+  userName,
   onViewIR,
   onSaveProject,
   onDeleteProject,
@@ -64,12 +66,15 @@ export default function MyStartupView({
       setIdeasLoading(true);
       api.getIdeaRequests()
         .then((res) => {
-          setMyIdeas(res.requests || []);
+          const userIdeas = (res.requests || []).filter(
+            (r) => !userName || r.requestedBy?.userName === userName
+          );
+          setMyIdeas(userIdeas);
         })
         .catch((err) => console.error("Failed to load idea requests", err))
         .finally(() => setIdeasLoading(false));
     }
-  }, [activeSubTab]);
+  }, [activeSubTab, userName]);
 
   // SubTab 1: Projects Search & Pagination
   const [searchProject, setSearchProject] = React.useState("");

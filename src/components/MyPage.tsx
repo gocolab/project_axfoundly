@@ -189,17 +189,19 @@ export default function MyPage({
     },
   ];
 
-  // 내 프로젝트 & 내가 개설한 강의
+  // 내 프로젝트 & 내가 개설한 강의 & 팀 빌딩 제안
   const myProjects = irProjects
     .filter((p) => !deletedProjectIds.includes(p.id))
     .filter(
       (p) =>
         p.authorName === userName ||
-        p.authorId === "u-current" ||
         p.members?.some((m) => m.name === userName || m.anonymousName === userName)
     );
   const myCreatedCourses = courses.filter((c) => c.instructor.includes(userName));
   const bookmarkedProjects = irProjects.filter((p) => p.bookmarked);
+  const myTeamRequests = teamRequests.filter(
+    (req) => req.fromUser === userName || req.toUser === userName
+  );
 
   const handleOpenProjectModal = () => {
     setActiveTab("startup");
@@ -307,8 +309,9 @@ export default function MyPage({
           {activeTab === "startup" && (
             <MyStartupView
               myProjects={myProjects}
-              teamRequests={teamRequests}
+              teamRequests={myTeamRequests}
               receivedProposals={proposals}
+              userName={userName}
               onViewIR={handleViewIR}
               onSaveProject={handleSaveProject}
               onDeleteProject={handleDeleteProject}
@@ -369,7 +372,7 @@ export default function MyPage({
           setActiveTab("startup");
         }}
         userName={userName}
-        userId="u-current"
+        userId={userName || "user-member"}
       />
     </div>
   );

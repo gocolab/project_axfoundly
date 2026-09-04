@@ -495,7 +495,7 @@ router.post("/", async (req, res) => {
 // POST /api/courses/:id/enroll (Enroll & Pay)
 router.post("/:id/enroll", (req, res) => {
   const { id } = req.params;
-  const { paymentMethod = "카드", userName = "김수강생", userEmail = "student@mail.com" } = req.body;
+  const { paymentMethod = "카카오페이", userName = "김수강생", userEmail = "student@mail.com" } = req.body;
 
   let enrolledCourse: Course | null = null;
 
@@ -530,7 +530,7 @@ router.post("/:id/enroll", (req, res) => {
     userId: "m1",
     amount: finalPrice,
     date: new Date().toISOString().split("T")[0],
-    method: paymentMethod === "계좌이체" ? "계좌이체" : "카드",
+    method: "카카오페이",
     status: "완료",
   };
   db.update("payments", (payments) => [newPayment, ...payments]);
@@ -667,6 +667,27 @@ router.post("/:id/reviews", (req, res) => {
   );
 
   res.status(201).json({ review: newReview });
+});
+
+// DELETE /api/courses/:id
+router.delete("/:id", (req, res) => {
+  const { id } = req.params;
+  const courses = db.get("courses") || [];
+  const course = courses.find((c) => c.id === id);
+
+  if (!course) {
+    return res.status(404).json({ error: "강의를 찾을 수 없습니다." });
+  }
+
+  db.update("courses", (coursesList) => coursesList.filter((c) => c.id !== id));
+
+  // Update stats if needed
+  db.update("stats", (stats) => ({
+    ...stats,
+    activeCourses: Math.max(0, (stats?.activeCourses || 1) - 1),
+  }));
+
+  res.json({ success: true, message: "강의가 삭제되었습니다." });
 });
 
 export default router;

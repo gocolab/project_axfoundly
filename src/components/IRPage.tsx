@@ -148,10 +148,7 @@ export default function IRPage({
   const [proposalMessage, setProposalMessage] = React.useState("");
   const [proposalSent, setProposalSent] = React.useState(false);
 
-  // Video & Apply Modals
-  const [showVideoModal, setShowVideoModal] = React.useState(false);
-  const [showEditVideoModal, setShowEditVideoModal] = React.useState(false);
-  const [videoUrlInput, setVideoUrlInput] = React.useState("");
+  // Modals
   const [selectedHiringRole, setSelectedHiringRole] = React.useState<HiringRoleDetail | null>(null);
   const [showApplyModal, setShowApplyModal] = React.useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
@@ -205,7 +202,7 @@ export default function IRPage({
       return;
     }
     try {
-      const res = await api.upvoteIdeaRequest(reqId, userName || "u-student-1");
+      const res = await api.upvoteIdeaRequest(reqId, userName);
       setIdeaRequests((prev) =>
         prev.map((r) => (r.id === reqId ? res.request : r))
       );
@@ -224,7 +221,7 @@ export default function IRPage({
       return;
     }
     try {
-      const targetUser = userName || "u-student-1";
+      const targetUser = userName;
       const res = await api.upvoteIRProject(projectId, targetUser);
       setLocalProjects((prev) =>
         prev.map((p) => (String(p.id) === String(projectId) ? res.project : p))
@@ -418,7 +415,6 @@ export default function IRPage({
   React.useEffect(() => {
     if (selectedProject) {
       setIsAnonymousMode(selectedProject.isAnonymous || false);
-      setVideoUrlInput(selectedProject.demoVideoUrl || "");
     }
   }, [selectedProject]);
 
@@ -515,7 +511,6 @@ export default function IRPage({
                       {/* 작성자 / 관리자 수정·삭제 액션 버튼 */}
                       {isLoggedIn &&
                         (selectedProject.authorName === userName ||
-                          selectedProject.authorId === "u-current" ||
                           selectedProject.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
                           userRoles.includes("admin") ||
                           userRoles.includes("manager")) && (
@@ -608,63 +603,63 @@ export default function IRPage({
               </div>
             </div>
 
-            {/* ── Demo / Operational Video Player Section ── */}
+            {/* ── Demo / Operational Video & Links Section ── */}
             <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                   <Video size={18} className="text-brand-primary" />
                   서비스 동작 및 피칭 영상
                 </h2>
-                <div className="flex items-center gap-2 flex-wrap">
+                {isLoggedIn &&
+                  (selectedProject.authorName === userName ||
+                    selectedProject.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
+                    userRoles.includes("admin") ||
+                    userRoles.includes("manager")) && (
+                    <button
+                      onClick={() => {
+                        setEditingProject(selectedProject);
+                        setShowCreateProjectModal(true);
+                      }}
+                      className="text-xs text-brand-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border/40"
+                    >
+                      <Edit3 size={12} /> 링크 입력/수정 (수정 화면)
+                    </button>
+                  )}
+              </div>
+
+              {selectedProject.demoVideoUrl || selectedProject.prototypeUrl ? (
+                <div className="flex flex-wrap gap-3">
+                  {selectedProject.demoVideoUrl && (
+                    <a
+                      href={selectedProject.demoVideoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 hover:from-indigo-900 hover:to-purple-900 text-indigo-200 hover:text-white border border-indigo-500/40 hover:border-indigo-400 transition-all font-semibold text-xs shadow-md cursor-pointer group"
+                    >
+                      <Video size={16} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <span>[서비스 동작 및 피칭 영상 바로가기]</span>
+                      <ExternalLink size={13} className="text-indigo-300 ml-1 opacity-70 group-hover:opacity-100" />
+                    </a>
+                  )}
+
                   {selectedProject.prototypeUrl && (
                     <a
                       href={selectedProject.prototypeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors cursor-pointer shadow-sm"
+                      className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-950/80 to-teal-950/80 hover:from-cyan-900 hover:to-teal-900 text-cyan-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 transition-all font-semibold text-xs shadow-md cursor-pointer group"
                     >
-                      <Globe size={13} />
+                      <Globe size={16} className="text-cyan-400 group-hover:scale-110 transition-transform" />
                       <span>[프로토타입 / 배포 사이트 방문]</span>
-                      <ExternalLink size={11} />
+                      <ExternalLink size={13} className="text-cyan-300 ml-1 opacity-70 group-hover:opacity-100" />
                     </a>
                   )}
-                  <button
-                    onClick={() => setShowEditVideoModal(true)}
-                    className="text-xs text-brand-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-surface-high border border-brand-border/40"
-                  >
-                    <Link size={12} /> 영상 링크 설정/변경
-                  </button>
-                </div>
-              </div>
-
-              {selectedProject.demoVideoUrl ? (
-                <div className="relative rounded-xl overflow-hidden border border-brand-border/40 aspect-video bg-black flex items-center justify-center group shadow-inner">
-                  {/* Video Thumbnail / Mock Player View */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-black flex flex-col items-center justify-center p-6 text-center">
-                    <button
-                      onClick={() => setShowVideoModal(true)}
-                      className="w-16 h-16 rounded-full bg-brand-primary-container text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform cursor-pointer"
-                    >
-                      <Play size={28} className="ml-1" />
-                    </button>
-                    <p className="text-sm font-bold text-white mt-4">
-                      {selectedProject.teamName} 서비스 시연 & 피칭 데모
-                    </p>
-                    <p className="text-xs text-brand-on-surface-variant mt-1 font-mono">
-                      {selectedProject.demoVideoUrl}
-                    </p>
-                  </div>
                 </div>
               ) : (
-                <div className="p-8 text-center bg-brand-surface-low rounded-xl border border-brand-border/30">
-                  <Video size={28} className="text-brand-on-surface-variant mx-auto mb-2 opacity-50" />
-                  <p className="text-xs text-brand-on-surface-variant">등록된 시연 영상 링크가 없습니다</p>
-                  <button
-                    onClick={() => setShowEditVideoModal(true)}
-                    className="mt-3 text-xs bg-brand-primary-container/20 text-brand-primary border border-brand-primary/30 px-3 py-1.5 rounded-lg hover:bg-brand-primary-container hover:text-white transition-colors cursor-pointer"
-                  >
-                    + 영상 링크 입력하기
-                  </button>
+                <div className="p-6 text-center bg-brand-surface-low rounded-xl border border-brand-border/30">
+                  <Video size={26} className="text-brand-on-surface-variant mx-auto mb-2 opacity-50" />
+                  <p className="text-xs text-brand-on-surface-variant">등록된 시연 영상 또는 웹사이트 링크가 없습니다.</p>
+                  <p className="text-[11px] text-slate-500 mt-1">프로젝트 수정 화면에서 각종 링크를 일괄 입력 및 변경할 수 있습니다.</p>
                 </div>
               )}
             </div>
@@ -904,95 +899,6 @@ export default function IRPage({
         </div>
       </div>
 
-        {/* ── Modal 1: Demo Video Player Modal ── */}
-        {showVideoModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/85 backdrop-blur-md p-4 animate-fadeIn">
-            <div className="glass-panel-heavy rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-brand-border">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-display text-sm font-bold text-white flex items-center gap-2">
-                  <Video size={16} className="text-brand-primary" />
-                  {selectedProject.teamName} 서비스 동작 시연
-                </h3>
-                <button
-                  onClick={() => setShowVideoModal(false)}
-                  className="p-1 rounded-lg hover:bg-brand-surface-high text-brand-on-surface-variant hover:text-white cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="aspect-video bg-black rounded-xl overflow-hidden border border-brand-border/40 flex items-center justify-center relative">
-                {/* Embed video or placeholder playback demo */}
-                <iframe
-                  src={convertToEmbedUrl(selectedProject.demoVideoUrl) || "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0"}
-                  title="Demo Video"
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-
-              <div className="mt-3 flex justify-between items-center text-xs text-brand-on-surface-variant">
-                <span className="truncate max-w-[70%]">동영상 원본 링크: {selectedProject.demoVideoUrl}</span>
-                <button
-                  onClick={() => setShowVideoModal(false)}
-                  className="px-4 py-1.5 rounded-lg bg-brand-surface-high text-white hover:bg-brand-primary-container text-xs cursor-pointer"
-                >
-                  닫기
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Modal 2: Edit Demo Video URL Modal ── */}
-        {showEditVideoModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
-            <div className="glass-panel-heavy rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-border">
-              <h3 className="font-display text-base font-bold text-white mb-2">동작/시연 영상 링크 등록</h3>
-              <p className="text-xs text-brand-on-surface-variant mb-4">
-                YouTube, Vimeo, Loom 등의 영상 URL을 입력하세요. 자동으로 플레이어 임베드 형식으로 변환됩니다.
-              </p>
-
-              <input
-                type="text"
-                value={videoUrlInput}
-                onChange={(e) => setVideoUrlInput(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2.5 px-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary mb-4"
-              />
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowEditVideoModal(false)}
-                  className="flex-1 border border-brand-border text-white py-2 rounded-xl hover:bg-brand-surface-high text-xs cursor-pointer"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={async () => {
-                    const finalVideoUrl = convertToEmbedUrl(videoUrlInput);
-                    const updatedProj = { ...selectedProject, demoVideoUrl: finalVideoUrl };
-                    setSelectedProject(updatedProj);
-                    setLocalProjects((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
-                    if (onSaveProject) onSaveProject(updatedProj);
-                    try {
-                      await api.saveIRProject(updatedProj);
-                    } catch (e) {
-                      console.warn("Save video url error", e);
-                    }
-                    setShowEditVideoModal(false);
-                    toast.success("영상 링크 저장 완료", "데모 영상 링크가 업데이트되었습니다.");
-                  }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2 rounded-xl text-xs hover:opacity-90 cursor-pointer shadow-md"
-                >
-                  저장하기
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ── Modal 3: One-click Job Application Modal ── */}
         <JobApplicationModal
           isOpen={showApplyModal}
@@ -1206,20 +1112,53 @@ export default function IRPage({
                   <div className="p-5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white/90">{project.teamName}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleBookmark(project.id);
-                        }}
-                        className="text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
-                      >
-                        {project.bookmarked ? (
-                          <BookmarkCheck className="w-4 h-4 text-amber-400 fill-amber-400" />
-                        ) : (
-                          <Bookmark className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {isLoggedIn &&
+                          (project.authorName === userName ||
+                            project.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
+                            userRoles.includes("admin") ||
+                            userRoles.includes("manager")) && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingProject(project);
+                                  setShowCreateProjectModal(true);
+                                }}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center gap-0.5 transition-colors cursor-pointer"
+                                title="프로젝트 수정"
+                              >
+                                <Edit3 size={10} /> 수정
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteProject(project.id);
+                                }}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 flex items-center gap-0.5 transition-colors cursor-pointer"
+                                title="프로젝트 삭제"
+                              >
+                                <Trash2 size={10} /> 삭제
+                              </button>
+                            </div>
+                          )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleBookmark(project.id);
+                          }}
+                          className="text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
+                        >
+                          {project.bookmarked ? (
+                            <BookmarkCheck className="w-4 h-4 text-amber-400 fill-amber-400" />
+                          ) : (
+                            <Bookmark className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     <h3 className="font-display text-base font-bold text-white mt-2 group-hover:text-brand-primary transition-colors line-clamp-1">
@@ -1265,7 +1204,7 @@ export default function IRPage({
 
                       {/* '나도 쓸래요!' 투표 버튼 */}
                       {(() => {
-                        const isUpvoted = project.upvotes?.includes(userName || "u-student-1");
+                        const isUpvoted = project.upvotes?.includes(userName);
                         const count = project.upvoteCount || project.upvotes?.length || 0;
                         return (
                           <button
@@ -1439,7 +1378,7 @@ export default function IRPage({
                 <div className={`grid gap-4 ${selectedIdeaRequest ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
                   {paginatedIdeaRequests.map((req) => {
                     const isSelected = selectedIdeaRequest?.id === req.id;
-                    const isUpvoted = req.upvotes?.includes(userName || "u-student-1");
+                    const isUpvoted = req.upvotes?.includes(userName);
                     const dDay = getDDayText(req.submissionDeadline);
                     const selectedCount = req.selectedProposalIds?.length || 0;
 
@@ -1579,9 +1518,7 @@ export default function IRPage({
                     {isLoggedIn &&
                       (userRoles.includes("admin") ||
                         userRoles.includes("manager") ||
-                        selectedIdeaRequest.requestedBy.userName === userName ||
-                        selectedIdeaRequest.requestedBy.userId === "u-current" ||
-                        selectedIdeaRequest.requestedBy.userId === "u-student-1") && (
+                        selectedIdeaRequest.requestedBy.userName === userName) && (
                         <button
                           onClick={() => handleDeleteIdeaRequest(selectedIdeaRequest.id)}
                           className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors cursor-pointer text-xs flex items-center gap-1 mr-1"
@@ -1668,23 +1605,6 @@ export default function IRPage({
                   </div>
                 </div>
 
-                {/* Upvote CTA */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/40 to-slate-900 border border-cyan-500/30 flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs text-white/60">출시 응원 잠재고객</div>
-                    <div className="text-base font-bold text-cyan-400">
-                      {selectedIdeaRequest.upvoteCount}명 공감 중
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => handleUpvoteIdea(e, selectedIdeaRequest.id)}
-                    className="px-4 py-2 rounded-xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <ThumbsUp className="w-4 h-4 fill-black" />
-                    나도 쓸래요 (+1)
-                  </button>
-                </div>
 
                 {/* Builder Proposals Section */}
                 <div className="pt-2 border-t border-white/10">
@@ -1901,9 +1821,9 @@ export default function IRPage({
             }
             return [newProject, ...prev];
           });
-          if (selectedProject?.id === newProject.id) {
-            setSelectedProject(newProject);
-          }
+          // 수정 후 리스트 화면으로 복귀
+          setSelectedProject(null);
+          onClearSelectedProject?.();
           if (onSaveProject) {
             onSaveProject(newProject);
           }
@@ -1915,7 +1835,7 @@ export default function IRPage({
         isOpen={showIdeaRequestModal}
         onClose={() => setShowIdeaRequestModal(false)}
         userName={userName || "김수강생"}
-        userId="u-student-1"
+        userId={userName || "u-student-1"}
         onRequestCreated={(newReq) => {
           setIdeaRequests((prev) => [newReq, ...prev]);
         }}

@@ -22,6 +22,7 @@ import {
   TrendingUp,
   FileCheck,
   Edit,
+  Trash2,
 } from "lucide-react";
 import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
@@ -31,12 +32,13 @@ import { api } from "../lib/api";
 
 interface CoursePageProps {
   courses: Course[];
-  onEnroll: (courseId: string, paymentMethod?: "카드" | "계좌이체" | "카카오페이") => void;
+  onEnroll: (courseId: string, paymentMethod?: "카카오페이") => void;
   isLoggedIn: boolean;
   userRoles?: import("../types").UserRole[];
   userName?: string;
   onLoginClick: () => void;
   onSaveCourse?: (course: Course) => void;
+  onDeleteCourse?: (courseId: string) => void;
   initialCourseId?: string | null;
   onClearSelectedCourse?: () => void;
 }
@@ -49,6 +51,7 @@ export default function CoursePage({
   userName = "게스트",
   onLoginClick,
   onSaveCourse,
+  onDeleteCourse,
   initialCourseId,
   onClearSelectedCourse,
 }: CoursePageProps) {
@@ -84,13 +87,86 @@ export default function CoursePage({
   const itemsPerPage = 6;
 
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
-  const [paymentMethod, setPaymentMethod] = React.useState<"카드" | "카카오페이">("카카오페이");
+  const [paymentMethod, setPaymentMethod] = React.useState<"카카오페이">("카카오페이");
   const [showInstructorModal, setShowInstructorModal] = React.useState(false);
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [editingCourse, setEditingCourse] = React.useState<Course | null>(null);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = React.useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = React.useState<Date>(new Date(2025, 8, 1)); // Sep 2025
+
+  // Star Rating & Review State
+  const [reviewRating, setReviewRating] = React.useState<number>(5);
+  const [reviewHoverRating, setReviewHoverRating] = React.useState<number>(0);
+  const [reviewContent, setReviewContent] = React.useState<string>("");
+  const [isSubmittingReview, setIsSubmittingReview] = React.useState<boolean>(false);
+
+  const handleDeleteCourseItem = async (courseId: string) => {
+    if (!window.confirm("정말 이 강의를 삭제하시겠습니까?\n삭제된 강의는 복구할 수 없습니다.")) return;
+    try {
+      if (onDeleteCourse) {
+        onDeleteCourse(courseId);
+      } else {
+        await api.deleteCourse(courseId);
+        toast.success("강의 삭제", "강의가 성공적으로 삭제되었습니다.");
+      }
+      if (selectedCourse?.id === courseId) {
+        setSelectedCourse(null);
+        onClearSelectedCourse?.();
+      }
+    } catch (err) {
+      console.error("Delete course failed:", err);
+      toast.error("강의 삭제 실패", "강의를 삭제하는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      toast.error("로그인 필요", "수강 후기를 작성하려면 먼저 로그인해주세요.");
+      onLoginClick();
+      return;
+    }
+    if (!reviewContent.trim()) {
+      toast.error("내용 입력", "후기 내용을 입력해주세요.");
+      return;
+    }
+    if (!selectedCourse) return;
+
+    setIsSubmittingReview(true);
+    try {
+      const res = await api.addCourseReview(selectedCourse.id, {
+        author: userName || "수강생",
+        rating: reviewRating,
+        content: reviewContent.trim(),
+      });
+
+      if (res.review) {
+        const nextReviews = [res.review, ...(selectedCourse.reviews || [])];
+        const nextRating = parseFloat(
+          (nextReviews.reduce((sum, r) => sum + r.rating, 0) / nextReviews.length).toFixed(1)
+        );
+        const updated = {
+          ...selectedCourse,
+          reviews: nextReviews,
+          reviewCount: nextReviews.length,
+          rating: nextRating,
+        };
+        setSelectedCourse(updated);
+        if (onSaveCourse) {
+          onSaveCourse(updated);
+        }
+        setReviewContent("");
+        setReviewRating(5);
+        toast.success("후기 등록 완료", "수강 후기와 별점이 성공적으로 등록되었습니다.");
+      }
+    } catch (err) {
+      console.error("Submit review error:", err);
+      toast.error("후기 등록 실패", "후기 등록 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const dynamicCategories = React.useMemo(() => {
     const catSet = new Set<string>();
@@ -189,16 +265,25 @@ export default function CoursePage({
           </button>
 
           {isLoggedIn && (selectedCourse.instructor === userName || userRoles?.includes("admin")) && (
-            <button
-              onClick={() => {
-                setEditingCourse(selectedCourse);
-                setShowEditModal(true);
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary hover:opacity-90 text-white transition-all shadow-md cursor-pointer"
-            >
-              <Edit size={13} />
-              강의 수정
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingCourse(selectedCourse);
+                  setShowEditModal(true);
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary hover:opacity-90 text-white transition-all shadow-md cursor-pointer"
+              >
+                <Edit size={13} />
+                강의 수정
+              </button>
+              <button
+                onClick={() => handleDeleteCourseItem(selectedCourse.id)}
+                className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all shadow-md cursor-pointer"
+              >
+                <Trash2 size={13} />
+                강의 삭제
+              </button>
+            </div>
           )}
         </div>
 
@@ -522,6 +607,80 @@ export default function CoursePage({
                   <span className="text-sm font-bold text-white">{selectedCourse.rating}</span>
                 </div>
               </div>
+
+              {/* Review Write Form with Star Rating */}
+              {isLoggedIn ? (
+                selectedCourse.isEnrolled || userRoles?.includes("admin") ? (
+                  <form onSubmit={handleSubmitReview} className="mb-6 p-4 bg-[#0b1329]/90 rounded-xl border border-slate-700/60 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-200">후기 작성 & 별점 평가</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const isFilled = (reviewHoverRating || reviewRating) >= star;
+                            return (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewRating(star)}
+                                onMouseEnter={() => setReviewHoverRating(star)}
+                                onMouseLeave={() => setReviewHoverRating(0)}
+                                className="p-0.5 text-slate-600 hover:scale-110 transition-transform cursor-pointer"
+                                title={`${star}점`}
+                              >
+                                <Star
+                                  size={18}
+                                  className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-600"}
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <span className="text-xs font-bold text-amber-400 w-8 text-right">
+                          {reviewHoverRating || reviewRating}점
+                        </span>
+                      </div>
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={reviewContent}
+                      onChange={(e) => setReviewContent(e.target.value)}
+                      placeholder="강의에 대한 솔직한 후기를 남겨주세요. (강의 내용, 실습 도움도 등)"
+                      className="w-full text-xs bg-slate-900 border border-slate-700/80 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary resize-none"
+                    />
+
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={isSubmittingReview || !reviewContent.trim()}
+                        className="px-4 py-2 bg-gradient-to-r from-brand-primary to-indigo-600 hover:opacity-90 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-all shadow-md cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        {isSubmittingReview ? "등록 중..." : "후기 및 별점 등록"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="mb-5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                    <p className="text-xs text-slate-400">
+                      💡 수강 신청을 완료하시면 별점과 수강 후기를 직접 작성하실 수 있습니다.
+                    </p>
+                  </div>
+                )
+              ) : (
+                <div className="mb-5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                  <p className="text-xs text-slate-400">
+                    수강생 후기 작성을 위해 로그인이 필요합니다.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onLoginClick}
+                    className="text-xs text-brand-primary hover:underline font-semibold"
+                  >
+                    로그인하기
+                  </button>
+                </div>
+              )}
 
               <div className="flex flex-col gap-3">
                 {selectedCourse.reviews.map((review) => (
@@ -912,28 +1071,18 @@ export default function CoursePage({
               </div>
 
               <div className="mb-4">
-                <p className="text-xs text-brand-on-surface-variant mb-2">결제 수단 선택</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPaymentMethod("카카오페이")}
-                    className={`flex-1 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
-                      paymentMethod === "카카오페이" 
-                        ? "bg-[#FEE500] text-black border-[#FEE500]" 
-                        : "bg-transparent text-brand-on-surface-variant border-brand-border"
-                    }`}
-                  >
-                    카카오페이
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod("카드")}
-                    className={`flex-1 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
-                      paymentMethod === "카드" 
-                        ? "bg-brand-surface-high text-white border-brand-border" 
-                        : "bg-transparent text-brand-on-surface-variant border-brand-border"
-                    }`}
-                  >
-                    일반 카드
-                  </button>
+                <p className="text-xs text-brand-on-surface-variant mb-2">결제 수단</p>
+                <div className="p-3 rounded-xl border border-[#FEE500]/50 bg-[#FEE500]/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-7 h-7 rounded-lg bg-[#FEE500] text-black font-extrabold text-xs flex items-center justify-center shadow-sm">
+                      카톡
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-white">카카오페이 (단일 결제수단)</p>
+                      <p className="text-[10px] text-slate-400">카카오 간편결제로 안전하게 결제됩니다</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FEE500] text-black">선택됨</span>
                 </div>
               </div>
 
@@ -946,13 +1095,12 @@ export default function CoursePage({
                 </button>
                 <button
                   onClick={() => {
-                    onEnroll(selectedCourse.id, paymentMethod);
+                    onEnroll(selectedCourse.id, "카카오페이");
                     setShowPaymentModal(false);
-                    // setSelectedCourse is handled in parent/App if needed
                   }}
-                  className="flex-1 bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity cursor-pointer text-sm shadow-md"
+                  className="flex-1 bg-[#FEE500] hover:bg-[#ebd300] text-black font-bold py-2.5 rounded-xl transition-all cursor-pointer text-sm shadow-md"
                 >
-                  결제하기
+                  카카오페이로 결제하기
                 </button>
               </div>
             </div>
@@ -1169,17 +1317,29 @@ export default function CoursePage({
                           </span>
                         </div>
                         {isAuthor && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingCourse(course);
-                              setShowEditModal(true);
-                            }}
-                            className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-purple-300 border border-purple-500/30 flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Edit size={11} /> 수정
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingCourse(course);
+                                setShowEditModal(true);
+                              }}
+                              className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-purple-300 border border-purple-500/30 flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Edit size={11} /> 수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCourseItem(course.id);
+                              }}
+                              className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={11} /> 삭제
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>

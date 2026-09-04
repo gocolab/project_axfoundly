@@ -262,11 +262,12 @@ export default function App() {
     setCurrentPage("home");
   };
 
-  const handleEnroll = async (courseId: string, paymentMethod: "카드" | "계좌이체" | "카카오페이" = "카드") => {
+  const handleEnroll = async (courseId: string, paymentMethod: "카카오페이" = "카카오페이") => {
     try {
-      if (paymentMethod === "카카오페이") {
-        const course = courses.find((c) => c.id === courseId);
-        if (!course) return;
+      const course = courses.find((c) => c.id === courseId);
+      if (!course) return;
+
+      try {
         const res = await api.enrollWithKakaoPay({
           itemName: course.title,
           totalAmount: course.discountedPrice || course.price,
@@ -275,11 +276,13 @@ export default function App() {
         });
         if (res.next_redirect_pc_url) {
           window.location.href = res.next_redirect_pc_url;
+          return;
         }
-        return;
+      } catch (e) {
+        console.warn("KakaoPay ready fallback to local enrollment", e);
       }
 
-      const res = await api.enrollCourse(courseId, paymentMethod as "카드" | "계좌이체");
+      const res = await api.enrollCourse(courseId, "카카오페이");
       setCourses((prev) =>
         prev.map((c) => (c.id === courseId ? { ...c, isEnrolled: true, progress: 0 } : c))
       );
@@ -287,10 +290,22 @@ export default function App() {
         setPayments((prev) => [res.payment, ...prev]);
       }
       refreshData();
-      toast.success("결제 완료", "수강 신청 및 결제가 완료되었습니다!");
+      toast.success("결제 완료", "카카오페이 결제 및 수강 신청이 완료되었습니다!");
     } catch (error) {
       console.error("Enrollment failed:", error);
       toast.error("결제 실패", "수강 신청에 실패했습니다.");
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    try {
+      await api.deleteCourse(courseId);
+      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      refreshData();
+      toast.success("강의 삭제", "강의가 성공적으로 삭제되었습니다.");
+    } catch (error) {
+      console.error("Delete course failed:", error);
+      toast.error("강의 삭제 실패", "강의 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -516,6 +531,7 @@ export default function App() {
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
             onSaveCourse={handleSaveCourse}
+            onDeleteCourse={handleDeleteCourse}
             initialCourseId={selectedCourseId}
             onClearSelectedCourse={() => setSelectedCourseId(null)}
           />
