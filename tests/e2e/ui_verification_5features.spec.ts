@@ -37,7 +37,7 @@ test.describe('5대 UI/UX 개선 기능 종합 검증 (QA Verification)', () => 
     expect(count).toBeLessThanOrEqual(5);
   });
 
-  test('2. 내 강의실 > 개강 요청 건: 검색창 및 페이지네이션 검증', async ({ page }) => {
+  test('2. 내 강의실: 검색창 및 페이지네이션 검증', async ({ page }) => {
     await page.goto('/mypage');
     await expect(page.locator('h1', { hasText: '마이페이지' })).toBeVisible({ timeout: 5000 });
 
@@ -45,13 +45,8 @@ test.describe('5대 UI/UX 개선 기능 종합 검증 (QA Verification)', () => 
     await page.locator('aside nav button', { hasText: '내 강의실' }).click();
     await expect(page.locator('h2', { hasText: '내 강의실' })).toBeVisible({ timeout: 5000 });
 
-    // Click "개강 요청 건" tab
-    const requestedTab = page.locator('button:has-text("개강 요청 건")');
-    await expect(requestedTab).toBeVisible({ timeout: 5000 });
-    await requestedTab.click();
-
     // Verify search bar is visible
-    const searchInput = page.locator('input[placeholder*="개강 요청 주제"]');
+    const searchInput = page.getByPlaceholder('강의명, 카테고리 검색...');
     await expect(searchInput).toBeVisible();
 
     // Test search functionality
@@ -83,7 +78,7 @@ test.describe('5대 UI/UX 개선 기능 종합 검증 (QA Verification)', () => 
     await searchInput.fill('');
   });
 
-  test('4. 강사 대시보드 > 수요 있는 개강 요청 탐색: 검색창 및 페이지네이션 검증', async ({ page }) => {
+  test('4. 강사 대시보드 > 수강생 관리: 검색창 및 페이지네이션 검증', async ({ page }) => {
     await page.goto('/mypage');
     await expect(page.locator('h1', { hasText: '마이페이지' })).toBeVisible({ timeout: 5000 });
 
@@ -91,17 +86,17 @@ test.describe('5대 UI/UX 개선 기능 종합 검증 (QA Verification)', () => 
     await page.locator('aside nav button', { hasText: '강의 개설 & 운영' }).click();
     await expect(page.locator('text=강사 대시보드').first()).toBeVisible({ timeout: 5000 });
 
-    // Click "수요 있는 개강 요청 탐색" subtab
-    const reqTab = page.locator('button:has-text("수요 있는 개강 요청 탐색")');
+    // Click "수강생 관리" subtab
+    const reqTab = page.locator('button:has-text("수강생 관리")').first();
     await expect(reqTab).toBeVisible({ timeout: 5000 });
     await reqTab.click();
 
     // Verify search bar is visible
-    const searchInput = page.locator('input[placeholder*="주제, 카테고리, 희망일정"]');
+    const searchInput = page.getByPlaceholder(/수강생 이름/i);
     await expect(searchInput).toBeVisible();
 
     // Test search filtering
-    await searchInput.fill('비즈니스');
+    await searchInput.fill('수강생');
     await page.waitForTimeout(500);
     await searchInput.fill('');
   });
@@ -127,22 +122,22 @@ test.describe('5대 UI/UX 개선 기능 종합 검증 (QA Verification)', () => 
     }
 
     // Check batch apply buttons
-    await expect(page.locator('text=모든 회차 일괄 지정:')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=진행방식 일괄지정:')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('button:has-text("온라인 일괄")')).toBeVisible();
     await expect(page.locator('button:has-text("오프라인 일괄")')).toBeVisible();
-    await expect(page.locator('button:has-text("VOD 일괄")')).toBeVisible();
+    await expect(page.locator('button:has-text("회차별 혼합")')).toBeVisible();
 
     // Click "오프라인 일괄"
     await page.locator('button:has-text("오프라인 일괄")').click();
     await page.waitForTimeout(500);
 
     // Check individual session delivery mode buttons exist
-    const sessionDeliveryBadges = page.locator('text=진행 방식:');
+    const sessionDeliveryBadges = page.locator('text=방식:');
     const badgeCount = await sessionDeliveryBadges.count();
     expect(badgeCount).toBeGreaterThanOrEqual(1);
 
-    // Click "온라인" on the first session
-    const firstOnlineBtn = page.locator('button:has-text("온라인")').first();
+    // Click "온라인" on the first session (filter out 일괄)
+    const firstOnlineBtn = page.locator('button:has-text("온라인")').filter({ hasNotText: '일괄' }).first();
     await firstOnlineBtn.click();
   });
 });

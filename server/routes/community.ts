@@ -29,13 +29,13 @@ router.get("/posts", (req, res) => {
   }
 
   if (search) {
-    const q = search.toLowerCase();
-    posts = posts.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.content.toLowerCase().includes(q) ||
-        p.author.toLowerCase().includes(q)
-    );
+    const tokens = search.toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length > 0) {
+      posts = posts.filter((p) => {
+        const text = `${p.title} ${p.content} ${p.author}`.toLowerCase();
+        return tokens.every((token) => text.includes(token));
+      });
+    }
   }
 
   // 상단 공지 고정(isPinned) 게시글 최우선 정렬
@@ -45,8 +45,10 @@ router.get("/posts", (req, res) => {
     return 0;
   });
 
-  const pageNum = parseInt(page || "1", 10);
-  const limitNum = parseInt(limit || "100", 10);
+  const parsedPage = parseInt(page || "1", 10);
+  const pageNum = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const parsedLimit = parseInt(limit || "100", 10);
+  const limitNum = isNaN(parsedLimit) || parsedLimit < 1 ? 100 : Math.min(parsedLimit, 200);
   const total = posts.length;
   const paginated = posts.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
@@ -55,7 +57,7 @@ router.get("/posts", (req, res) => {
     total,
     page: pageNum,
     limit: limitNum,
-    totalPages: Math.ceil(total / limitNum),
+    totalPages: Math.ceil(total / limitNum) || 1,
   });
 });
 

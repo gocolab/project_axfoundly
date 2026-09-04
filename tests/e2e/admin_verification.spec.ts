@@ -38,8 +38,10 @@ test.describe('통합 E2E 검증: 교육/강의, 스타트업/IR, 커뮤니티, 
     await expect(page.locator('h1')).toBeVisible();
 
     // 상세 화면에서 수정/삭제 버튼 노출 여부 확인:
-    // 작성자 본인(김수강생)인 경우에만 버튼이 보이고, 목록 화면에서는 절대 보이지 않음
-    const isInstructorSelf = (await page.locator('text=김수강생').count()) > 0;
+    // 강의 상세의 강사가 본인(김수강생)인 경우에만 버튼이 보이고, 아닌 경우 노출되지 않음
+    const instructorArea = page.locator('[title*="강사 상세 정보"]');
+    const instructorText = (await instructorArea.count() > 0) ? (await instructorArea.textContent()) : '';
+    const isInstructorSelf = instructorText?.includes('김수강생') ?? false;
     if (isInstructorSelf) {
       await expect(page.getByRole('button', { name: '강의 수정' })).toBeVisible();
       await expect(page.getByRole('button', { name: '강의 삭제' })).toBeVisible();
@@ -61,7 +63,7 @@ test.describe('통합 E2E 검증: 교육/강의, 스타트업/IR, 커뮤니티, 
     if (await enrollBtn.isVisible()) {
       await enrollBtn.click();
       // 카카오페이 단독 결제 수단 확인
-      await expect(page.locator('text=카카오페이')).toBeVisible();
+      await expect(page.locator('text=카카오페이').first()).toBeVisible();
       await expect(page.locator('text=일반 신용카드')).not.toBeVisible();
       // 결제 모달 닫기
       const closeBtn = page.locator('.glass-panel-heavy button').first();

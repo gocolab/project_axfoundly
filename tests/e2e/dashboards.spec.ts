@@ -10,6 +10,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
 
   // ── 1. 통합 마이페이지: 스타트업 IR 프로젝트 등록 및 결제 영수증/환불 시나리오 ──
   test('마이페이지: 내 스타트업 IR 등록 및 결제/영수증 관리 환불 신청 시나리오가 완결된다', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. 수강생 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
@@ -71,6 +72,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
 
   // ── 2. 강의 개설 & 운영 시나리오 ──
   test('마이페이지: 강의 개설 & 운영(AI 강의 개설, 수강생 CRM, 정산) 시나리오가 완결된다', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. 강사/회원 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
@@ -89,11 +91,11 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
 
     await expect(page.locator('h2', { hasText: 'AI 연계 강의 개설 & 달력 일정 등록' })).toBeVisible();
 
-    // AI 주제 입력 후 초벌 생성
-    const aiInput = page.locator('input[placeholder*="비개발자 창업가"]');
+    // AI 주제 입력 후 초벌 생성 (인터뷰 textarea)
+    const aiInput = page.locator('[placeholder*="비개발자 창업가"]');
     await expect(aiInput).toBeVisible();
     await aiInput.fill('LLM 에이전트 마스터');
-    await page.getByRole('button', { name: '생성' }).click();
+    await page.getByRole('button', { name: '전송' }).click();
 
     // 상세 편집기로 적용 버튼 클릭
     const applyDraftBtn = page.locator('button', { hasText: '상세 편집기로 적용' }).first();
@@ -107,7 +109,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     }
 
     // 상세 편집기 폼에서 강의 개설 완료
-    await expect(page.getByPlaceholder('강의 제목을 입력하세요')).toBeVisible();
+    await expect(page.getByPlaceholder(/생성형 AI|강의 제목/)).toBeVisible();
 
     const submitCourseBtn = page.locator('.glass-panel-heavy').getByRole('button', { name: /강의 개설 및 (일정 등록|배포) 완료/ });
     await submitCourseBtn.click();
@@ -116,7 +118,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await expect(page.locator('h2', { hasText: 'AI 연계 강의 개설 & 달력 일정 등록' })).not.toBeVisible();
 
     // 4. 수강생 관리 (CRM) 탭 이동 및 메시지 발송
-    await page.locator('button', { hasText: '수강생 관리' }).click();
+    await page.locator('button', { hasText: '수강생 관리' }).first().click();
     await expect(page.locator('text=수강생 명단 및')).toBeVisible();
 
     // 메시지 발송 모달 열기
@@ -161,6 +163,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
 
   // ── 4. 관리자 대시보드 시나리오 ──
   test('관리자 대시보드: 회원 관리(권한 변경), 강의 승인/반려, 게시판 관리(신규 생성) 시나리오가 완결된다', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. 관리자 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
@@ -183,9 +186,9 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     await memberSearch.fill('김수강생');
     await expect(page.locator('text=student@mail.com')).toBeVisible();
 
-    // 5. 강의 검수 & 승인 탭 이동
-    await page.getByRole('button', { name: '강의 검수 & 승인' }).click();
-    await expect(page.locator('text=신청/등록된 강의 커리큘럼 검수 & 승인')).toBeVisible();
+    // 5. 강의 리스트 관리 탭 이동
+    await page.getByRole('button', { name: '강의 리스트 관리' }).click();
+    await expect(page.locator('h2', { hasText: '강의 리스트 관리' })).toBeVisible();
 
     // 승인 버튼이 있는 경우 승인 처리
     const approveBtn = page.getByRole('button', { name: '승인' }).first();

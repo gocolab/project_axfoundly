@@ -36,6 +36,10 @@ import {
 } from "lucide-react";
 import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal, IdeaRequest, IdeaProposal } from "../types";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
+import { useUrlPagination } from "../hooks/useUrlQueryState";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
 import ProjectCreateEditModal, { convertToEmbedUrl } from "./ProjectCreateEditModal";
@@ -138,9 +142,13 @@ export default function IRPage({
 
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
-  const [searchText, setSearchText] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 6;
+  const {
+    page: currentPage,
+    setPage: setCurrentPage,
+    query: searchText,
+    setQuery: setSearchText,
+  } = useUrlPagination({ pageKey: "page", queryKey: "q", defaultPage: 1 });
+  const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
   // Detail View State
   const [isAnonymousMode, setIsAnonymousMode] = React.useState(false);
@@ -164,7 +172,7 @@ export default function IRPage({
   const [ideaSort, setIdeaSort] = React.useState<"deadline" | "popular" | "recent">("deadline");
   const [ideaStatusFilter, setIdeaStatusFilter] = React.useState<string>("전체");
   const [ideaPage, setIdeaPage] = React.useState(1);
-  const ideasPerPage = 6;
+  const [ideasPerPage, setIdeasPerPage] = React.useState(6);
 
   const fetchIdeaRequests = React.useCallback(async () => {
     try {
@@ -359,11 +367,12 @@ export default function IRPage({
   const [applicantNote, setApplicantNote] = React.useState("");
 
   const dynamicFields = React.useMemo(() => {
-    const fieldSet = new Set<string>();
+    const defaultFields = ["전체", "AI/ML", "B2B SaaS", "핀테크", "바이오/헬스케어", "커머스"];
+    const fieldSet = new Set<string>(defaultFields);
     projects.forEach((p) => {
       if (p.field) fieldSet.add(p.field);
     });
-    return ["전체", ...Array.from(fieldSet)];
+    return Array.from(fieldSet);
   }, [projects]);
 
   const popularTags = React.useMemo(() => {
@@ -382,15 +391,10 @@ export default function IRPage({
       .filter((p) => {
         const matchField = activeField === "전체" || p.field === activeField;
         const matchTag = !activeTag || p.tags?.includes(activeTag);
-        const q = searchText.toLowerCase();
-        const matchSearch =
-          !searchText ||
-          p.teamName.toLowerCase().includes(q) ||
-          p.title.toLowerCase().includes(q) ||
-          p.oneLiner.toLowerCase().includes(q) ||
-          p.solution.toLowerCase().includes(q) ||
-          p.field?.toLowerCase().includes(q) ||
-          p.tags?.some((t) => t.toLowerCase().includes(q));
+        const matchSearch = multiMatch(
+          [p.teamName, p.title, p.oneLiner, p.solution, p.field, ...(p.tags || [])],
+          searchText
+        );
         return matchField && matchTag && matchSearch;
       })
       .sort((a, b) => {
@@ -407,9 +411,14 @@ export default function IRPage({
     currentPage * itemsPerPage
   );
 
+  const isFirstFieldRender = React.useRef(true);
   React.useEffect(() => {
+    if (isFirstFieldRender.current) {
+      isFirstFieldRender.current = false;
+      return;
+    }
     setCurrentPage(1);
-  }, [activeField, activeTag, searchText]);
+  }, [activeField, activeTag]);
 
   // When project changes, sync anonymous state
   React.useEffect(() => {
@@ -932,15 +941,10 @@ export default function IRPage({
     const matchField = activeField === "전체" || r.category === activeField;
     const matchTag = !activeTag || r.tags?.includes(activeTag);
     const matchStatus = ideaStatusFilter === "전체" || r.status === ideaStatusFilter;
-    const q = searchText.toLowerCase();
-    const matchSearch =
-      !searchText ||
-      r.title.toLowerCase().includes(q) ||
-      r.problem.toLowerCase().includes(q) ||
-      r.solutionConcept.toLowerCase().includes(q) ||
-      r.requestedBy?.userName.toLowerCase().includes(q) ||
-      r.category?.toLowerCase().includes(q) ||
-      r.tags?.some((t) => t.toLowerCase().includes(q));
+    const matchSearch = multiMatch(
+      [r.title, r.problem, r.solutionConcept, r.requestedBy?.userName, r.category, ...(r.tags || [])],
+      searchText
+    );
     return matchField && matchTag && matchStatus && matchSearch;
   });
 
@@ -1004,17 +1008,14 @@ export default function IRPage({
           {/* Streamlined Search & Action Bar */}
           <div className="flex flex-col gap-3 mb-6">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              {/* Search Input */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
-                <input
-                  type="text"
-                  placeholder="스타트업명, 아이템, 분야, 태그 검색..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full shadow-inner"
-                />
-              </div>
+              {/* Search Input with Debounce & Shortcut */}
+              <SearchBar
+                value={searchText}
+                onChange={setSearchText}
+                placeholder="스타트업명, 아이템, 분야, 태그 검색..."
+                className="flex-1 max-w-md"
+                inputClassName="rounded-xl py-2 shadow-inner"
+              />
 
               {/* Right Action & Pagination */}
               <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
@@ -1034,9 +1035,29 @@ export default function IRPage({
                     onPageChange={setCurrentPage}
                     totalItems={filtered.length}
                     itemsPerPage={itemsPerPage}
+                    onPageSizeChange={setItemsPerPage}
+                    pageSizeOptions={[6, 12, 24]}
                   />
                 )}
               </div>
+            </div>
+
+            {/* Field Filter Buttons */}
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              <span className="text-[11px] font-semibold text-brand-on-surface-variant">산업 분야:</span>
+              {dynamicFields.map((field) => (
+                <button
+                  key={field}
+                  onClick={() => setActiveField(field)}
+                  className={`text-[11px] px-3 py-1 rounded-xl border transition-all cursor-pointer font-medium ${
+                    activeField === field
+                      ? "bg-brand-primary text-black border-brand-primary font-bold shadow-sm"
+                      : "bg-brand-surface-low border-brand-border text-brand-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  {field}
+                </button>
+              ))}
             </div>
 
             {/* Tag Cloud */}
@@ -1111,7 +1132,9 @@ export default function IRPage({
 
                   <div className="p-5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white/90">{project.teamName}</span>
+                      <span className="text-xs font-bold text-white/90">
+                        <HighlightText text={project.teamName} query={searchText} />
+                      </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
@@ -1131,10 +1154,10 @@ export default function IRPage({
                     </div>
 
                     <h3 className="font-display text-base font-bold text-white mt-2 group-hover:text-brand-primary transition-colors line-clamp-1">
-                      {project.title}
+                      <HighlightText text={project.title} query={searchText} />
                     </h3>
                     <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                      {project.oneLiner}
+                      <HighlightText text={project.oneLiner} query={searchText} />
                     </p>
 
                     {project.tags && project.tags.length > 0 && (
@@ -1302,16 +1325,13 @@ export default function IRPage({
 
             {/* Search + Pagination */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
-                <input
-                  type="text"
-                  placeholder="아이디어명, 분야, 문제점, 솔루션 검색..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-cyan-500 transition-colors w-full shadow-inner"
-                />
-              </div>
+              <SearchBar
+                value={searchText}
+                onChange={setSearchText}
+                placeholder="아이디어명, 분야, 문제점, 솔루션 검색... (/ 단축키)"
+                className="flex-1 max-w-md"
+                inputClassName="rounded-xl py-2 shadow-inner"
+              />
 
               {totalIdeaPages > 1 && (
                 <div className="ml-auto shrink-0">
@@ -1321,6 +1341,8 @@ export default function IRPage({
                     onPageChange={setIdeaPage}
                     totalItems={filteredIdeaRequests.length}
                     itemsPerPage={ideasPerPage}
+                    onPageSizeChange={setIdeasPerPage}
+                    pageSizeOptions={[6, 12, 24]}
                   />
                 </div>
               )}

@@ -21,6 +21,9 @@ import {
 import type { IRProject, TeamBuildingRequest, InvestmentProposal, IdeaRequest } from "../types";
 import ProjectCreateEditModal from "./ProjectCreateEditModal";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
 
@@ -59,7 +62,7 @@ export default function MyStartupView({
   const [ideasLoading, setIdeasLoading] = React.useState(false);
   const [searchIdea, setSearchIdea] = React.useState("");
   const [ideaPage, setIdeaPage] = React.useState(1);
-  const ideaItemsPerPage = 6;
+  const [ideaItemsPerPage, setIdeaItemsPerPage] = React.useState(6);
 
   React.useEffect(() => {
     if (activeSubTab === "ideas") {
@@ -79,31 +82,32 @@ export default function MyStartupView({
   // SubTab 1: Projects Search & Pagination
   const [searchProject, setSearchProject] = React.useState("");
   const [projectPage, setProjectPage] = React.useState(1);
-  const projectItemsPerPage = 6;
+  const [projectItemsPerPage, setProjectItemsPerPage] = React.useState(6);
 
   // SubTab 2: Team Building Search, Filter & Pagination
   const [teamFilter, setTeamFilter] = React.useState<"all" | "received" | "sent" | "pending">("all");
   const [searchTeam, setSearchTeam] = React.useState("");
   const [teamPage, setTeamPage] = React.useState(1);
-  const teamItemsPerPage = 5;
+  const [teamItemsPerPage, setTeamItemsPerPage] = React.useState(5);
 
   // SubTab 3: Proposals Search, Filter & Pagination
   const [proposalFilter, setProposalFilter] = React.useState<"all" | "대기중" | "수락" | "거절">("all");
   const [searchProposal, setSearchProposal] = React.useState("");
   const [proposalPage, setProposalPage] = React.useState(1);
-  const proposalItemsPerPage = 5;
+  const [proposalItemsPerPage, setProposalItemsPerPage] = React.useState(5);
 
   // SubTab 4: Filtered Ideas
   const filteredIdeas = myIdeas.filter((idea) => {
-    if (!searchIdea.trim()) return true;
-    const query = searchIdea.toLowerCase().trim();
-    return (
-      idea.title.toLowerCase().includes(query) ||
-      (idea.problem && idea.problem.toLowerCase().includes(query)) ||
-      idea.category.toLowerCase().includes(query) ||
-      (idea.rewardType && idea.rewardType.toLowerCase().includes(query)) ||
-      (idea.rewardDetail && idea.rewardDetail.toLowerCase().includes(query)) ||
-      (idea.proposals && idea.proposals.some((p) => p.proposerName?.toLowerCase().includes(query) || p.planSummary?.toLowerCase().includes(query)))
+    return multiMatch(
+      [
+        idea.title,
+        idea.problem,
+        idea.category,
+        idea.rewardType,
+        idea.rewardDetail,
+        ...(idea.proposals?.map((p) => `${p.proposerName} ${p.planSummary}`) || []),
+      ],
+      searchIdea
     );
   });
   const ideaTotalPages = Math.ceil(filteredIdeas.length / ideaItemsPerPage);
@@ -135,14 +139,7 @@ export default function MyStartupView({
 
   // Filtered Projects
   const filteredProjects = myProjects.filter((p) => {
-    if (!searchProject.trim()) return true;
-    const query = searchProject.toLowerCase();
-    return (
-      p.teamName.toLowerCase().includes(query) ||
-      p.title.toLowerCase().includes(query) ||
-      p.oneLiner.toLowerCase().includes(query) ||
-      p.field.toLowerCase().includes(query)
-    );
+    return multiMatch([p.teamName, p.title, p.oneLiner, p.field], searchProject);
   });
   const projectTotalPages = Math.ceil(filteredProjects.length / projectItemsPerPage);
   const paginatedProjects = filteredProjects.slice(
@@ -164,14 +161,10 @@ export default function MyStartupView({
         : teamFilter === "sent"
         ? req.type === "sent"
         : req.status === "대기중";
-    const query = searchTeam.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      req.projectName.toLowerCase().includes(query) ||
-      req.role.toLowerCase().includes(query) ||
-      req.message.toLowerCase().includes(query) ||
-      req.fromUser.toLowerCase().includes(query) ||
-      req.toUser.toLowerCase().includes(query);
+    const matchSearch = multiMatch(
+      [req.projectName, req.role, req.message, req.fromUser, req.toUser],
+      searchTeam
+    );
     return matchFilter && matchSearch;
   });
   const teamTotalPages = Math.ceil(filteredTeamRequests.length / teamItemsPerPage);
@@ -187,11 +180,7 @@ export default function MyStartupView({
   // Filtered Received Proposals
   const filteredProposals = receivedProposals.filter((prop) => {
     const matchFilter = proposalFilter === "all" ? true : prop.status === proposalFilter;
-    const query = searchProposal.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      prop.projectName.toLowerCase().includes(query) ||
-      prop.message.toLowerCase().includes(query);
+    const matchSearch = multiMatch([prop.projectName, prop.message], searchProposal);
     return matchFilter && matchSearch;
   });
   const proposalTotalPages = Math.ceil(filteredProposals.length / proposalItemsPerPage);
@@ -328,25 +317,12 @@ export default function MyStartupView({
               </div>
 
               <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-                <div className="relative w-full sm:w-60">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                  <input
-                    type="text"
-                    placeholder="프로젝트명, 한줄소개 검색..."
-                    value={searchProject}
-                    onChange={(e) => setSearchProject(e.target.value)}
-                    className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                  />
-                  {searchProject && (
-                    <button
-                      onClick={() => setSearchProject("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                      title="검색어 지우기"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
+                <SearchBar
+                  value={searchProject}
+                  onChange={setSearchProject}
+                  placeholder="프로젝트명, 한줄소개 검색... (/ 단축키)"
+                  className="w-full sm:w-60"
+                />
 
                 {projectTotalPages > 1 && (
                   <div className="ml-auto">
@@ -356,6 +332,8 @@ export default function MyStartupView({
                       onPageChange={setProjectPage}
                       totalItems={filteredProjects.length}
                       itemsPerPage={projectItemsPerPage}
+                      onPageSizeChange={setProjectItemsPerPage}
+                      pageSizeOptions={[6, 12, 24]}
                     />
                   </div>
                 )}
@@ -526,25 +504,12 @@ export default function MyStartupView({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="프로젝트, 포지션, 지원자 검색..."
-                  value={searchTeam}
-                  onChange={(e) => setSearchTeam(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchTeam && (
-                  <button
-                    onClick={() => setSearchTeam("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchTeam}
+                onChange={setSearchTeam}
+                placeholder="프로젝트, 포지션, 지원자 검색... (/ 단축키)"
+                className="w-full sm:w-60"
+              />
 
               {teamTotalPages > 1 && (
                 <div className="ml-auto">
@@ -554,6 +519,8 @@ export default function MyStartupView({
                     onPageChange={setTeamPage}
                     totalItems={filteredTeamRequests.length}
                     itemsPerPage={teamItemsPerPage}
+                    onPageSizeChange={setTeamItemsPerPage}
+                    pageSizeOptions={[5, 10, 20]}
                   />
                 </div>
               )}
@@ -697,25 +664,12 @@ export default function MyStartupView({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="프로젝트, 제안 메시지 검색..."
-                  value={searchProposal}
-                  onChange={(e) => setSearchProposal(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchProposal && (
-                  <button
-                    onClick={() => setSearchProposal("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchProposal}
+                onChange={setSearchProposal}
+                placeholder="프로젝트, 제안 메시지 검색... (/ 단축키)"
+                className="w-full sm:w-60"
+              />
 
               {proposalTotalPages > 1 && (
                 <div className="ml-auto">
@@ -725,6 +679,8 @@ export default function MyStartupView({
                     onPageChange={setProposalPage}
                     totalItems={filteredProposals.length}
                     itemsPerPage={proposalItemsPerPage}
+                    onPageSizeChange={setProposalItemsPerPage}
+                    pageSizeOptions={[5, 10, 20]}
                   />
                 </div>
               )}
@@ -808,25 +764,12 @@ export default function MyStartupView({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="아이디어 제목, 문제, 기술스택 검색..."
-                  value={searchIdea}
-                  onChange={(e) => setSearchIdea(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-cyan-400 transition-colors"
-                />
-                {searchIdea && (
-                  <button
-                    onClick={() => setSearchIdea("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchIdea}
+                onChange={setSearchIdea}
+                placeholder="아이디어 제목, 문제, 기술스택 검색... (/ 단축키)"
+                className="w-full sm:w-64"
+              />
 
               {ideaTotalPages > 1 && (
                 <div className="ml-auto">
@@ -836,6 +779,8 @@ export default function MyStartupView({
                     onPageChange={setIdeaPage}
                     totalItems={filteredIdeas.length}
                     itemsPerPage={ideaItemsPerPage}
+                    onPageSizeChange={setIdeaItemsPerPage}
+                    pageSizeOptions={[6, 12, 24]}
                   />
                 </div>
               )}

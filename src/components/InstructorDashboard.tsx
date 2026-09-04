@@ -33,6 +33,9 @@ import type {
 } from "../types";
 import { api } from "../lib/api";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 import { useToast } from "./common/Toast";
 import CourseCreateEditModal from "./CourseCreateEditModal";
 
@@ -66,7 +69,7 @@ export default function InstructorDashboard({
   const [courseStatusFilter, setCourseStatusFilter] = React.useState<"all" | "모집중" | "진행중" | "종료">("all");
   const [searchCourse, setSearchCourse] = React.useState("");
   const [coursePage, setCoursePage] = React.useState(1);
-  const courseItemsPerPage = 5;
+  const [courseItemsPerPage, setCourseItemsPerPage] = React.useState(5);
 
   // SubTab 2: Students Real Data, Filter & Pagination
   const [students, setStudents] = React.useState<CourseStudent[]>([]);
@@ -76,13 +79,13 @@ export default function InstructorDashboard({
   >("all");
   const [searchStudent, setSearchStudent] = React.useState("");
   const [studentPage, setStudentPage] = React.useState(1);
-  const studentItemsPerPage = 6;
+  const [studentItemsPerPage, setStudentItemsPerPage] = React.useState(6);
 
   // SubTab 3: Settlement Search, Filter & Pagination
   const [settlementFilter, setSettlementFilter] = React.useState<"all" | "정산완료" | "출금신청" | "대기중">("all");
   const [searchSettlement, setSearchSettlement] = React.useState("");
   const [settlementPage, setSettlementPage] = React.useState(1);
-  const settlementItemsPerPage = 5;
+  const [settlementItemsPerPage, setSettlementItemsPerPage] = React.useState(5);
 
   // Course Creation / Edit Modal State
   const [showCourseModal, setShowCourseModal] = React.useState(false);
@@ -170,12 +173,10 @@ export default function InstructorDashboard({
   // 1. Filtered Courses
   const filteredCourses = myCourses.filter((course) => {
     const matchStatus = courseStatusFilter === "all" ? true : course.status === courseStatusFilter;
-    const query = searchCourse.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      course.title.toLowerCase().includes(query) ||
-      course.category.toLowerCase().includes(query) ||
-      course.description.toLowerCase().includes(query);
+    const matchSearch = multiMatch(
+      [course.title, course.category, course.description],
+      searchCourse
+    );
     return matchStatus && matchSearch;
   });
   const courseTotalPages = Math.ceil(filteredCourses.length / courseItemsPerPage);
@@ -202,11 +203,7 @@ export default function InstructorDashboard({
         ? !s.completed && s.paymentStatus !== "환불"
         : true;
 
-    const query = searchStudent.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      s.name.toLowerCase().includes(query) ||
-      s.email.toLowerCase().includes(query);
+    const matchSearch = multiMatch([s.name, s.email], searchStudent);
     return matchFilter && matchSearch;
   });
   const studentTotalPages = Math.ceil(filteredStudents.length / studentItemsPerPage);
@@ -221,11 +218,7 @@ export default function InstructorDashboard({
   // 3. Filtered Settlements
   const filteredSettlements = localSettlements.filter((record) => {
     const matchStatus = settlementFilter === "all" ? true : record.status === settlementFilter;
-    const query = searchSettlement.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      record.period.toLowerCase().includes(query) ||
-      record.status.toLowerCase().includes(query);
+    const matchSearch = multiMatch([record.period, record.status], searchSettlement);
     return matchStatus && matchSearch;
   });
   const settlementTotalPages = Math.ceil(filteredSettlements.length / settlementItemsPerPage);
@@ -519,25 +512,12 @@ export default function InstructorDashboard({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="강의명, 카테고리 검색..."
-                  value={searchCourse}
-                  onChange={(e) => setSearchCourse(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchCourse && (
-                  <button
-                    onClick={() => setSearchCourse("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchCourse}
+                onChange={setSearchCourse}
+                placeholder="강의명, 카테고리 검색... (/ 단축키)"
+                className="w-full sm:w-60"
+              />
 
               {courseTotalPages > 1 && (
                 <div className="ml-auto">
@@ -547,6 +527,8 @@ export default function InstructorDashboard({
                     onPageChange={setCoursePage}
                     totalItems={filteredCourses.length}
                     itemsPerPage={courseItemsPerPage}
+                    onPageSizeChange={setCourseItemsPerPage}
+                    pageSizeOptions={[5, 10, 20]}
                   />
                 </div>
               )}
@@ -790,25 +772,12 @@ export default function InstructorDashboard({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="수강생 이름, 이메일 검색..."
-                  value={searchStudent}
-                  onChange={(e) => setSearchStudent(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchStudent && (
-                  <button
-                    onClick={() => setSearchStudent("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchStudent}
+                onChange={setSearchStudent}
+                placeholder="수강생 이름, 이메일 검색... (/ 단축키)"
+                className="w-full sm:w-60"
+              />
 
               {studentTotalPages > 1 && (
                 <div className="ml-auto">
@@ -818,6 +787,8 @@ export default function InstructorDashboard({
                     onPageChange={setStudentPage}
                     totalItems={filteredStudents.length}
                     itemsPerPage={studentItemsPerPage}
+                    onPageSizeChange={setStudentItemsPerPage}
+                    pageSizeOptions={[6, 12, 24]}
                   />
                 </div>
               )}
@@ -1076,25 +1047,12 @@ export default function InstructorDashboard({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="정산 기간, 상태 검색..."
-                  value={searchSettlement}
-                  onChange={(e) => setSearchSettlement(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchSettlement && (
-                  <button
-                    onClick={() => setSearchSettlement("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchSettlement}
+                onChange={setSearchSettlement}
+                placeholder="정산 기간, 상태 검색... (/ 단축키)"
+                className="w-full sm:w-60"
+              />
 
               {settlementTotalPages > 1 && (
                 <div className="ml-auto">
@@ -1104,6 +1062,8 @@ export default function InstructorDashboard({
                     onPageChange={setSettlementPage}
                     totalItems={filteredSettlements.length}
                     itemsPerPage={settlementItemsPerPage}
+                    onPageSizeChange={setSettlementItemsPerPage}
+                    pageSizeOptions={[5, 10, 20]}
                   />
                 </div>
               )}

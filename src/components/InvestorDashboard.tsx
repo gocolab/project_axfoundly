@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import type { IRProject, AIRecommendation, InvestmentProposal } from "../types";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 
 interface InvestorDashboardProps {
   bookmarkedProjects: IRProject[];
@@ -39,18 +42,18 @@ export default function InvestorDashboard({
   // Tab 1: Bookmarks Search & Pagination
   const [searchBookmark, setSearchBookmark] = React.useState("");
   const [bookmarkPage, setBookmarkPage] = React.useState(1);
-  const bookmarkItemsPerPage = 6;
+  const [bookmarkItemsPerPage, setBookmarkItemsPerPage] = React.useState(6);
 
   // Tab 2: AI Recommendations Search & Pagination
   const [searchAi, setSearchAi] = React.useState("");
   const [aiPage, setAiPage] = React.useState(1);
-  const aiItemsPerPage = 6;
+  const [aiItemsPerPage, setAiItemsPerPage] = React.useState(6);
 
   // Tab 3: Proposals Search, Filter & Pagination
   const [proposalFilter, setProposalFilter] = React.useState<"all" | "대기중" | "수락" | "거절">("all");
   const [searchProposal, setSearchProposal] = React.useState("");
   const [proposalPage, setProposalPage] = React.useState(1);
-  const proposalItemsPerPage = 5;
+  const [proposalItemsPerPage, setProposalItemsPerPage] = React.useState(5);
 
   const tabs = [
     { id: "bookmarks" as const, label: "관심 스타트업", icon: <Heart size={14} /> },
@@ -60,13 +63,9 @@ export default function InvestorDashboard({
 
   // Filtered Bookmarks
   const filteredBookmarks = bookmarkedProjects.filter((project) => {
-    const query = searchBookmark.toLowerCase().trim();
-    if (!query) return true;
-    return (
-      project.teamName.toLowerCase().includes(query) ||
-      project.oneLiner.toLowerCase().includes(query) ||
-      project.field.toLowerCase().includes(query) ||
-      project.investmentStage.toLowerCase().includes(query)
+    return multiMatch(
+      [project.teamName, project.title, project.oneLiner, project.field, project.investmentStage],
+      searchBookmark
     );
   });
   const bookmarkTotalPages = Math.ceil(filteredBookmarks.length / bookmarkItemsPerPage);
@@ -80,12 +79,9 @@ export default function InvestorDashboard({
 
   // Filtered AI Recommendations
   const filteredAi = recommendations.filter((rec) => {
-    const query = searchAi.toLowerCase().trim();
-    if (!query) return true;
-    return (
-      rec.projectName.toLowerCase().includes(query) ||
-      rec.field.toLowerCase().includes(query) ||
-      rec.matchReasons.some((r) => r.toLowerCase().includes(query))
+    return multiMatch(
+      [rec.projectName, rec.field, ...(rec.matchReasons || [])],
+      searchAi
     );
   });
   const aiTotalPages = Math.ceil(filteredAi.length / aiItemsPerPage);
@@ -100,11 +96,7 @@ export default function InvestorDashboard({
   // Filtered Proposals
   const filteredProposals = proposals.filter((proposal) => {
     const matchFilter = proposalFilter === "all" ? true : proposal.status === proposalFilter;
-    const query = searchProposal.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      proposal.projectName.toLowerCase().includes(query) ||
-      proposal.message.toLowerCase().includes(query);
+    const matchSearch = multiMatch([proposal.projectName, proposal.message], searchProposal);
     return matchFilter && matchSearch;
   });
   const proposalTotalPages = Math.ceil(filteredProposals.length / proposalItemsPerPage);
@@ -168,25 +160,12 @@ export default function InvestorDashboard({
               </div>
 
               <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-                <div className="relative w-full sm:w-60">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                  <input
-                    type="text"
-                    placeholder="스타트업명, 분야, 소개 검색..."
-                    value={searchBookmark}
-                    onChange={(e) => setSearchBookmark(e.target.value)}
-                    className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                  />
-                  {searchBookmark && (
-                    <button
-                      onClick={() => setSearchBookmark("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                      title="검색어 지우기"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
+                <SearchBar
+                  value={searchBookmark}
+                  onChange={setSearchBookmark}
+                  placeholder="스타트업명, 분야, 소개 검색... (/ 단축키)"
+                  className="w-full sm:w-60"
+                />
 
                 {bookmarkTotalPages > 1 && (
                   <div className="ml-auto">
@@ -196,6 +175,8 @@ export default function InvestorDashboard({
                       onPageChange={setBookmarkPage}
                       totalItems={filteredBookmarks.length}
                       itemsPerPage={bookmarkItemsPerPage}
+                      onPageSizeChange={setBookmarkItemsPerPage}
+                      pageSizeOptions={[6, 12, 24]}
                     />
                   </div>
                 )}
@@ -295,25 +276,12 @@ export default function InvestorDashboard({
               </div>
 
               <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-                <div className="relative w-full sm:w-60">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                  <input
-                    type="text"
-                    placeholder="스타트업명, 추천 키워드 검색..."
-                    value={searchAi}
-                    onChange={(e) => setSearchAi(e.target.value)}
-                    className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                  />
-                  {searchAi && (
-                    <button
-                      onClick={() => setSearchAi("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                      title="검색어 지우기"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
+                <SearchBar
+                  value={searchAi}
+                  onChange={setSearchAi}
+                  placeholder="스타트업명, 추천 키워드 검색... (/ 단축키)"
+                  className="w-full sm:w-60"
+                />
 
                 {aiTotalPages > 1 && (
                   <div className="ml-auto">
@@ -323,6 +291,8 @@ export default function InvestorDashboard({
                       onPageChange={setAiPage}
                       totalItems={filteredAi.length}
                       itemsPerPage={aiItemsPerPage}
+                      onPageSizeChange={setAiItemsPerPage}
+                      pageSizeOptions={[6, 12, 24]}
                     />
                   </div>
                 )}
@@ -427,25 +397,12 @@ export default function InvestorDashboard({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="스타트업명, 제안 내용 검색..."
-                  value={searchProposal}
-                  onChange={(e) => setSearchProposal(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchProposal && (
-                  <button
-                    onClick={() => setSearchProposal("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchProposal}
+                onChange={setSearchProposal}
+                placeholder="스타트업명, 제안 내용 검색... (/ 단축키)"
+                className="w-full sm:w-60"
+              />
 
               {proposalTotalPages > 1 && (
                 <div className="ml-auto">
@@ -455,6 +412,8 @@ export default function InvestorDashboard({
                     onPageChange={setProposalPage}
                     totalItems={filteredProposals.length}
                     itemsPerPage={proposalItemsPerPage}
+                    onPageSizeChange={setProposalItemsPerPage}
+                    pageSizeOptions={[5, 10, 20]}
                   />
                 </div>
               )}

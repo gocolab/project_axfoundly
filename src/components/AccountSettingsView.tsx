@@ -16,6 +16,9 @@ import {
 import type { PaymentRecord, UserRole, Notification } from "../types";
 import PaymentReceiptModal from "./PaymentReceiptModal";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 
 interface AccountSettingsViewProps {
   userName: string;
@@ -68,7 +71,7 @@ export default function AccountSettingsView({
   const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<"all" | "완료" | "환불">("all");
   const [searchPayment, setSearchPayment] = React.useState("");
   const [paymentPage, setPaymentPage] = React.useState(1);
-  const paymentItemsPerPage = 6;
+  const [paymentItemsPerPage, setPaymentItemsPerPage] = React.useState(6);
 
   // ── SubTab 2: Profile Edit States ──
   const [isEditing, setIsEditing] = React.useState(false);
@@ -126,12 +129,7 @@ export default function AccountSettingsView({
   // Filtered Payments
   const filteredPayments = payments.filter((p) => {
     const matchStatus = paymentStatusFilter === "all" ? true : p.status === paymentStatusFilter;
-    const query = searchPayment.toLowerCase().trim();
-    const matchSearch =
-      query === "" ||
-      p.courseTitle.toLowerCase().includes(query) ||
-      p.date.toLowerCase().includes(query) ||
-      p.amount.toString().includes(query);
+    const matchSearch = multiMatch([p.courseTitle, p.date, p.amount, p.method], searchPayment);
     return matchStatus && matchSearch;
   });
   const paymentTotalPages = Math.ceil(filteredPayments.length / paymentItemsPerPage);
@@ -219,25 +217,12 @@ export default function AccountSettingsView({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="강의명, 일자, 금액 검색..."
-                  value={searchPayment}
-                  onChange={(e) => setSearchPayment(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchPayment && (
-                  <button
-                    onClick={() => setSearchPayment("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                    title="검색어 지우기"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchPayment}
+                onChange={setSearchPayment}
+                placeholder="강의명, 일자, 금액 검색... (/ 단축키)"
+                className="w-full sm:w-64"
+              />
 
               {paymentTotalPages > 1 && (
                 <div className="shrink-0">
@@ -245,6 +230,10 @@ export default function AccountSettingsView({
                     currentPage={paymentPage}
                     totalPages={paymentTotalPages}
                     onPageChange={setPaymentPage}
+                    totalItems={filteredPayments.length}
+                    itemsPerPage={paymentItemsPerPage}
+                    onPageSizeChange={setPaymentItemsPerPage}
+                    pageSizeOptions={[6, 12, 24]}
                   />
                 </div>
               )}
@@ -302,7 +291,7 @@ export default function AccountSettingsView({
                           {p.date}
                         </span>
                         <span className="flex-1 sm:px-4 font-bold text-white truncate">
-                          {p.courseTitle}
+                          <HighlightText text={p.courseTitle} query={searchPayment} />
                         </span>
                         <span className="w-28 sm:text-right font-mono font-bold text-white">
                           {p.amount.toLocaleString()}원

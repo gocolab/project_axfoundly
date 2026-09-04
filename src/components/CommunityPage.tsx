@@ -16,6 +16,10 @@ import {
 } from "lucide-react";
 import type { BoardPost, BoardType, UserRole, AdminBoard } from "../types";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
+import { useUrlPagination } from "../hooks/useUrlQueryState";
 import CommunityPostDetailModal from "./CommunityPostDetailModal";
 
 interface CommunityPageProps {
@@ -45,9 +49,13 @@ export default function CommunityPage({
 }: CommunityPageProps) {
   const isAdmin = userRoles.includes("admin") || userRoles.includes("manager");
   const [activeBoard, setActiveBoard] = React.useState<string>("전체");
-  const [searchText, setSearchText] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 6;
+  const {
+    page: currentPage,
+    setPage: setCurrentPage,
+    query: searchText,
+    setQuery: setSearchText,
+  } = useUrlPagination({ pageKey: "page", queryKey: "q", defaultPage: 1 });
+  const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
   const [isClosing, setIsClosing] = React.useState(false);
   const [selectedPost, setSelectedPost] = React.useState<BoardPost | null>(() => {
@@ -157,10 +165,7 @@ export default function CommunityPage({
 
   const filtered = uniquePosts.filter((p) => {
     const matchBoard = activeBoard === "전체" || p.boardType === activeBoard;
-    const matchSearch =
-      p.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.author.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.content.toLowerCase().includes(searchText.toLowerCase());
+    const matchSearch = multiMatch([p.title, p.author, p.content], searchText);
     return matchBoard && matchSearch;
   });
 
@@ -170,13 +175,18 @@ export default function CommunityPage({
     currentPage * itemsPerPage
   );
 
+  const isFirstCommunityRender = React.useRef(true);
   React.useEffect(() => {
+    if (isFirstCommunityRender.current) {
+      isFirstCommunityRender.current = false;
+      return;
+    }
     setCurrentPage(1);
     if (selectedPost) {
       setSelectedPost(null);
       setIsClosing(false);
     }
-  }, [activeBoard, searchText]);
+  }, [activeBoard]);
 
   React.useEffect(() => {
     if (selectedPost) {
@@ -258,16 +268,12 @@ export default function CommunityPage({
         </div>
 
         <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-          <div className="relative w-full xl:w-60">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-            <input
-              type="text"
-              placeholder="게시글 검색..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-            />
-          </div>
+          <SearchBar
+            value={searchText}
+            onChange={setSearchText}
+            placeholder="게시글 검색... (/ 단축키)"
+            className="w-full xl:w-64"
+          />
           {totalPages > 1 && (
             <div className="ml-auto">
               <Pagination
@@ -276,6 +282,8 @@ export default function CommunityPage({
                 onPageChange={setCurrentPage}
                 totalItems={filtered.length}
                 itemsPerPage={itemsPerPage}
+                onPageSizeChange={setItemsPerPage}
+                pageSizeOptions={[6, 12, 20]}
               />
             </div>
           )}
@@ -375,7 +383,7 @@ export default function CommunityPage({
                           : "text-white/90 font-medium hover:text-brand-primary"
                       }`}
                     >
-                      {post.title}
+                      <HighlightText text={post.title} query={searchText} />
                     </span>
                     {post.commentCount > 0 && (
                       <span className="text-[9px] text-brand-primary shrink-0 font-mono font-bold">
@@ -396,7 +404,9 @@ export default function CommunityPage({
                       <div className="w-4 h-4 rounded-full bg-brand-surface-high flex items-center justify-center text-[8px] font-bold text-brand-primary shrink-0">
                         {post.author.charAt(0)}
                       </div>
-                      <span className="text-[10px] text-brand-on-surface-variant truncate">{post.author}</span>
+                      <span className="text-[10px] text-brand-on-surface-variant truncate">
+                        <HighlightText text={post.author} query={searchText} />
+                      </span>
                     </div>
                     <div className="w-10 sm:w-12 text-center">
                       <span className="text-[10px] text-brand-on-surface-variant flex items-center justify-center gap-0.5">

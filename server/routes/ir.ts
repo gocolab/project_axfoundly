@@ -531,16 +531,13 @@ router.get("/projects", (req, res) => {
   }
 
   if (search) {
-    const q = search.toLowerCase();
-    projects = projects.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.teamName.toLowerCase().includes(q) ||
-        p.oneLiner.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.field?.toLowerCase().includes(q) ||
-        p.tags?.some((t) => t.toLowerCase().includes(q))
-    );
+    const tokens = search.toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length > 0) {
+      projects = projects.filter((p) => {
+        const text = `${p.title} ${p.teamName} ${p.oneLiner} ${p.description} ${p.field || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
+        return tokens.every((token) => text.includes(token));
+      });
+    }
   }
 
   // 생성일(createdAt 또는 id 기반) 역순 정렬
@@ -550,9 +547,22 @@ router.get("/projects", (req, res) => {
     return timeB - timeA;
   });
 
-  const pageNum = parseInt(page || "1", 10);
-  const limitNum = parseInt(limit || "100", 10);
   const total = projects.length;
+
+  if (!page && !limit) {
+    return res.json({
+      projects,
+      total,
+      page: 1,
+      limit: total,
+      totalPages: 1,
+    });
+  }
+
+  const parsedPage = parseInt(page || "1", 10);
+  const pageNum = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const parsedLimit = parseInt(limit || "50", 10);
+  const limitNum = isNaN(parsedLimit) || parsedLimit < 1 ? 50 : Math.min(parsedLimit, 200);
   const paginated = projects.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
   res.json({
@@ -560,7 +570,7 @@ router.get("/projects", (req, res) => {
     total,
     page: pageNum,
     limit: limitNum,
-    totalPages: Math.ceil(total / limitNum),
+    totalPages: Math.ceil(total / limitNum) || 1,
   });
 });
 

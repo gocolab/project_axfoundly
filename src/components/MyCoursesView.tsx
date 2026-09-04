@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import type { Course } from "../types";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 import { useToast } from "./common/Toast";
 
 interface MyCoursesViewProps {
@@ -29,7 +32,7 @@ export default function MyCoursesView({
   const [filter, setFilter] = React.useState<"all" | "in_progress" | "completed">("all");
   const [searchText, setSearchText] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 6;
+  const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
   const filteredCourses = enrolledCourses.filter((course) => {
     const matchFilter =
@@ -38,12 +41,10 @@ export default function MyCoursesView({
         : filter === "in_progress"
         ? (course.progress || 0) < 100
         : (course.progress || 0) === 100;
-    const matchSearch =
-      searchText.trim() === "" ||
-      course.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      course.category.toLowerCase().includes(searchText.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchText.toLowerCase()) ||
-      (course.instructor && course.instructor.toLowerCase().includes(searchText.toLowerCase()));
+    const matchSearch = multiMatch(
+      [course.title, course.category, course.description, course.instructor],
+      searchText
+    );
     return matchFilter && matchSearch;
   });
 
@@ -116,25 +117,12 @@ export default function MyCoursesView({
         </div>
 
         <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-          <div className="relative w-full sm:w-60">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-            <input
-              type="text"
-              placeholder="강의명, 카테고리 검색..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-            />
-            {searchText && (
-              <button
-                onClick={() => setSearchText("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                title="검색어 지우기"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
+          <SearchBar
+            value={searchText}
+            onChange={setSearchText}
+            placeholder="강의명, 카테고리 검색... (/ 단축키)"
+            className="w-full sm:w-64"
+          />
 
           {totalPages > 1 && (
             <div className="ml-auto">
@@ -144,6 +132,8 @@ export default function MyCoursesView({
                 onPageChange={setCurrentPage}
                 totalItems={filteredCourses.length}
                 itemsPerPage={itemsPerPage}
+                onPageSizeChange={setItemsPerPage}
+                pageSizeOptions={[6, 12, 24]}
               />
             </div>
           )}
@@ -261,7 +251,7 @@ export default function MyCoursesView({
                     </div>
 
                     <h3 className="font-display text-base font-bold text-white leading-snug line-clamp-1 group-hover:text-brand-primary transition-colors">
-                      {course.title}
+                      <HighlightText text={course.title} query={searchText} />
                     </h3>
 
                     <p className="text-xs text-slate-400 line-clamp-2 mt-1.5 mb-3 leading-relaxed">

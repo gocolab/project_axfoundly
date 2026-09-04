@@ -31,14 +31,23 @@ export class AnomalyTracker {
 
   private attachListeners() {
     // 1. 브라우저 콘솔 에러 리스너 (console.error)
-    this.page.on('console', (msg) => {
+    this.page.on('console', async (msg) => {
       if (msg.type() === 'error') {
         const text = msg.text();
+        const loc = msg.location();
+        const currentUrl = this.page.url();
+        try {
+          const args = await Promise.all(msg.args().map((a) => a.jsonValue().catch(() => '')));
+          console.log('[CONSOLE ERROR FULL]:', JSON.stringify(args));
+        } catch {
+          // fallback
+        }
+        const fullText = `[${currentUrl}] ${text} (${loc.url}:${loc.lineNumber}:${loc.columnNumber})`;
         const isAllowed = this.allowedConsolePatterns.some((pattern) =>
           typeof pattern === 'string' ? text.includes(pattern) : pattern.test(text)
         );
         if (!isAllowed) {
-          this.logs.consoleErrors.push(text);
+          this.logs.consoleErrors.push(fullText);
         }
       }
     });

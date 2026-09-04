@@ -11,19 +11,28 @@ export const clearCommonCodesCache = () => {
 };
 
 export function useCommonCodes(groups?: string[]) {
+  // groups 배열 참조 변경으로 인한 무한 렌더링 방지 (원시 문자열 키로 정규화)
+  const groupsKey = groups ? [...groups].sort().join(",") : "";
+  const groupsList = React.useMemo(() => (groupsKey ? groupsKey.split(",") : undefined), [groupsKey]);
+
   const [codes, setCodes] = React.useState<CommonCode[]>(() => {
     if (!globalCodesCache) return [];
-    if (!groups || groups.length === 0) return globalCodesCache;
-    return globalCodesCache.filter((c) => groups.includes(c.groupCode));
+    if (!groupsList || groupsList.length === 0) return globalCodesCache;
+    return globalCodesCache.filter((c) => groupsList.includes(c.groupCode));
   });
   const [loading, setLoading] = React.useState<boolean>(!globalCodesCache);
 
   const fetchCodes = React.useCallback(async (force = false) => {
     if (!force && globalCodesCache) {
-      const filtered = groups && groups.length > 0
-        ? globalCodesCache.filter((c) => groups.includes(c.groupCode))
+      const filtered = groupsList && groupsList.length > 0
+        ? globalCodesCache.filter((c) => groupsList.includes(c.groupCode))
         : globalCodesCache;
-      setCodes(filtered);
+      setCodes((prev) => {
+        if (prev.length === filtered.length && prev.every((item, idx) => item.code === filtered[idx].code)) {
+          return prev;
+        }
+        return filtered;
+      });
       setLoading(false);
       return;
     }
@@ -37,17 +46,22 @@ export function useCommonCodes(groups?: string[]) {
         });
       }
       const allCodes = await pendingFetchPromise;
-      const filtered = groups && groups.length > 0
-        ? allCodes.filter((c) => groups.includes(c.groupCode))
+      const filtered = groupsList && groupsList.length > 0
+        ? allCodes.filter((c) => groupsList.includes(c.groupCode))
         : allCodes;
-      setCodes(filtered);
+      setCodes((prev) => {
+        if (prev.length === filtered.length && prev.every((item, idx) => item.code === filtered[idx].code)) {
+          return prev;
+        }
+        return filtered;
+      });
     } catch (err) {
       console.error("[useCommonCodes] 로드 실패:", err);
     } finally {
       setLoading(false);
       pendingFetchPromise = null;
     }
-  }, [groups]);
+  }, [groupsKey]);
 
   React.useEffect(() => {
     fetchCodes();

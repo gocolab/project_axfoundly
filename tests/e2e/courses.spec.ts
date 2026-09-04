@@ -106,7 +106,8 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
     await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
     await expect(page.locator('header button', { hasText: '김수강생' })).toBeVisible();
 
-    // 2. 강의 상세 이동
+    // 2. 강의 상세 이동 (모의 결제 테스트를 위해 외부 PG 리다이렉트 abort)
+    await page.route('**/api/payments/kakao/ready', route => route.abort());
     await page.locator('header nav').getByRole('button', { name: '교육/강의' }).click();
     const firstCourseCard = page.locator('[data-testid="course-card"]').first();
     await expect(firstCourseCard).toBeVisible();
@@ -122,10 +123,9 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
 
       await enrollBtn.click();
 
-      // 4. 수강 신청 및 결제 모달 확인 및 일반 카드 선택 후 결제하기 클릭
+      // 4. 수강 신청 및 결제 모달 확인 및 결제하기 클릭
       await expect(page.locator('h3', { hasText: '수강 신청 및 결제' })).toBeVisible();
-      await page.getByRole('button', { name: '일반 카드' }).click();
-      await page.getByRole('button', { name: '결제하기' }).click();
+      await page.getByRole('button', { name: '카카오페이로 결제하기' }).click();
 
       // 5. 결제 후 수강완료 상태 배지 확인
       await expect(page.locator('text=수강 신청 완료')).toBeVisible();

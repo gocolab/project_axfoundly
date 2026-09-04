@@ -1,5 +1,8 @@
 import React from "react";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 import {
   BarChart3,
   Users,
@@ -109,6 +112,10 @@ export default function AdminDashboard({
   }, []);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
   const allCourses = courses || pendingCourses || [];
   const [localBoards, setLocalBoards] = React.useState<AdminBoard[]>(boards);
   const [localMembers, setLocalMembers] = React.useState<AdminMember[]>(members);
@@ -1005,38 +1012,37 @@ export default function AdminDashboard({
   ];
 
   // --- Pagination & Filtering ---
-  const itemsPerPage = 8;
-  const lcSearch = searchQuery.toLowerCase();
+  const [itemsPerPage, setItemsPerPage] = React.useState(8);
 
-  const filteredMembers = localMembers.filter(m => m.name.toLowerCase().includes(lcSearch) || m.email.toLowerCase().includes(lcSearch));
+  const filteredMembers = localMembers.filter(m => multiMatch([m.name, m.email, m.role, m.status], searchQuery));
   const totalMemberPages = Math.max(1, Math.ceil(filteredMembers.length / itemsPerPage));
   const paginatedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const filteredCourses = localCourses.filter(c => c.title.toLowerCase().includes(lcSearch) || c.instructor.toLowerCase().includes(lcSearch));
+  const filteredCourses = localCourses.filter(c => multiMatch([c.title, c.instructor, c.category, c.status], searchQuery));
   const totalCoursePages = Math.max(1, Math.ceil(filteredCourses.length / itemsPerPage));
   const paginatedCourses = filteredCourses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const filteredProjects = adminProjects.filter(p => {
-    const matchSearch = p.teamName.toLowerCase().includes(lcSearch) || p.title.toLowerCase().includes(lcSearch) || p.field.toLowerCase().includes(lcSearch);
+    const matchSearch = multiMatch([p.teamName, p.title, p.field], searchQuery);
     const matchSub = irSubFilter === "all" ? true : irSubFilter === "stealth" ? p.isAnonymous : p.isHiring;
     return matchSearch && matchSub;
   });
   const totalProjectPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
   const paginatedProjects = filteredProjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const filteredCategories = adminCategoryInsights.filter(c => c.category.toLowerCase().includes(lcSearch));
+  const filteredCategories = adminCategoryInsights.filter(c => multiMatch([c.category, c.type, c.recentTrend], searchQuery));
   const totalCategoryPages = Math.max(1, Math.ceil(filteredCategories.length / itemsPerPage));
   const paginatedCategories = filteredCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const filteredBoards = localBoards.filter(b => b.name.toLowerCase().includes(lcSearch));
+  const filteredBoards = localBoards.filter(b => multiMatch([b.name, b.template, b.description], searchQuery));
   const totalBoardPages = Math.max(1, Math.ceil(filteredBoards.length / itemsPerPage));
   const paginatedBoards = filteredBoards.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const filteredLogs = sendLogs.filter(l => l.subject.toLowerCase().includes(lcSearch) || l.target.toLowerCase().includes(lcSearch));
+  const filteredLogs = sendLogs.filter(l => multiMatch([l.subject, l.target, l.type, l.status], searchQuery));
   const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
   const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const filteredPayments = payments.filter(p => (p.courseTitle || p.course)?.toLowerCase().includes(lcSearch) || (p.userId || p.user)?.toLowerCase().includes(lcSearch));
+  const filteredPayments = payments.filter(p => multiMatch([p.courseTitle || p.course, p.userId || p.user, p.method, p.status], searchQuery));
   const totalPaymentPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
   const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   // ------------------------------
@@ -1062,7 +1068,12 @@ export default function AdminDashboard({
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setCurrentPage(1);
+                  setSearchQuery("");
+                  setSelectedPanelItem(null);
+                }}
                 className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer text-left ${
                   activeTab === tab.id
                     ? "bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30 shadow-sm"
@@ -1206,16 +1217,12 @@ export default function AdminDashboard({
                     <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 회원의 권한 및 계정 상태를 조회하고 변경합니다.</p>
                   </div>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-                    <div className="relative w-full xl:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                      <input
-                        type="text"
-                        placeholder="회원 검색..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-                      />
-                    </div>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="회원 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
+                    />
                     {totalMemberPages > 1 && (
                       <div className="ml-auto">
                         <Pagination
@@ -1224,6 +1231,8 @@ export default function AdminDashboard({
                           onPageChange={setCurrentPage}
                           totalItems={filteredMembers.length}
                           itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
                         />
                       </div>
                     )}
@@ -1267,8 +1276,14 @@ export default function AdminDashboard({
                               {member.name.charAt(0)}
                             </div>
                             <div className="min-w-0">
-                              <span className="text-xs text-white truncate block font-medium">{member.name}</span>
-                              {selectedPanelItem && <span className="text-[9px] text-brand-on-surface-variant truncate block">{member.email}</span>}
+                              <span className="text-xs text-white truncate block font-medium">
+                                <HighlightText text={member.name} query={searchQuery} />
+                              </span>
+                              {selectedPanelItem && (
+                                <span className="text-[9px] text-brand-on-surface-variant truncate block">
+                                  <HighlightText text={member.email} query={searchQuery} />
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -1380,16 +1395,12 @@ export default function AdminDashboard({
                     </p>
                   </div>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-                    <div className="relative w-full xl:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                      <input
-                        type="text"
-                        placeholder="강의 검색..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-                      />
-                    </div>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="강의 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
+                    />
                     {totalCoursePages > 1 && (
                       <div className="ml-auto">
                         <Pagination
@@ -1398,6 +1409,8 @@ export default function AdminDashboard({
                           onPageChange={setCurrentPage}
                           totalItems={filteredCourses.length}
                           itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
                         />
                       </div>
                     )}
@@ -1482,16 +1495,12 @@ export default function AdminDashboard({
                     </p>
                   </div>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-                    <div className="relative w-full xl:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                      <input
-                        type="text"
-                        placeholder="프로젝트, 팀명, 분야 검색..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-                      />
-                    </div>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="프로젝트, 팀명, 분야 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
+                    />
                     {totalProjectPages > 1 && (
                       <div className="ml-auto">
                         <Pagination
@@ -1500,6 +1509,8 @@ export default function AdminDashboard({
                           onPageChange={setCurrentPage}
                           totalItems={filteredProjects.length}
                           itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
                         />
                       </div>
                     )}
@@ -1607,15 +1618,26 @@ export default function AdminDashboard({
                       플랫폼 내에서 AI와 사용자가 자율 생성한 자연어 카테고리 빈도수를 분석하고 프론트엔드 추천 칩에 매핑합니다.
                     </p>
                   </div>
-                  <div className="relative w-full xl:w-60">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                    <input
-                      type="text"
-                      placeholder="카테고리명 검색..."
+                  <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
+                    <SearchBar
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
+                      onChange={setSearchQuery}
+                      placeholder="카테고리명 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
                     />
+                    {totalCategoryPages > 1 && (
+                      <div className="ml-auto">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalCategoryPages}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredCategories.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1663,27 +1685,26 @@ export default function AdminDashboard({
                     멀티 게시판 관리
                   </h2>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-                    <div className="relative w-full xl:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                      <input
-                        type="text"
-                        placeholder="게시판 검색..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-                      />
-                    </div>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="게시판 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
+                    />
                     {totalBoardPages > 1 && (
                       <div className="ml-auto">
                         <Pagination
                           currentPage={currentPage}
                           totalPages={totalBoardPages}
-                        onPageChange={setCurrentPage}
-                        totalItems={filteredBoards.length}
-                        itemsPerPage={itemsPerPage}
-                      />
-                    </div>
-                  )}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredBoards.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => setShowCreateBoardModal(true)}
                     className="text-xs bg-gradient-to-r from-brand-primary-container to-brand-secondary text-white font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 ml-2"
@@ -1692,9 +1713,8 @@ export default function AdminDashboard({
                     새 게시판 만들기
                   </button>
                 </div>
-              </div>
 
-              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
                   <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
                     <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
                       <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
@@ -1782,31 +1802,29 @@ export default function AdminDashboard({
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
                   <h3 className="text-xs font-bold text-brand-on-surface-variant m-0">발송 로그</h3>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-                    <div className="relative w-full xl:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                      <input
-                        type="text"
-                        placeholder="발송 로그 검색..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-                      />
-                    </div>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="발송 로그 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
+                    />
                     {totalLogPages > 1 && (
                       <div className="ml-auto">
                         <Pagination
                           currentPage={currentPage}
                           totalPages={totalLogPages}
-                        onPageChange={setCurrentPage}
-                        totalItems={filteredLogs.length}
-                        itemsPerPage={itemsPerPage}
-                      />
-                    </div>
-                  )}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredLogs.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
                   <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
                     <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
                       <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
@@ -1891,31 +1909,29 @@ export default function AdminDashboard({
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
                   <h3 className="text-xs font-bold text-brand-on-surface-variant m-0">모의 결제 내역</h3>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
-                    <div className="relative w-full xl:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                      <input
-                        type="text"
-                        placeholder="결제 내역 검색..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors w-full"
-                      />
-                    </div>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="결제 내역 검색... (/ 단축키)"
+                      className="w-full xl:w-60"
+                    />
                     {totalPaymentPages > 1 && (
                       <div className="ml-auto">
                         <Pagination
                           currentPage={currentPage}
                           totalPages={totalPaymentPages}
-                        onPageChange={setCurrentPage}
-                        totalItems={filteredPayments.length}
-                        itemsPerPage={itemsPerPage}
-                      />
-                    </div>
-                  )}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredPayments.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageSizeChange={setItemsPerPage}
+                          pageSizeOptions={[8, 16, 32]}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="relative flex flex-col lg:flex-row gap-5 items-start">
+                <div className="relative flex flex-col lg:flex-row gap-5 items-start">
                   <div className={`min-w-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedPanelItem ? "w-full lg:w-[52%] xl:w-[55%]" : "w-full"}`}>
                     <div className="bg-brand-card border border-brand-border/60 rounded-xl overflow-hidden shadow-md">
                   <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">

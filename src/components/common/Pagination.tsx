@@ -7,6 +7,8 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   totalItems?: number;
   itemsPerPage?: number;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
   className?: string;
 }
 
@@ -16,6 +18,8 @@ export default function Pagination({
   onPageChange,
   totalItems,
   itemsPerPage,
+  onPageSizeChange,
+  pageSizeOptions = [5, 10, 20],
   className = "",
 }: PaginationProps) {
   if (totalPages <= 1) return null;
@@ -45,19 +49,39 @@ export default function Pagination({
 
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${className}`}>
-      {/* Items summary */}
-      {totalItems !== undefined && (
-        <div className="text-xs text-brand-on-surface-variant whitespace-nowrap shrink-0">
-          총 <span className="font-semibold text-white">{totalItems}</span>개 항목 중{" "}
-          <span className="font-semibold text-brand-primary">
-            {Math.min((currentPage - 1) * (itemsPerPage || 6) + 1, totalItems)} -{" "}
-            {Math.min(currentPage * (itemsPerPage || 6), totalItems)}
-          </span>
-        </div>
-      )}
+      {/* Items summary & optional page size selector */}
+      <div className="flex items-center gap-2">
+        {totalItems !== undefined && (
+          <div className="text-xs text-brand-on-surface-variant whitespace-nowrap shrink-0">
+            총 <span className="font-semibold text-white">{totalItems}</span>개 항목 중{" "}
+            <span className="font-semibold text-brand-primary">
+              {Math.min((currentPage - 1) * (itemsPerPage || 6) + 1, totalItems)} -{" "}
+              {Math.min(currentPage * (itemsPerPage || 6), totalItems)}
+            </span>
+          </div>
+        )}
+        {onPageSizeChange && itemsPerPage && (
+          <div className="flex items-center gap-1 text-xs text-brand-on-surface-variant/70">
+            <span className="hidden sm:inline">|</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="bg-brand-surface-low border border-brand-border/40 text-brand-on-surface-variant text-[11px] rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-primary"
+              title="페이지당 항목 수 선택"
+              aria-label="페이지당 항목 수"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt} className="bg-brand-surface-medium text-white">
+                  {opt}개씩
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1" role="navigation" aria-label="페이지 이동">
         {/* First Page */}
         <button
           onClick={() => onPageChange(1)}
@@ -87,6 +111,7 @@ export default function Pagination({
               <button
                 key={idx}
                 onClick={() => onPageChange(page)}
+                aria-current={currentPage === page ? "page" : undefined}
                 className={`min-w-[30px] h-[30px] text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
                   currentPage === page
                     ? "bg-brand-primary-container text-white font-bold shadow-sm shadow-brand-primary/30"

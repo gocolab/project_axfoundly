@@ -73,15 +73,13 @@ router.get("/requests", (req, res) => {
   }
 
   if (search) {
-    const q = search.toLowerCase();
-    requests = requests.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        r.requestedBy?.userName.toLowerCase().includes(q) ||
-        r.category?.toLowerCase().includes(q) ||
-        r.tags?.some((t) => t.toLowerCase().includes(q))
-    );
+    const tokens = search.toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length > 0) {
+      requests = requests.filter((r) => {
+        const text = `${r.title} ${r.description} ${r.requestedBy?.userName || ""} ${r.category || ""} ${(r.tags || []).join(" ")}`.toLowerCase();
+        return tokens.every((token) => text.includes(token));
+      });
+    }
   }
 
   if (sort === "popular") {
@@ -90,8 +88,10 @@ router.get("/requests", (req, res) => {
     requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  const pageNum = parseInt(page || "1", 10);
-  const limitNum = parseInt(limit || "100", 10);
+  const parsedPage = parseInt(page || "1", 10);
+  const pageNum = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const parsedLimit = parseInt(limit || "100", 10);
+  const limitNum = isNaN(parsedLimit) || parsedLimit < 1 ? 100 : Math.min(parsedLimit, 200);
   const total = requests.length;
   const paginated = requests.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
@@ -100,7 +100,7 @@ router.get("/requests", (req, res) => {
     total,
     page: pageNum,
     limit: limitNum,
-    totalPages: Math.ceil(total / limitNum),
+    totalPages: Math.ceil(total / limitNum) || 1,
   });
 });
 
@@ -381,20 +381,31 @@ router.get("/", (req, res) => {
   }
 
   if (search) {
-    const q = search.toLowerCase();
-    courses = courses.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.instructor.toLowerCase().includes(q) ||
-        c.category?.toLowerCase().includes(q) ||
-        c.tags?.some((t) => t.toLowerCase().includes(q))
-    );
+    const tokens = search.toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length > 0) {
+      courses = courses.filter((c) => {
+        const text = `${c.title} ${c.description} ${c.instructor} ${c.category || ""} ${(c.tags || []).join(" ")}`.toLowerCase();
+        return tokens.every((token) => text.includes(token));
+      });
+    }
   }
 
-  const pageNum = parseInt(page || "1", 10);
-  const limitNum = parseInt(limit || "100", 10);
   const total = courses.length;
+
+  if (!page && !limit) {
+    return res.json({
+      courses,
+      total,
+      page: 1,
+      limit: total,
+      totalPages: 1,
+    });
+  }
+
+  const parsedPage = parseInt(page || "1", 10);
+  const pageNum = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const parsedLimit = parseInt(limit || "50", 10);
+  const limitNum = isNaN(parsedLimit) || parsedLimit < 1 ? 50 : Math.min(parsedLimit, 200);
   const paginated = courses.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
   res.json({
@@ -402,7 +413,7 @@ router.get("/", (req, res) => {
     total,
     page: pageNum,
     limit: limitNum,
-    totalPages: Math.ceil(total / limitNum),
+    totalPages: Math.ceil(total / limitNum) || 1,
   });
 });
 
@@ -524,7 +535,8 @@ router.post("/:id/enroll", (req, res) => {
     return res.status(400).json({ error: "이미 종료된 강의는 수강 신청할 수 없습니다." });
   }
 
-  if (targetCourse.schedule?.startDate) {
+  // VOD 코스가 아니면서 모집중이 아닌 경우에만 개강일 마감 검증
+  if (targetCourse.deliveryType !== "vod" && targetCourse.status !== "모집중" && targetCourse.schedule?.startDate) {
     const startTimestamp = new Date(targetCourse.schedule.startDate).getTime();
     const todayStart = new Date().setHours(0, 0, 0, 0);
     if (startTimestamp < todayStart) {

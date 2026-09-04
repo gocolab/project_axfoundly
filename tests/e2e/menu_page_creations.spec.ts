@@ -93,8 +93,10 @@ test.describe('메뉴 페이지별 직접 등록/생성 기능 E2E 검증', () =
     // 5. 등록 버튼 클릭
     await page.getByRole('button', { name: '등록 완료' }).click();
 
-    // 6. 모달 닫힘 및 게시글 등록 확인
+    // 6. 모달 닫힘 및 게시글 등록 확인 (검색창 연동 검증)
     await expect(modalTitle).not.toBeVisible();
-    await expect(page.locator(`text=${uniqueTitle}`)).toBeVisible();
+    const searchInput = page.getByPlaceholder('게시글 검색...');
+    await searchInput.fill(uniqueTitle);
+    await expect(page.locator(`text=${uniqueTitle}`).first()).toBeVisible();
   });
 });

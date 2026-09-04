@@ -169,6 +169,6 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 권한 기반 공지 작성
     await postDeleteBtn.click();
 
     // 7. 게시글이 목록에서 완전히 삭제되었는지 확인
-    await expect(page.locator(`text=${testPostTitle}`)).not.toBeVisible();
+    await expect(page.locator(`text=${testPostTitle}`)).toHaveCount(0);
   });
 });

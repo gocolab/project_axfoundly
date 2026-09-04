@@ -27,6 +27,9 @@ import type {
   NotificationTemplate,
 } from "../types";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
 
@@ -96,7 +99,7 @@ export default function NotificationCenterView({
   const [notificationFilter, setNotificationFilter] = React.useState<string>("all");
   const [searchNotification, setSearchNotification] = React.useState<string>("");
   const [notificationPage, setNotificationPage] = React.useState(1);
-  const notificationItemsPerPage = 6;
+  const [notificationItemsPerPage, setNotificationItemsPerPage] = React.useState(6);
 
   const filteredNotifications = localNotifications.filter((n) => {
     const matchFilter =
@@ -105,10 +108,7 @@ export default function NotificationCenterView({
         : notificationFilter === "unread"
         ? !n.isRead
         : n.type === notificationFilter || n.category === notificationFilter;
-    const matchSearch =
-      searchNotification.trim() === "" ||
-      n.title.toLowerCase().includes(searchNotification.toLowerCase()) ||
-      n.message.toLowerCase().includes(searchNotification.toLowerCase());
+    const matchSearch = multiMatch([n.title, n.message, n.category], searchNotification);
     return matchFilter && matchSearch;
   });
   const notificationTotalPages = Math.ceil(filteredNotifications.length / notificationItemsPerPage);
@@ -304,24 +304,12 @@ export default function NotificationCenterView({
             </div>
 
             <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full sm:w-auto shrink-0">
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={14} />
-                <input
-                  type="text"
-                  placeholder="알림 제목, 내용 검색..."
-                  value={searchNotification}
-                  onChange={(e) => setSearchNotification(e.target.value)}
-                  className="w-full bg-brand-surface-low border border-brand-border rounded-lg py-1.5 pl-9 pr-8 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary transition-colors"
-                />
-                {searchNotification && (
-                  <button
-                    onClick={() => setSearchNotification("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant hover:text-white cursor-pointer"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBar
+                value={searchNotification}
+                onChange={setSearchNotification}
+                placeholder="알림 제목, 내용 검색... (/ 단축키)"
+                className="w-full sm:w-64"
+              />
 
               {notificationTotalPages > 1 && (
                 <div className="ml-auto">
@@ -331,6 +319,8 @@ export default function NotificationCenterView({
                     onPageChange={setNotificationPage}
                     totalItems={filteredNotifications.length}
                     itemsPerPage={notificationItemsPerPage}
+                    onPageSizeChange={setNotificationItemsPerPage}
+                    pageSizeOptions={[6, 12, 20]}
                   />
                 </div>
               )}
@@ -386,7 +376,7 @@ export default function NotificationCenterView({
                               <span className="w-2 h-2 rounded-full bg-brand-primary shrink-0" />
                             )}
                             <h4 className="text-xs font-bold text-white line-clamp-1">
-                              {notif.title}
+                              <HighlightText text={notif.title} query={searchNotification} />
                             </h4>
                           </div>
                           <span className="text-[10px] text-brand-on-surface-variant shrink-0 font-mono">
@@ -394,7 +384,7 @@ export default function NotificationCenterView({
                           </span>
                         </div>
                         <p className="text-[11px] text-brand-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
-                          {notif.message}
+                          <HighlightText text={notif.message} query={searchNotification} />
                         </p>
                       </div>
                     );

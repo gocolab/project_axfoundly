@@ -27,6 +27,10 @@ import {
 } from "lucide-react";
 import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
+import SearchBar from "./common/SearchBar";
+import HighlightText from "./common/HighlightText";
+import { multiMatch } from "../utils/searchUtils";
+import { useUrlPagination } from "../hooks/useUrlQueryState";
 import CourseCreateEditModal from "./CourseCreateEditModal";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
@@ -83,9 +87,13 @@ export default function CoursePage({
   const [activeCategory, setActiveCategory] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
   const [deliveryFilter, setDeliveryFilter] = React.useState<"all" | "online" | "offline" | "hybrid">("all");
-  const [searchText, setSearchText] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 6;
+  const {
+    page: currentPage,
+    setPage: setCurrentPage,
+    query: searchText,
+    setQuery: setSearchText,
+  } = useUrlPagination({ pageKey: "page", queryKey: "q", defaultPage: 1 });
+  const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<"카카오페이">("카카오페이");
@@ -187,11 +195,12 @@ export default function CoursePage({
   };
 
   const dynamicCategories = React.useMemo(() => {
-    const catSet = new Set<string>();
+    const defaultCats = ["전체", "AI 모델링", "비즈니스 기획", "마케팅", "개발", "디자인"];
+    const catSet = new Set<string>(defaultCats);
     courses.forEach((c) => {
       if (c.category) catSet.add(c.category);
     });
-    return ["전체", ...Array.from(catSet)];
+    return Array.from(catSet);
   }, [courses]);
 
   const popularTags = React.useMemo(() => {
@@ -206,17 +215,16 @@ export default function CoursePage({
 
   // Filtered courses
   const filtered = courses.filter((c) => {
-    const matchCategory = activeCategory === "전체" || c.category === activeCategory;
+    const matchCategory =
+      activeCategory === "전체" ||
+      c.category === activeCategory ||
+      (c.category && c.category.startsWith(activeCategory));
     const matchTag = !activeTag || c.tags?.includes(activeTag);
     const matchDelivery = deliveryFilter === "all" || c.deliveryType === deliveryFilter;
-    const q = searchText.toLowerCase();
-    const matchSearch =
-      !searchText ||
-      c.title.toLowerCase().includes(q) ||
-      c.description.toLowerCase().includes(q) ||
-      c.instructor.toLowerCase().includes(q) ||
-      c.category?.toLowerCase().includes(q) ||
-      c.tags?.some((t) => t.toLowerCase().includes(q));
+    const matchSearch = multiMatch(
+      [c.title, c.description, c.instructor, c.category, ...(c.tags || [])],
+      searchText
+    );
     return matchCategory && matchTag && matchDelivery && matchSearch;
   });
 
@@ -227,10 +235,15 @@ export default function CoursePage({
     currentPage * itemsPerPage
   );
 
-  // Reset page when category or search changes
+  // Reset page when category or tag or delivery changes
+  const isFirstCourseRender = React.useRef(true);
   React.useEffect(() => {
+    if (isFirstCourseRender.current) {
+      isFirstCourseRender.current = false;
+      return;
+    }
     setCurrentPage(1);
-  }, [activeCategory, activeTag, deliveryFilter, searchText]);
+  }, [activeCategory, activeTag, deliveryFilter]);
 
   // Calendar generation helpers
   const getDaysInMonth = (year: number, month: number) => {
@@ -247,7 +260,9 @@ export default function CoursePage({
     const instructorProfile = selectedCourse.instructorProfile;
     const isCourseClosed =
       selectedCourse.status === "종료" ||
-      (Boolean(schedule?.startDate) &&
+      selectedCourse.status === "마감" ||
+      (selectedCourse.status !== "모집중" &&
+        Boolean(schedule?.startDate) &&
         new Date(schedule.startDate).getTime() < new Date().setHours(0, 0, 0, 0));
 
     // Build session dates map for calendar
@@ -1144,9 +1159,11 @@ export default function CoursePage({
                   취소
                 </button>
                 <button
-                  onClick={() => {
-                    onEnroll(selectedCourse.id, "카카오페이");
+                  onClick={async () => {
+                    const cId = selectedCourse.id;
+                    setSelectedCourse((prev) => (prev ? { ...prev, isEnrolled: true, progress: 0 } : null));
                     setShowPaymentModal(false);
+                    await onEnroll(cId, "카카오페이");
                   }}
                   className="flex-1 bg-[#FEE500] hover:bg-[#ebd300] text-black font-bold py-2.5 rounded-xl transition-all cursor-pointer text-sm shadow-md"
                 >
@@ -1182,17 +1199,14 @@ export default function CoursePage({
       {/* Streamlined Search & Filter Action Bar */}
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-on-surface-variant" size={15} />
-            <input
-              type="text"
-              placeholder="강의명, 강사명, 분야, 태그 검색..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="bg-brand-surface-low border border-brand-border rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder:text-brand-on-surface-variant/60 focus:outline-none focus:border-brand-primary-container transition-colors w-full shadow-inner"
-            />
-          </div>
+          {/* Search Input with Debounce & Shortcut */}
+          <SearchBar
+            value={searchText}
+            onChange={setSearchText}
+            placeholder="강의명, 강사명, 태그 검색..."
+            className="flex-1 max-w-md"
+            inputClassName="rounded-xl py-2 shadow-inner"
+          />
 
           {/* Right Pagination */}
           <div className="flex items-center gap-3 justify-end shrink-0">
@@ -1203,16 +1217,36 @@ export default function CoursePage({
                 onPageChange={setCurrentPage}
                 totalItems={filtered.length}
                 itemsPerPage={itemsPerPage}
+                onPageSizeChange={setItemsPerPage}
+                pageSizeOptions={[6, 12, 24]}
               />
             )}
           </div>
+        </div>
+
+        {/* Category Filter Buttons */}
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          <span className="text-[11px] font-semibold text-brand-on-surface-variant">분야 / 카테고리:</span>
+          {dynamicCategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`text-[11px] px-3 py-1 rounded-xl border transition-all cursor-pointer font-medium ${
+                activeCategory === cat
+                  ? "bg-brand-primary text-black border-brand-primary font-bold shadow-sm"
+                  : "bg-brand-surface-low border-brand-border text-brand-on-surface-variant hover:text-white"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* Delivery Type Filter Buttons */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
           <span className="text-[11px] font-semibold text-brand-on-surface-variant">강의 진행 방식:</span>
           {[
-            { id: "all" as const, label: "전체" },
+            { id: "all" as const, label: "모든 방식" },
             { id: "online" as const, label: "💻 실시간 온라인" },
             { id: "offline" as const, label: "🏢 현장 오프라인" },
             { id: "hybrid" as const, label: "🔄 온·오프라인 혼합" },
@@ -1326,10 +1360,10 @@ export default function CoursePage({
                       </div>
 
                       <h3 className="font-display text-base font-bold text-white mt-2 group-hover:text-brand-primary transition-colors line-clamp-1 leading-snug">
-                        {course.title}
+                        <HighlightText text={course.title} query={searchText} />
                       </h3>
                       <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                        {course.description}
+                        <HighlightText text={course.description} query={searchText} />
                       </p>
 
                       {course.tags && course.tags.length > 0 && (
@@ -1363,9 +1397,22 @@ export default function CoursePage({
                             {course.instructor.charAt(0)}
                           </div>
                           <span className="text-xs text-slate-300 font-medium">
-                            {course.instructor} 강사
+                            <HighlightText text={course.instructor} query={searchText} /> 강사
                           </span>
                         </div>
+                        {isAuthor && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCourse(course);
+                              setShowEditModal(true);
+                            }}
+                            className="px-2.5 py-1 text-xs rounded-lg bg-brand-primary-container/20 hover:bg-brand-primary-container/40 text-brand-primary border border-brand-primary/40 font-semibold transition-colors cursor-pointer"
+                          >
+                            수정
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

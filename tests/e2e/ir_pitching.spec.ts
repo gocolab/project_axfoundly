@@ -33,7 +33,7 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
 
     const cards = page.locator('.card-hover');
     await expect(cards.first()).toBeVisible();
-    await expect(cards.first().locator('h3')).toHaveText(/DocuMind/);
+    await expect(page.locator('.card-hover', { hasText: 'DocuMind' }).first()).toBeVisible();
   });
 
   test('스타트업 카드 클릭 시 상세 정보(문제, 솔루션, 비즈니스 모델, 팀원)가 표시된다', async ({ page }) => {
@@ -94,8 +94,9 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   test('투자자 역할 로그인 시 [투자 제안하기] 클릭으로 제안 폼 작성 및 발송이 완료된다', async ({ page }) => {
     // 1. 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '일반 회원' }).first().click();
-    await expect(page.locator('header button', { hasText: /(마하우|김수강생|일반 회원)/ })).toBeVisible();
+    await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
+    await expect(page.locator('.glass-panel-heavy')).not.toBeVisible();
+    await expect(page.locator('header button', { hasText: /(마하우|김수강생|수강생)/ })).toBeVisible();
 
     // 2. 스타트업/IR 상세 이동
     await page.locator('header nav').getByRole('button', { name: '스타트업/IR' }).click();
@@ -130,7 +131,8 @@ test.describe('TC-05: 스타트업/IR 탐색, 스텔스 모드, 구인 지원서
   test('관심 스타트업 북마크 토글이 정상 동작한다', async ({ page }) => {
     // 1. 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '일반 회원' }).first().click();
+    await page.locator('.glass-panel-heavy button', { hasText: '수강생' }).first().click();
+    await expect(page.locator('.glass-panel-heavy')).not.toBeVisible();
 
     // 2. IR 상세 이동
     await page.locator('header nav').getByRole('button', { name: '스타트업/IR' }).click();

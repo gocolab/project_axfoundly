@@ -20,9 +20,9 @@ test.describe('프론트엔드 동작 및 이상 여부 판단 통합 테스트'
     await expect(heroTitle).toBeVisible();
 
     // 1-4. 사용자 클릭 인터랙션 및 모달 상태 변화 검증
-    const signupBtn = page.getByRole('button', { name: '무료 가입하기' });
-    await expect(signupBtn).toBeVisible();
-    await signupBtn.click();
+    const loginBtn = page.getByRole('button', { name: '로그인', exact: true });
+    await expect(loginBtn).toBeVisible();
+    await loginBtn.click();
 
     // 모달 헤더 오픈 확인
     const modalHeader = page.locator('.glass-panel-heavy h2');

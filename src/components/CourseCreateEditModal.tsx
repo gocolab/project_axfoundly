@@ -903,7 +903,7 @@ export default function CourseCreateEditModal({
                   type="text"
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="예: [실전] 생성형 AI로 3일 만에 MVP 웹서비스 완성하기"
+                  placeholder="예: [실전] 생성형 AI로 3일 만에 MVP 웹서비스 완성하기 (강의 제목을 입력하세요)"
                   className="w-full bg-brand-surface-low border border-brand-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-brand-primary transition-colors font-medium"
                 />
               </div>
