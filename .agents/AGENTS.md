@@ -102,6 +102,7 @@
 - [ ] 작업 착수 전 `git pull` 완료 (최신 원격 동기화)
 - [ ] `npm run build` — 빌드 성공 (TypeScript 컴파일 포함)
 - [ ] 린트 에러 0건
+- [ ] 브라우저 시스템 알림(`alert`, `confirm`) 호출 0건 확인 및 CSS 알림(`Toast`, `ConfirmDialog`, `AlertDialog`) 표준 준수
 - [ ] 관련 테스트 스위트 통과
 - [ ] 코드와 명세 문서 일치 확인
 - [ ] 결정 변경 시 `99_DECISIONS.md` 업데이트

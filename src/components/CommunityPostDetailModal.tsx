@@ -136,7 +136,14 @@ export default function CommunityPostDetailModal({
   };
 
   const handleDeletePost = async () => {
-    if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+    const confirmed = await toast.confirm({
+      title: "게시글 삭제 확인",
+      message: "정말로 이 게시글을 삭제하시겠습니까?\n삭제된 게시글은 복구할 수 없습니다.",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
     setDeletingPost(true);
     try {
       await api.deletePost(post.id, { author: userName, userRoles });
@@ -152,7 +159,14 @@ export default function CommunityPostDetailModal({
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
+    const confirmed = await toast.confirm({
+      title: "댓글 삭제 확인",
+      message: "댓글을 삭제하시겠습니까?",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
     try {
       await api.deleteComment(post.id, commentId, { author: userName, userRoles });
       setComments((prev) => prev.filter((c) => c.id !== commentId));

@@ -20,6 +20,13 @@ export interface ConfirmOptions {
   type?: "danger" | "primary" | "success";
 }
 
+export interface AlertOptions {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  type?: "info" | "warning" | "error" | "success" | "danger" | "primary";
+}
+
 // ── Toast Context ──
 interface ToastContextValue {
   toasts: Toast[];
@@ -30,6 +37,7 @@ interface ToastContextValue {
   warning: (title: string, message?: string) => void;
   info: (title: string, message?: string) => void;
   confirm: (options: ConfirmOptions | string) => Promise<boolean>;
+  alert: (options: AlertOptions | string) => Promise<void>;
 }
 
 const ToastContext = React.createContext<ToastContextValue | null>(null);
@@ -40,6 +48,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [confirmState, setConfirmState] = React.useState<{
     options: ConfirmOptions;
     resolve: (val: boolean) => void;
+  } | null>(null);
+  const [alertState, setAlertState] = React.useState<{
+    options: AlertOptions;
+    resolve: () => void;
   } | null>(null);
 
   const removeToast = React.useCallback((id: string) => {
@@ -100,9 +112,27 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const alert = React.useCallback((options: AlertOptions | string) => {
+    const normalizedOptions: AlertOptions =
+      typeof options === "string"
+        ? { title: "알림", message: options }
+        : { title: options.title || "알림", ...options };
+
+    return new Promise<void>((resolve) => {
+      setAlertState({ options: normalizedOptions, resolve });
+    });
+  }, []);
+
+  const handleAlertClose = () => {
+    if (alertState) {
+      alertState.resolve();
+      setAlertState(null);
+    }
+  };
+
   const contextValue = React.useMemo(
-    () => ({ toasts, showToast, removeToast, success, error, warning, info, confirm }),
-    [toasts, showToast, removeToast, success, error, warning, info, confirm]
+    () => ({ toasts, showToast, removeToast, success, error, warning, info, confirm, alert }),
+    [toasts, showToast, removeToast, success, error, warning, info, confirm, alert]
   );
 
   return (
@@ -113,6 +143,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         <ConfirmDialog
           options={confirmState.options}
           onClose={handleConfirmClose}
+        />
+      )}
+      {alertState && (
+        <AlertDialog
+          options={alertState.options}
+          onClose={handleAlertClose}
         />
       )}
     </ToastContext.Provider>
@@ -282,4 +318,81 @@ function ConfirmDialog({
     </div>
   );
 }
+
+// ── Custom CSS Alert Dialog (시스템 alert 대체) ──
+function AlertDialog({
+  options,
+  onClose,
+}: {
+  options: AlertOptions;
+  onClose: () => void;
+}) {
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "Enter") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  const isDanger = options.type === "danger" || options.type === "error";
+  const isSuccess = options.type === "success";
+  const isWarning = options.type === "warning";
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-md bg-[#0f172a]/95 border border-white/15 rounded-2xl p-6 shadow-2xl animate-scaleUp space-y-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+              isDanger
+                ? "bg-red-500/20 text-red-400 border-red-500/30"
+                : isSuccess
+                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                : isWarning
+                ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                : "bg-sky-500/20 text-sky-400 border-sky-500/30"
+            }`}
+          >
+            {isDanger ? (
+              <XCircle className="w-5 h-5" />
+            ) : isSuccess ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : isWarning ? (
+              <AlertTriangle className="w-5 h-5" />
+            ) : (
+              <Info className="w-5 h-5" />
+            )}
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">{options.title || "알림"}</h3>
+          </div>
+        </div>
+
+        <p className="text-xs sm:text-sm text-white/80 leading-relaxed whitespace-pre-line">
+          {options.message}
+        </p>
+
+        <div className="flex items-center justify-end pt-2 border-t border-white/10">
+          <button
+            type="button"
+            onClick={onClose}
+            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
+              isDanger
+                ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-red-900/30"
+                : isSuccess
+                ? "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-900/30"
+                : isWarning
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-amber-900/30"
+                : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-indigo-900/30"
+            }`}
+          >
+            {options.confirmText || "확인"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 

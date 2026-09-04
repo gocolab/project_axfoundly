@@ -119,3 +119,23 @@ src/
 
 ### 투자자용 대시보드
 - IR 열람, AI 매칭 추천, 미팅 제안, 포트폴리오 관리
+
+---
+
+## 7. 사용자 피드백 및 알림 시스템 규칙 (하네스 전사 표준)
+
+- **원칙**: 브라우저 내장 회색 팝업창(`window.alert()`, `window.confirm()`, `window.prompt()`) 사용 **전면 금지**
+- **이유**: 브라우저 JS 싱글 스레드 블로킹, 반응형/모바일 UI 부조화, 일관되지 않은 플랫폼 기본 룩앤필 배제 및 글래스모피즘 기반 프리미엄 UX 제공
+- **표준 도구**: `src/components/common/Toast.tsx`의 `useToast()` 훅 활용
+
+| 알림 유형 | 사용 API | 설명 및 규격 |
+|---|---|---|
+| **작업 성공** | `toast.success(title, message?)` | 우상단 슬라이드 인앱 토스트 (녹색 테두리/글로우) |
+| **작업 실패/에러** | `toast.error(title, message?)` | 우상단 슬라이드 인앱 토스트 (적색 테두리/글로우) |
+| **주의/경고** | `toast.warning(title, message?)` | 우상단 슬라이드 인앱 토스트 (황색 테두리/글로우) |
+| **일반 정보** | `toast.info(title, message?)` | 우상단 슬라이드 인앱 토스트 (청색 테두리/글로우) |
+| **양방향 확인/취소** | `await toast.confirm({ title, message, confirmText?, cancelText?, type? })` | CSS 글래스모피즘 모달 다이얼로그 (Promise&lt;boolean&gt; 반환, Esc/Enter 단축키 지원, `danger`/`primary`/`success` 타입 지원) |
+| **단일 확인 모달 알림** | `await toast.alert({ title?, message, confirmText?, type? })` | 시스템 `alert()`를 대체하는 CSS 모달 다이얼로그 (Promise&lt;void&gt; 반환, Esc/Enter 지원, `info`/`warning`/`error`/`success` 타입 지원) |
+
+> ⚠️ **주의**: 컴포넌트나 이벤트 핸들러 작성 시 절대로 `window.confirm`이나 `window.alert`를 직접 호출하지 마십시오. 반드시 `const toast = useToast();`를 통해 상기 표준 API를 호출해야 합니다.
+

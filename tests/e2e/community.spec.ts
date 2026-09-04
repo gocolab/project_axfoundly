@@ -161,12 +161,20 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 권한 기반 공지 작성
     const commentDeleteBtn = commentItem.locator('button[title="댓글 삭제"]');
     await expect(commentDeleteBtn).toBeVisible();
     await commentDeleteBtn.click();
+    // CSS ConfirmDialog 확인 버튼 클릭
+    const confirmCommentDeleteBtn = page.locator('button', { hasText: '삭제' }).last();
+    await expect(confirmCommentDeleteBtn).toBeVisible();
+    await confirmCommentDeleteBtn.click();
     await expect(page.locator('div.p-3\\.5', { hasText: testComment })).not.toBeVisible();
 
     // 6. 게시글 삭제
     const postDeleteBtn = page.getByTitle('게시글 삭제');
     await expect(postDeleteBtn).toBeVisible();
     await postDeleteBtn.click();
+    // CSS ConfirmDialog 확인 버튼 클릭
+    const confirmPostDeleteBtn = page.locator('button', { hasText: '삭제' }).last();
+    await expect(confirmPostDeleteBtn).toBeVisible();
+    await confirmPostDeleteBtn.click();
 
     // 7. 게시글이 목록에서 완전히 삭제되었는지 확인
     await expect(page.locator(`text=${testPostTitle}`)).toHaveCount(0);

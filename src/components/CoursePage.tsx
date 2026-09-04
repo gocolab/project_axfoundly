@@ -111,7 +111,14 @@ export default function CoursePage({
   const [isSubmittingReview, setIsSubmittingReview] = React.useState<boolean>(false);
 
   const handleDeleteCourseItem = async (courseId: string) => {
-    if (!window.confirm("정말 이 강의를 삭제하시겠습니까?\n삭제된 강의는 복구할 수 없습니다.")) return;
+    const confirmed = await toast.confirm({
+      title: "강의 삭제 확인",
+      message: "정말 이 강의를 삭제하시겠습니까?\n삭제된 강의는 복구할 수 없습니다.",
+      confirmText: "삭제",
+      cancelText: "취소",
+      type: "danger",
+    });
+    if (!confirmed) return;
     try {
       if (onDeleteCourse) {
         onDeleteCourse(courseId);
@@ -130,7 +137,14 @@ export default function CoursePage({
   };
 
   const handleCancelEnrollment = async (courseId: string) => {
-    if (!window.confirm("정말 이 강의의 수강을 취소하시겠습니까?\n취소 시 결제된 금액은 전액 환불 처리됩니다.")) return;
+    const confirmed = await toast.confirm({
+      title: "수강 취소 및 환불 확인",
+      message: "정말 이 강의의 수강을 취소하시겠습니까?\n취소 시 결제된 금액은 전액 환불 처리됩니다.",
+      confirmText: "수강 취소",
+      cancelText: "유지",
+      type: "danger",
+    });
+    if (!confirmed) return;
     try {
       const res = await api.cancelCourseEnrollment(courseId, userName);
       if (res?.course) {
