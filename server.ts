@@ -1,5 +1,4 @@
 import "dotenv/config";
-import http from "http";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -30,40 +29,6 @@ const getDirname = () => {
 };
 const __dirname = getDirname();
 
-function listenWithFallback(server: http.Server, initialPort: number, host = "0.0.0.0"): Promise<number> {
-  return new Promise((resolve, reject) => {
-    let port = initialPort;
-    const maxTries = 10;
-    let tries = 0;
-
-    const tryListen = () => {
-      const errorHandler = (err: any) => {
-        if (err.code === "EADDRINUSE") {
-          tries++;
-          if (tries < maxTries) {
-            const nextPort = port + 1;
-            console.warn(`[AI Platform Server] 포트 ${port}가 이미 사용 중입니다. 포트 ${nextPort}로 자동 전환합니다...`);
-            port = nextPort;
-            setTimeout(() => tryListen(), 150);
-          } else {
-            console.error(`[AI Platform Server] 사용 가능한 포트를 찾을 수 없습니다 (${initialPort}~${port}).`);
-            reject(err);
-          }
-        } else {
-          reject(err);
-        }
-      };
-
-      server.once("error", errorHandler);
-      server.listen(port, host, () => {
-        server.removeListener("error", errorHandler);
-        resolve(port);
-      });
-    };
-
-    tryListen();
-  });
-}
 
 async function startServer() {
   // MongoDB 초기화 (연결 + 시드 데이터 로드)
@@ -71,7 +36,6 @@ async function startServer() {
 
   const app = express();
   const PORT = Number(process.env.PORT) || 3010;
-  const httpServer = http.createServer(app);
 
   // CORS 설정
   const allowedOrigins = process.env.ALLOWED_ORIGINS || "*";
@@ -124,12 +88,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       configFile: path.join(__dirname, "vite.config.ts"),
-      server: {
-        middlewareMode: true,
-        hmr: {
-          server: httpServer,
-        },
-      },
+      server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -141,8 +100,9 @@ async function startServer() {
     });
   }
 
-  const boundPort = await listenWithFallback(httpServer, PORT, "0.0.0.0");
-  console.log(`[AI Platform Server] Running on http://localhost:${boundPort}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[AI Platform Server] Running on http://localhost:${PORT}`);
+  });
 }
 
 startServer();
