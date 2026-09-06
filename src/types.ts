@@ -82,6 +82,7 @@ export interface InstructorProfile {
   rating: number;
   reviewCount: number;
   totalStudents: number;
+  externalStudentCount?: number;
   infographic: InstructorInfographic;
   careerHistory: string[];
   courses: {
@@ -94,6 +95,12 @@ export interface InstructorProfile {
     status: "모집중" | "진행중" | "종료";
   }[];
   reviews: Review[];
+  stats?: {
+    totalStudents: number;
+    satisfactionRate: number;
+    totalCourses: number;
+    averageRating: number;
+  };
 }
 
 export interface Course {

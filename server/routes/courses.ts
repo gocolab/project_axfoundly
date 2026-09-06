@@ -3,6 +3,7 @@ import { db } from "../db.js";
 import { classifyContent } from "../services/aiClassifier.js";
 import { notificationService } from "../services/notificationService.js";
 import { generateUniqueCourseId } from "../utils/idGenerator.js";
+import { buildAggregatedInstructorProfile } from "./instructor.js";
 import type { Course, PaymentRecord, Notification, Review, CourseRequest, CourseProposal } from "../../src/types.js";
 
 const router = Router();
@@ -425,6 +426,26 @@ router.get("/:id", (req, res) => {
   if (!course) {
     return res.status(404).json({ error: "Course not found" });
   }
+
+  const instructors = db.get("instructors") || [];
+  const matchedInstructor = instructors.find(
+    (inst) => inst.name === course.instructor || (course.instructorProfile && inst.id === course.instructorProfile.id)
+  );
+
+  if (matchedInstructor) {
+    const aggregated = buildAggregatedInstructorProfile(matchedInstructor);
+    return res.json({
+      course: {
+        ...course,
+        instructorTitle: matchedInstructor.title || course.instructorTitle,
+        instructorProfile: aggregated,
+      },
+    });
+  } else if (course.instructorProfile) {
+    const aggregated = buildAggregatedInstructorProfile(course.instructorProfile);
+    return res.json({ course: { ...course, instructorProfile: aggregated } });
+  }
+
   res.json({ course });
 });
 

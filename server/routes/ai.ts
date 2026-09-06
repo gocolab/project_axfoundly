@@ -426,6 +426,25 @@ router.post("/auto-fill", async (req, res) => {
   "targetRound": "Seed" | "Pre-A",
   "investmentAmount": "3억원 ~ 5억원"
 }`;
+      } else if (type === "instructor_profile") {
+        promptBody += `
+출력 JSON 스키마:
+{
+  "title": "대표 직함 (예: 실전 AI 시스템 아키텍트 & 테크 디렉터)",
+  "bio": "강사의 핵심 전문성과 코칭 철학을 나타내는 3~4문장의 프로필 소개글",
+  "experienceYears": 10,
+  "certifiedBadge": "공식 인증 배지 (예: AI 실전 창업 최고 전문 멘토)",
+  "topKeywords": ["키워드1", "키워드2", "키워드3", "키워드4"],
+  "careerHighlights": [
+    "핵심 실적 1 (예: 전) 글로벌 테크 유니콘 AI PM 리드)",
+    "핵심 실적 2 (예: 다수 AI 프로덕트 런칭 및 시리즈 A 투자 유치 총괄)",
+    "핵심 실적 3 (예: 창업진흥원 및 주요 액셀러레이터 공식 스타트업 멘토)"
+  ],
+  "careerHistory": [
+    "2023~현재: AI 스타트업 엑셀러레이팅 수석 디렉터",
+    "2020~2023: 글로벌 생성형 AI 서비스 PM 리드"
+  ]
+}`;
       }
 
       const response = await withTimeout(
@@ -551,6 +570,50 @@ function generateAutoFillFallback(type: string, input: string, context: any) {
         ? cleanTopic
         : `${cleanTopic} 솔루션`;
     }
+  }
+
+  if (type === "instructor_profile") {
+    const lines = input.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const expMatch = input.match(/(\d+)\s*년/);
+    const expYears = expMatch ? parseInt(expMatch[1], 10) : 10;
+    const titleMatch = input.match(/(대표|엔지니어|아키텍트|디렉터|리드|팀장|멘토|교수|박사|연구원)/);
+    const title = lines[0] && lines[0].length < 30 ? lines[0] : (titleMatch ? `AI 스타트업 실전 ${titleMatch[1]}` : "AI 프로덕트 & 창업 테크 리드");
+
+    const keywords: string[] = [];
+    if (input.includes("LLM") || input.includes("프롬프트")) keywords.push("LLM");
+    if (input.includes("에이전트") || input.includes("Agent")) keywords.push("AI 에이전트");
+    if (input.includes("풀스택") || input.includes("개발")) keywords.push("풀스택");
+    if (input.includes("스타트업") || input.includes("창업")) keywords.push("린스타트업");
+    if (input.includes("로봇") || input.includes("임베디드")) keywords.push("임베디드 AI");
+    if (input.includes("기획") || input.includes("PM")) keywords.push("AI PM");
+    if (keywords.length === 0) keywords.push("AI창업", "실전실습", "프로덕트 코칭");
+
+    const highlights = lines.filter((l) => l.length > 8 && l.length < 60 && !l.includes(":")).slice(0, 3);
+    if (highlights.length < 3) {
+      highlights.push(
+        `현) ${title}`,
+        `다수 생성형 AI 프로덕트 런칭 및 IR 유치 총괄`,
+        `창업진흥원 및 주요 액셀러레이터 공식 스타트업 멘토`
+      );
+    }
+
+    const historyItems = lines.filter((l) => /\d{4}|현재|전\)|현\)/.test(l)).slice(0, 4);
+    if (historyItems.length === 0) {
+      historyItems.push(
+        `2024~현재: ${title}`,
+        `2020~2024: 시니어 AI 프로덕트 엔지니어 & 컨설턴트`
+      );
+    }
+
+    return {
+      title,
+      bio: input.length > 30 ? input.slice(0, 250) : `${title}로서 실무 경험을 바탕으로 실전 창업 코칭을 제공합니다.`,
+      experienceYears: expYears,
+      certifiedBadge: `${keywords[0] || "AI 창업"} 최고 전문 멘토`,
+      topKeywords: keywords.slice(0, 5),
+      careerHighlights: highlights.slice(0, 3),
+      careerHistory: historyItems,
+    };
   }
 
   if (type === "course_request") {

@@ -30,6 +30,8 @@ import {
   Lightbulb,
   Check,
   Copy,
+  Award,
+  ShieldCheck,
 } from "lucide-react";
 import type {
   DashboardStats,
@@ -43,6 +45,7 @@ import type {
   IdeaRequest,
   InvestmentProposal,
   AdminCategoryInsight,
+  InstructorProfile,
 } from "../types";
 import AdminBoardCreateModal from "./AdminBoardCreateModal";
 import AdminStatsTab from "./admin/AdminStatsTab";
@@ -139,9 +142,15 @@ export default function AdminDashboard({
   const { getDisplayName: getCommonDisplayName, getBadgeClass: getCommonBadgeClass } = useCommonCodes(["USER_STATUS", "USER_ROLE"]);
 
   // 회원 상세 서브탭 및 개인 활동 내역 상태
-  const [memberDetailTab, setMemberDetailTab] = React.useState<"info" | "courses" | "startup">("info");
+  const [memberDetailTab, setMemberDetailTab] = React.useState<"info" | "courses" | "startup" | "instructor">("info");
   const [memberActivity, setMemberActivity] = React.useState<MemberActivity | null>(null);
   const [activityLoading, setActivityLoading] = React.useState(false);
+
+  // 회원 강사 프로필 및 공식 인증 배지 상태
+  const [memberInstructorProfile, setMemberInstructorProfile] = React.useState<InstructorProfile | null>(null);
+  const [instructorLoading, setInstructorLoading] = React.useState(false);
+  const [certifiedBadgeInput, setCertifiedBadgeInput] = React.useState("");
+  const [isSavingBadge, setIsSavingBadge] = React.useState(false);
 
   // 회원 직권 강제 탈퇴 모달 상태
   const [showWithdrawModal, setShowWithdrawModal] = React.useState(false);
@@ -199,11 +208,14 @@ export default function AdminDashboard({
     setLocalCourses(courses || pendingCourses || []);
   }, [courses, pendingCourses]);
 
-  // 회원 상세 패널 열람 시 개인 활동 내역 로드
+  // 회원 상세 패널 열람 시 개인 활동 내역 및 강사 프로필 로드
   React.useEffect(() => {
     if (selectedPanelItem?.type === "member") {
       setMemberDetailTab("info");
       setActivityLoading(true);
+      setInstructorLoading(true);
+
+      // 활동 내역 로드
       api.getAdminMemberActivity(selectedPanelItem.data.id)
         .then((res) => {
           setMemberActivity(res.activity);
@@ -213,10 +225,78 @@ export default function AdminDashboard({
           setMemberActivity(null);
         })
         .finally(() => setActivityLoading(false));
+
+      // 강사 프로필 및 공식 인증 배지 로드
+      api.getInstructorProfile(selectedPanelItem.data.name)
+        .then((res) => {
+          if (res && res.profile) {
+            setMemberInstructorProfile(res.profile);
+            setCertifiedBadgeInput(res.profile.infographic?.certifiedBadge || "");
+          } else {
+            setMemberInstructorProfile(null);
+            setCertifiedBadgeInput("");
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load instructor profile", err);
+          setMemberInstructorProfile(null);
+          setCertifiedBadgeInput("");
+        })
+        .finally(() => setInstructorLoading(false));
     } else {
       setMemberActivity(null);
+      setMemberInstructorProfile(null);
+      setCertifiedBadgeInput("");
     }
   }, [selectedPanelItem?.type === "member" ? selectedPanelItem.data.id : null]);
+
+  // 관리자 직권 강사 공식 인증 배지 저장
+  const handleSaveCertifiedBadge = async () => {
+    if (!selectedPanelItem || selectedPanelItem.type !== "member") return;
+    const member = selectedPanelItem.data;
+    setIsSavingBadge(true);
+
+    try {
+      const existingInfographic = memberInstructorProfile?.infographic || {
+        experienceYears: 5,
+        studentCount: 0,
+        rating: 5.0,
+        coreCompetencies: ["비즈니스 모델", "AI 활용 전략"],
+      };
+
+      const res = await api.updateInstructorProfile({
+        name: member.name,
+        title: memberInstructorProfile?.title || `${member.name} 강사`,
+        bio: memberInstructorProfile?.bio || `${member.name} 강사의 프로필 정보입니다.`,
+        infographic: {
+          ...existingInfographic,
+          certifiedBadge: certifiedBadgeInput.trim(),
+        },
+      });
+
+      if (res && res.profile) {
+        setMemberInstructorProfile(res.profile);
+        setCertifiedBadgeInput(res.profile.infographic?.certifiedBadge || "");
+      }
+
+      if (certifiedBadgeInput.trim()) {
+        toast.success(
+          "공식 인증 배지 승인 완료",
+          `'${member.name}' 회원에게 [${certifiedBadgeInput.trim()}] 공식 인증 배지가 부여되었습니다.`
+        );
+      } else {
+        toast.info(
+          "공식 인증 배지 초기화",
+          `'${member.name}' 회원의 공식 인증 배지가 제거되었습니다.`
+        );
+      }
+    } catch (err: any) {
+      console.error("Failed to save certified badge", err);
+      toast.error("저장 실패", err.message || "공식 인증 배지 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSavingBadge(false);
+    }
+  };
 
   // 회원 접근 권한 다중 변경 처리
   const handleMemberRolesChange = (memberId: string, newRoles: UserRole[]) => {
@@ -626,6 +706,23 @@ export default function AdminDashboard({
                     </span>
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setMemberDetailTab("instructor")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    memberDetailTab === "instructor"
+                      ? "bg-brand-primary-container/20 text-brand-primary border border-brand-primary-container/30"
+                      : "text-brand-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  <Award size={13} className={memberInstructorProfile?.infographic?.certifiedBadge ? "text-amber-400" : ""} />
+                  강사 프로필 & 인증
+                  {memberInstructorProfile?.infographic?.certifiedBadge && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                      인증됨
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Subtab 1: 기본 정보 */}
@@ -926,6 +1023,227 @@ export default function AdminDashboard({
                       </div>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Subtab 4: 강사 프로필 & 인증 */}
+              {memberDetailTab === "instructor" && (
+                <div className="space-y-4 animate-fadeIn">
+                  {/* 공식 인증 배지 설정 카드 (관리자 직권) */}
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-brand-surface-low to-brand-surface border border-amber-500/30 shadow-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Award size={15} className="text-amber-400" />
+                        공식 인증 배지 관리 (관리자 직권 승인)
+                      </h5>
+                      {memberInstructorProfile?.infographic?.certifiedBadge ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                          인증 활성
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-brand-on-surface-variant font-medium">
+                          미부여
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-brand-on-surface-variant mb-3 leading-relaxed">
+                      강사의 전문성과 신뢰도를 보증하는 플랫폼 공식 인증 배지입니다. 강의 상세 및 프로필 상단에 골드 엠블럼으로 노출됩니다.
+                    </p>
+
+                    {/* 실시간 배지 미리보기 */}
+                    <div className="mb-3 p-2.5 rounded-lg bg-black/40 border border-white/10">
+                      <div className="text-[10px] text-brand-on-surface-variant/80 mb-1 font-mono">
+                        노출 미리보기 (강의 상세 & 강사 프로필)
+                      </div>
+                      {certifiedBadgeInput.trim() ? (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/25 to-yellow-500/25 border border-amber-400/50 text-amber-300 text-xs font-bold shadow-sm animate-fadeIn">
+                          <ShieldCheck size={13} className="text-amber-300" />
+                          <span>{certifiedBadgeInput.trim()}</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-brand-on-surface-variant/60 italic">
+                          현재 배지가 입력되지 않았습니다 (일반 강사 등급으로 노출)
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 배지 문구 입력 */}
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-semibold text-white">
+                        공식 인증 배지 문구
+                      </label>
+                      <input
+                        type="text"
+                        value={certifiedBadgeInput}
+                        onChange={(e) => setCertifiedBadgeInput(e.target.value)}
+                        placeholder="예: AX FOUNDLY 공식 인증 전문 강사"
+                        className="w-full bg-brand-surface border border-amber-500/40 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                      />
+
+                      {/* 빠른 추천 프리셋 */}
+                      <div>
+                        <span className="text-[10px] text-brand-on-surface-variant mr-1 font-medium">
+                          추천 프리셋:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {[
+                            "AX FOUNDLY 공식 인증 전문 강사",
+                            "실무 경력 10년+ 검증 파트너",
+                            "피지컬 AI 최고 전문 강사",
+                            "투자 유치 누적 50억+ 멘토",
+                            "중기부 공인 스타트업 코치",
+                          ].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setCertifiedBadgeInput(preset)}
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 hover:bg-amber-500/20 text-brand-on-surface-variant hover:text-amber-300 border border-white/10 hover:border-amber-500/30 transition-all cursor-pointer"
+                            >
+                              + {preset}
+                            </button>
+                          ))}
+                          {certifiedBadgeInput && (
+                            <button
+                              type="button"
+                              onClick={() => setCertifiedBadgeInput("")}
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 transition-all cursor-pointer"
+                            >
+                              초기화 (배지 제거)
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 저장 버튼 */}
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleSaveCertifiedBadge}
+                          disabled={isSavingBadge}
+                          className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {isSavingBadge ? (
+                            <>
+                              <RefreshCw size={12} className="animate-spin" />
+                              저장 중...
+                            </>
+                          ) : (
+                            <>
+                              <Check size={13} />
+                              공식 인증 배지 저장
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 강사 프로필 상세 현황 카드 */}
+                  <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/30 space-y-3">
+                    <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <BookOpen size={13} className="text-brand-primary" />
+                      강사 프로필 & 이력 정보 현황
+                    </h5>
+
+                    {instructorLoading ? (
+                      <div className="p-6 text-center text-xs text-brand-on-surface-variant">
+                        <RefreshCw className="animate-spin mx-auto mb-2 text-brand-primary" size={18} />
+                        강사 프로필 정보를 불러오는 중...
+                      </div>
+                    ) : memberInstructorProfile ? (
+                      <div className="space-y-3">
+                        {/* 강사 기본 정보 */}
+                        <div className="p-3 bg-brand-surface rounded-lg border border-brand-border/40">
+                          <p className="text-xs font-bold text-white mb-0.5">
+                            {memberInstructorProfile.title || "대표 직함 미입력"}
+                          </p>
+                          <p className="text-[11px] text-brand-on-surface-variant line-clamp-2">
+                            {memberInstructorProfile.bio || "상세 소개글이 등록되지 않았습니다."}
+                          </p>
+                        </div>
+
+                        {/* 통계 지표 그리드 */}
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="p-2 bg-brand-surface rounded-lg border border-brand-border/40">
+                            <span className="text-[10px] text-brand-on-surface-variant block">누적 수강생</span>
+                            <span className="text-xs font-bold text-brand-primary font-mono">
+                              {(
+                                (memberInstructorProfile.infographic?.studentCount || 0) +
+                                (memberInstructorProfile.externalStudentCount || 0)
+                              ).toLocaleString()}명
+                            </span>
+                            {memberInstructorProfile.externalStudentCount ? (
+                              <span className="text-[9px] text-brand-on-surface-variant block">
+                                (외부 +{memberInstructorProfile.externalStudentCount.toLocaleString()}명)
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="p-2 bg-brand-surface rounded-lg border border-brand-border/40">
+                            <span className="text-[10px] text-brand-on-surface-variant block">평균 만족도</span>
+                            <span className="text-xs font-bold text-amber-400 font-mono">
+                              ★ {memberInstructorProfile.infographic?.rating || 5.0}
+                            </span>
+                          </div>
+                          <div className="p-2 bg-brand-surface rounded-lg border border-brand-border/40">
+                            <span className="text-[10px] text-brand-on-surface-variant block">강의 경력</span>
+                            <span className="text-xs font-bold text-white font-mono">
+                              {memberInstructorProfile.infographic?.experienceYears || 0}년
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 전문 역량 태그 */}
+                        {memberInstructorProfile.infographic?.coreCompetencies && memberInstructorProfile.infographic.coreCompetencies.length > 0 && (
+                          <div>
+                            <span className="text-[10px] text-brand-on-surface-variant font-medium block mb-1">
+                              핵심 전문 역량
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {memberInstructorProfile.infographic.coreCompetencies.map((comp, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary border border-brand-primary/20"
+                                >
+                                  {comp}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 주요 경력 및 타임라인 */}
+                        {memberInstructorProfile.careerHistory && memberInstructorProfile.careerHistory.length > 0 && (
+                          <div>
+                            <span className="text-[10px] text-brand-on-surface-variant font-medium block mb-1.5">
+                              주요 경력 & 연혁 ({memberInstructorProfile.careerHistory.length}건)
+                            </span>
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {memberInstructorProfile.careerHistory.map((ch, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-start gap-2 p-1.5 rounded bg-brand-surface text-[11px] border border-brand-border/30"
+                                >
+                                  <span className="text-[10px] font-mono text-amber-300 font-bold shrink-0 mt-0.5">
+                                    {ch.year}
+                                  </span>
+                                  <span className="text-white leading-tight">{ch.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-lg bg-brand-surface text-center border border-dashed border-brand-border/40">
+                        <p className="text-xs text-brand-on-surface-variant mb-1">
+                          현재 등록된 강사 프로필 및 이력 정보가 없습니다.
+                        </p>
+                        <p className="text-[10px] text-brand-on-surface-variant/70">
+                          상단의 [공식 인증 배지 문구]를 입력하고 저장하면 해당 회원의 강사 기본 레코드가 즉시 활성화됩니다.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

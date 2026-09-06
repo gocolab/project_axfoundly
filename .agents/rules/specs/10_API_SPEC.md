@@ -58,6 +58,8 @@
 | API-INST-02 | POST | `/api/instructor/courses/:courseId/students/:studentId/complete` | 수강생 수료 완료 승인 및 수료증 발급 | Instructor | 강사 | ✅ 완료 |
 | API-INST-03 | POST | `/api/instructor/courses/:courseId/students/:studentId/refund` | 수강생 직권 환불 처리 및 수강 취소 | Instructor | 강사 | ✅ 완료 |
 | API-INST-04 | PATCH | `/api/instructor/courses/:courseId/students/:studentId/progress` | 수강생 진도율 수동 조정 | Instructor | 강사 | ✅ 완료 |
+| API-INST-05 | GET | `/api/instructor/profile` | 강사 프로필 및 자동 집계 통계(수강생/평점/강의) 조회 | Instructor | 회원/관리자 | ✅ 완료 |
+| API-INST-06 | PUT | `/api/instructor/profile` | 강사 프로필, 이력, 공식 인증 배지 저장 및 갱신 | Instructor | 강사/관리자 | ✅ 완료 |
 | API-CODE-01 | GET | `/api/common/codes` | 공통 코드 목록 조회 (그룹 필터링) | Common | 불필요 | ✅ 완료 |
 | API-CODE-02 | GET | `/api/common/groups` | 공통 코드 그룹 목록 조회 | Common | 불필요 | ✅ 완료 |
 | API-CODE-03 | POST | `/api/common/codes` | 신규 공통 코드 등록 | Common | 관리자 | ✅ 완료 |

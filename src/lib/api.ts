@@ -27,6 +27,7 @@ import type {
   NotificationPreference,
   NotificationTemplate,
   NotificationLog,
+  InstructorProfile,
 } from "../types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -604,6 +605,21 @@ export const api = {
     return fetchJson<{ success: boolean; settlement: SettlementRecord }>("/api/instructor/settlements/withdraw", {
       method: "POST",
       body: JSON.stringify({ settlementId }),
+    });
+  },
+
+  getInstructorProfile: async (name?: string, id?: string) => {
+    const params = new URLSearchParams();
+    if (name) params.append("name", name);
+    if (id) params.append("id", id);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return fetchJson<{ profile: InstructorProfile }>(`/api/instructor/profile${query}`);
+  },
+
+  updateInstructorProfile: async (profileData: Partial<InstructorProfile>) => {
+    return fetchJson<{ success: boolean; profile: InstructorProfile }>("/api/instructor/profile", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
     });
   },
 

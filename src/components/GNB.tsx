@@ -12,6 +12,7 @@ import {
   LogOut,
   LayoutDashboard,
   User,
+  ArrowUpRight,
 } from "lucide-react";
 import type { UserRole, Notification } from "../types";
 
@@ -75,6 +76,14 @@ export default function GNB({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // 마이페이지 > 알림센터로 즉시 이동
+  const handleGoToNotifications = () => {
+    window.history.pushState({ page: "dashboard" }, "", "/mypage?tab=notifications");
+    setCurrentPage("dashboard");
+    window.dispatchEvent(new Event("popstate"));
+    setShowNotifications(false);
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-brand-bg/90 backdrop-blur-xl border-b border-brand-border/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -137,7 +146,16 @@ export default function GNB({
                         <span className="font-bold text-sm text-white flex items-center gap-1.5">
                           <Bell size={14} className="text-brand-primary" /> 알림
                         </span>
-                        <span className="text-[10px] text-brand-on-surface-variant font-mono">{unreadCount}개 안 읽음</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-brand-on-surface-variant font-mono">{unreadCount}개 안 읽음</span>
+                          <button
+                            type="button"
+                            onClick={handleGoToNotifications}
+                            className="text-[11px] font-bold text-brand-primary hover:text-brand-primary-light hover:underline cursor-pointer flex items-center gap-0.5 ml-1"
+                          >
+                            전체 보기 &rarr;
+                          </button>
+                        </div>
                       </div>
                       <div className="max-h-72 overflow-y-auto">
                         {notifications.length === 0 ? (
@@ -153,7 +171,11 @@ export default function GNB({
                                   if (n.targetUrl.startsWith("/courses")) setCurrentPage("courses");
                                   else if (n.targetUrl.startsWith("/ir")) setCurrentPage("ir");
                                   else if (n.targetUrl.startsWith("/community")) setCurrentPage("community");
-                                  else if (n.targetUrl.startsWith("/mypage")) setCurrentPage("dashboard");
+                                  else if (n.targetUrl.startsWith("/mypage")) {
+                                    window.history.pushState({ page: "dashboard" }, "", n.targetUrl);
+                                    setCurrentPage("dashboard");
+                                    window.dispatchEvent(new Event("popstate"));
+                                  }
                                 }
                               }}
                               className={`w-full text-left p-3 border-b border-brand-border/20 hover:bg-brand-surface-low transition-colors cursor-pointer ${
@@ -186,15 +208,14 @@ export default function GNB({
                           ))
                         )}
                       </div>
-                      <div className="p-2 border-t border-brand-border/40 bg-brand-surface-low/60 text-center">
+                      <div className="p-2.5 border-t border-brand-border/40 bg-brand-surface-low/80 text-center">
                         <button
-                          onClick={() => {
-                            setCurrentPage("dashboard");
-                            setShowNotifications(false);
-                          }}
-                          className="text-[11px] text-brand-primary hover:text-brand-primary-light font-bold cursor-pointer"
+                          type="button"
+                          onClick={handleGoToNotifications}
+                          className="text-xs text-brand-primary hover:text-brand-primary-light font-bold cursor-pointer flex items-center justify-center gap-1.5 w-full py-1 hover:underline"
                         >
-                          마이페이지에서 전체 알림 & 설정 보기 &rarr;
+                          <span>마이페이지 &gt; 알림센터 전체 보기</span>
+                          <ArrowUpRight size={13} />
                         </button>
                       </div>
                     </div>

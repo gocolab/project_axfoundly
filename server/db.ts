@@ -27,10 +27,12 @@ import type {
   NotificationPreference,
   NotificationTemplate,
   NotificationLog,
+  InstructorProfile,
 } from "../src/types";
 
 export interface DatabaseSchema {
   courses: Course[];
+  instructors: InstructorProfile[];
   courseStudents: CourseStudent[];
   courseRequests: CourseRequest[];
   courseProposals: CourseProposal[];
@@ -95,6 +97,7 @@ function getDocumentPrimaryKey(item: any): string | null {
 function createEmptySchema(): DatabaseSchema {
   return {
     courses: [],
+    instructors: [],
     courseStudents: [],
     courseRequests: [],
     courseProposals: [],
@@ -159,6 +162,7 @@ class Database {
 
       const keys: Array<keyof DatabaseSchema> = [
         "courses",
+        "instructors",
         "courseStudents",
         "courseRequests",
         "courseProposals",
@@ -226,6 +230,14 @@ class Database {
             }
             return true;
           });
+        }
+      }
+
+      if (!this.cache.instructors || this.cache.instructors.length === 0) {
+        const { buildSeedData } = await import("./seeds/seedData.js");
+        this.cache.instructors = buildSeedData().instructors || [];
+        if (this.cache.instructors.length > 0) {
+          await this.syncToMongo("instructors");
         }
       }
 

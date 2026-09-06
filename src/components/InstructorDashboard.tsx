@@ -25,12 +25,25 @@ import {
   CheckSquare,
   Square,
   Copy,
+  UserCheck,
+  Briefcase,
+  ShieldCheck,
+  Award,
+  Trash2,
+  Plus,
+  ExternalLink,
+  Save,
+  Star,
+  ChevronUp,
+  ChevronDown,
+  Lock,
 } from "lucide-react";
 import type {
   Course,
   SettlementRecord,
   CRMMessage,
   CourseStudent,
+  InstructorProfile,
 } from "../types";
 import { api } from "../lib/api";
 import Pagination from "./common/Pagination";
@@ -65,7 +78,7 @@ export default function InstructorDashboard({
 }: InstructorDashboardProps) {
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement">("courses");
+  const [activeTab, setActiveTab] = React.useState<"courses" | "students" | "settlement" | "profile">("courses");
   const [selectedCourseForCRM, setSelectedCourseForCRM] = React.useState<string>(myCourses[0]?.id || "c1");
 
   // SubTab 1: Courses Search, Filter & Pagination
@@ -175,7 +188,167 @@ export default function InstructorDashboard({
     { id: "courses" as const, label: "내 강의 목록", icon: <BookOpen size={14} /> },
     { id: "students" as const, label: "수강생 관리 (수료·환불 권한)", icon: <Users size={14} /> },
     { id: "settlement" as const, label: "정산 관리", icon: <DollarSign size={14} /> },
+    { id: "profile" as const, label: "강사 프로필 & 이력", icon: <UserCheck size={14} /> },
   ];
+
+  // ── SubTab 4: Instructor Profile & Career States ──
+  const [profileData, setProfileData] = React.useState<InstructorProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = React.useState(false);
+  const [isSavingProfile, setIsSavingProfile] = React.useState(false);
+
+  const [profTitle, setProfTitle] = React.useState("");
+  const [profBio, setProfBio] = React.useState("");
+  const [profExpYears, setProfExpYears] = React.useState(10);
+  const [profBadge, setProfBadge] = React.useState("공식 인증 전문 강사");
+  const [profKeywords, setProfKeywords] = React.useState<string[]>([]);
+  const [keywordInput, setKeywordInput] = React.useState("");
+  const [profHighlights, setProfHighlights] = React.useState<string[]>([]);
+  const [highlightInput, setHighlightInput] = React.useState("");
+  const [profHistory, setProfHistory] = React.useState<string[]>([]);
+  const [historyInput, setHistoryInput] = React.useState("");
+  const [profExternalStudents, setProfExternalStudents] = React.useState(0);
+  const [showPreviewModal, setShowPreviewModal] = React.useState(false);
+
+  // AI Bio Assistant Modal State
+  const [showAiBioModal, setShowAiBioModal] = React.useState(false);
+  const [aiRawText, setAiRawText] = React.useState("");
+  const [isAiExtracting, setIsAiExtracting] = React.useState(false);
+
+  const fetchInstructorProfile = React.useCallback(async () => {
+    try {
+      setIsProfileLoading(true);
+      const res = await api.getInstructorProfile(userName || "김소현");
+      if (res.profile) {
+        setProfileData(res.profile);
+        setProfTitle(res.profile.title || "");
+        setProfBio(res.profile.bio || "");
+        setProfExpYears(res.profile.infographic?.experienceYears ?? 10);
+        setProfBadge(res.profile.infographic?.certifiedBadge || "공식 인증 전문 강사");
+        setProfKeywords(res.profile.infographic?.topKeywords || ["AI창업", "실전실습"]);
+        setProfHighlights(res.profile.infographic?.careerHighlights || []);
+        setProfHistory(res.profile.careerHistory || []);
+        setProfExternalStudents(res.profile.externalStudentCount || 0);
+      }
+    } catch (err) {
+      console.error("Failed to load instructor profile:", err);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, [userName]);
+
+  React.useEffect(() => {
+    fetchInstructorProfile();
+  }, [fetchInstructorProfile]);
+
+  const handleSaveInstructorProfile = async () => {
+    if (!profTitle.trim()) {
+      toast.warning("직함 입력 필요", "강사 대표 직함을 입력해주세요.");
+      return;
+    }
+    try {
+      setIsSavingProfile(true);
+      const payload: Partial<InstructorProfile> = {
+        name: userName || "김소현",
+        title: profTitle,
+        bio: profBio,
+        externalStudentCount: Number(profExternalStudents) || 0,
+        infographic: {
+          experienceYears: Number(profExpYears) || 1,
+          totalStudents: (profileData?.totalStudents || 0),
+          satisfactionRate: profileData?.infographic?.satisfactionRate || 98,
+          topKeywords: profKeywords,
+          careerHighlights: profHighlights,
+          certifiedBadge: profBadge,
+        },
+        careerHistory: profHistory,
+      };
+      const res = await api.updateInstructorProfile(payload);
+      if (res.success && res.profile) {
+        setProfileData(res.profile);
+        toast.success("프로필 저장 완료", "강사 프로필 및 이력 정보가 성공적으로 반영되었습니다.");
+      }
+    } catch (err: any) {
+      console.error("Failed to save instructor profile:", err);
+      toast.error("저장 실패", "프로필 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleAddKeyword = () => {
+    const kw = keywordInput.trim().replace(/^#/, "");
+    if (kw && !profKeywords.includes(kw)) {
+      setProfKeywords([...profKeywords, kw]);
+      setKeywordInput("");
+    }
+  };
+
+  const handleRemoveKeyword = (kwToRemove: string) => {
+    setProfKeywords(profKeywords.filter((k) => k !== kwToRemove));
+  };
+
+  const handleAddHighlight = () => {
+    if (highlightInput.trim() && !profHighlights.includes(highlightInput.trim())) {
+      setProfHighlights([...profHighlights, highlightInput.trim()]);
+      setHighlightInput("");
+    }
+  };
+
+  const handleRemoveHighlight = (idx: number) => {
+    setProfHighlights(profHighlights.filter((_, i) => i !== idx));
+  };
+
+  const handleMoveHighlight = (idx: number, direction: "up" | "down") => {
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= profHighlights.length) return;
+    const next = [...profHighlights];
+    const temp = next[idx];
+    next[idx] = next[targetIdx];
+    next[targetIdx] = temp;
+    setProfHighlights(next);
+  };
+
+  const handleAddHistory = () => {
+    if (historyInput.trim()) {
+      setProfHistory([...profHistory, historyInput.trim()]);
+      setHistoryInput("");
+    }
+  };
+
+  const handleRemoveHistory = (idx: number) => {
+    setProfHistory(profHistory.filter((_, i) => i !== idx));
+  };
+
+  const handleRunAiBioExtraction = async () => {
+    if (!aiRawText.trim()) {
+      toast.warning("약력 텍스트 필요", "이력서나 소개글 텍스트를 입력해주세요.");
+      return;
+    }
+    try {
+      setIsAiExtracting(true);
+      const res = await api.aiAutoFill({
+        type: "instructor_profile",
+        prompt: aiRawText,
+      });
+      if (res.result) {
+        const d = res.result;
+        if (d.title) setProfTitle(d.title);
+        if (d.bio) setProfBio(d.bio);
+        if (d.experienceYears) setProfExpYears(d.experienceYears);
+        // certifiedBadge는 관리자 전용 승인/입력 항목이므로 AI가 임의로 덮어쓰지 않음
+        if (Array.isArray(d.topKeywords) && d.topKeywords.length > 0) setProfKeywords(d.topKeywords);
+        if (Array.isArray(d.careerHighlights) && d.careerHighlights.length > 0) setProfHighlights(d.careerHighlights);
+        if (Array.isArray(d.careerHistory) && d.careerHistory.length > 0) setProfHistory(d.careerHistory);
+        setShowAiBioModal(false);
+        toast.success("AI 약력 정리 완료", "강사 프로필 및 인포그래픽 핵심 항목이 자동으로 정리되었습니다.");
+      }
+    } catch (err: any) {
+      console.error("AI bio extraction failed:", err);
+      toast.error("AI 분석 실패", "약력 자동 정리 중 오류가 발생했습니다.");
+    } finally {
+      setIsAiExtracting(false);
+    }
+  };
 
   // ── Load Real Students Data from API ──
   const fetchStudents = React.useCallback(async (courseId?: string) => {
@@ -1144,6 +1317,614 @@ export default function InstructorDashboard({
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── 4. 강사 프로필 & 이력 관리 탭 ──────────────── */}
+      {activeTab === "profile" && (
+        <div className="flex flex-col gap-6 animate-fadeIn">
+          {/* Top Header Card */}
+          <div className="bg-brand-surface-low p-5 rounded-2xl border border-brand-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="p-1.5 rounded-lg bg-brand-primary/20 text-brand-primary">
+                  <Award size={18} />
+                </span>
+                <h3 className="font-display text-base font-bold text-white">
+                  강사 프로필 & 전문성 이력 관리
+                </h3>
+              </div>
+              <p className="text-xs text-brand-on-surface-variant">
+                강의 상세 페이지의 인포그래픽 카드 및 강사 상세 모달에 노출되는 대표 직함, 경력 연차, 핵심 실적을 관리합니다.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAiBioModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-surface border border-brand-primary/40 text-brand-primary hover:bg-brand-primary/10 text-xs font-semibold transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+              >
+                <Sparkles size={14} className="text-brand-primary" />
+                AI 약력 스마트 정리
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveInstructorProfile}
+                disabled={isSavingProfile}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-primary to-brand-secondary text-white text-xs font-bold transition-all cursor-pointer shadow-md hover:opacity-95 disabled:opacity-50 hover:scale-[1.02]"
+              >
+                <Save size={14} />
+                {isSavingProfile ? "저장 중..." : "변경사항 저장"}
+              </button>
+            </div>
+          </div>
+
+          {/* 2-Column Split: Form (Left) vs Live Preview (Right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Form: 7 cols */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Section 1: 기본 직함 & 소개 */}
+              <div className="bg-brand-card p-5 rounded-2xl border border-brand-border/60 shadow-md space-y-4">
+                <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider flex items-center gap-1.5 text-brand-primary">
+                  <UserCheck size={14} /> 기본 프로필 & 대표 직함
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1">
+                      강사 이름
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={userName || "김소현"}
+                      className="w-full bg-brand-surface-high border border-brand-border/50 rounded-xl px-3 py-2 text-xs text-white opacity-80 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-medium text-brand-on-surface-variant">
+                        공식 인증 배지 문구
+                      </label>
+                      <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                        <Lock size={10} /> 관리자 직권 지정 항목
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      disabled
+                      value={profBadge || "공식 인증 전문 강사"}
+                      title="공식 인증 배지는 플랫폼 관리자 대시보드(회원 관리)에서만 승인 및 수정할 수 있습니다."
+                      className="w-full bg-brand-surface-high border border-brand-border/50 rounded-xl px-3 py-2 text-xs text-amber-300 font-semibold opacity-90 cursor-not-allowed shadow-inner"
+                    />
+                    <p className="text-[10px] text-brand-on-surface-variant/70 mt-1">
+                      * 공식 인증 배지는 관리자 검증 후 관리자 대시보드에서만 부여됩니다.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1">
+                    대표 직함 (Title) <span className="text-brand-primary">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={profTitle}
+                    onChange={(e) => setProfTitle(e.target.value)}
+                    placeholder="예: 피지컬 AI 시스템 아키텍트 & 로보틱스 엔지니어"
+                    className="w-full bg-brand-surface border border-brand-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1">
+                    강사 상세 소개 (Bio)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={profBio}
+                    onChange={(e) => setProfBio(e.target.value)}
+                    placeholder="강사의 실무 전문 분야와 수강생들을 위한 교육/코칭 비전을 입력하세요."
+                    className="w-full bg-brand-surface border border-brand-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {/* Section 2: 인포그래픽 지표 & 키워드 */}
+              <div className="bg-brand-card p-5 rounded-2xl border border-brand-border/60 shadow-md space-y-4">
+                <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider flex items-center gap-1.5 text-brand-tertiary">
+                  <Award size={14} /> 인포그래픽 전문성 지표 & 키워드
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1">
+                      실무 경력 연차 (년)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={profExpYears}
+                        onChange={(e) => setProfExpYears(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="w-full bg-brand-surface border border-brand-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors pr-10"
+                      />
+                      <span className="absolute right-3 top-2 text-xs text-brand-on-surface-variant">년+</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1">
+                      외부 실무 누적 수강생 합산 (명)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={profExternalStudents}
+                        onChange={(e) => setProfExternalStudents(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        className="w-full bg-brand-surface border border-brand-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors pr-10"
+                      />
+                      <span className="absolute right-3 top-2 text-xs text-brand-on-surface-variant">명</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keywords Tagging */}
+                <div>
+                  <label className="block text-[11px] font-medium text-brand-on-surface-variant mb-1.5">
+                    전문 분야 키워드 배지 (인포그래픽 하단 태그)
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddKeyword();
+                        }
+                      }}
+                      placeholder="키워드 입력 후 Enter (예: AI 에이전트)"
+                      className="flex-1 bg-brand-surface border border-brand-border rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddKeyword}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer border border-slate-700/60 transition-colors"
+                    >
+                      추가
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profKeywords.map((kw, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-brand-surface-high text-brand-primary border border-brand-border/60"
+                      >
+                        #{kw}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveKeyword(kw)}
+                          className="hover:text-rose-400 cursor-pointer ml-0.5"
+                        >
+                          <X size={11} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  {/* Quick Recommendation Chips */}
+                  <div className="flex items-center gap-1 mt-2 text-[10px] text-brand-on-surface-variant flex-wrap">
+                    <span>추천 태그:</span>
+                    {["AI 에이전트", "LLM", "린스타트업", "하네스", "풀스택", "ROS2", "BM설계", "IR피칭"].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => {
+                          if (!profKeywords.includes(chip)) {
+                            setProfKeywords([...profKeywords, chip]);
+                          }
+                        }}
+                        className="px-2 py-0.5 rounded bg-brand-surface-low hover:bg-brand-surface-high border border-brand-border/40 text-slate-300 hover:text-white cursor-pointer transition-colors"
+                      >
+                        +{chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: 핵심 실적 하이라이트 (3선) */}
+              <div className="bg-brand-card p-5 rounded-2xl border border-brand-border/60 shadow-md space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider flex items-center gap-1.5 text-[#34d399]">
+                    <CheckCircle size={14} /> 인포그래픽 핵심 실적 하이라이트 (체크리스트 3선)
+                  </h4>
+                  <span className="text-[10px] text-brand-on-surface-variant font-mono">
+                    {profHighlights.length}개 등록됨
+                  </span>
+                </div>
+                <p className="text-[11px] text-brand-on-surface-variant leading-relaxed">
+                  강의 상세 페이지 사이드바 인포그래픽 카드에 초록 체크마크와 함께 강조 노출되는 3~4개의 굵직한 실적입니다.
+                </p>
+
+                <div className="space-y-2">
+                  {profHighlights.map((hl, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/40 hover:border-brand-primary/40 transition-colors"
+                    >
+                      <CheckCircle size={13} className="text-[#34d399] flex-shrink-0" />
+                      <span className="flex-1 text-xs text-white leading-relaxed">{hl}</span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveHighlight(idx, "up")}
+                          className="p-1 text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                        >
+                          <ChevronUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === profHighlights.length - 1}
+                          onClick={() => handleMoveHighlight(idx, "down")}
+                          className="p-1 text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                        >
+                          <ChevronDown size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveHighlight(idx)}
+                          className="p-1 text-slate-400 hover:text-rose-400 cursor-pointer ml-1"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={highlightInput}
+                    onChange={(e) => setHighlightInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddHighlight();
+                      }
+                    }}
+                    placeholder="새 핵심 실적 입력 (예: 전) 글로벌 테크 유니콘 AI PM 리드)"
+                    className="flex-1 bg-brand-surface border border-brand-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddHighlight}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer border border-slate-700/60 transition-colors flex items-center gap-1"
+                  >
+                    <Plus size={13} /> 추가
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 4: 주요 경력 및 연혁 (Career History) */}
+              <div className="bg-brand-card p-5 rounded-2xl border border-brand-border/60 shadow-md space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider flex items-center gap-1.5 text-brand-secondary">
+                    <Briefcase size={14} /> 주요 경력 및 연혁 (상세 모달 타임라인)
+                  </h4>
+                  <span className="text-[10px] text-brand-on-surface-variant font-mono">
+                    {profHistory.length}개 등록됨
+                  </span>
+                </div>
+                <p className="text-[11px] text-brand-on-surface-variant leading-relaxed">
+                  수강생이 강사 카드를 클릭했을 때 열리는 상세 모달창에 타임라인 형태로 표시되는 연도별 약력입니다.
+                </p>
+
+                <div className="space-y-2">
+                  {profHistory.map((hist, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 p-2.5 bg-brand-surface-low rounded-xl border border-brand-border/40 hover:border-brand-secondary/40 transition-colors"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-secondary flex-shrink-0" />
+                      <span className="flex-1 text-xs text-slate-300 leading-relaxed">{hist}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveHistory(idx)}
+                        className="p-1 text-slate-400 hover:text-rose-400 cursor-pointer flex-shrink-0"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={historyInput}
+                    onChange={(e) => setHistoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddHistory();
+                      }
+                    }}
+                    placeholder="예: 2023~현재: AX Foundly 로보틱스 & AI 시스템 총괄"
+                    className="flex-1 bg-brand-surface border border-brand-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddHistory}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer border border-slate-700/60 transition-colors flex items-center gap-1"
+                  >
+                    <Plus size={13} /> 추가
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Live Preview: 5 cols */}
+            <div className="lg:col-span-5 sticky top-24 space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-mono text-brand-primary uppercase font-bold flex items-center gap-1">
+                  <Eye size={13} /> 실시간 라이브 미리보기
+                </span>
+                <span className="text-[10px] text-brand-on-surface-variant">강의 상세 화면 연동 1:1</span>
+              </div>
+
+              {/* Exact side card preview matching CourseDetailView */}
+              <div className="glass-panel rounded-2xl overflow-hidden shadow-xl border border-brand-border/60">
+                {/* Header Banner */}
+                <div className="h-20 bg-gradient-to-r from-brand-primary-container via-brand-surface-high to-brand-primary/20 relative p-3">
+                  <div className="absolute top-2.5 left-3 flex gap-2">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg backdrop-blur-md border bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]">
+                      강사 전문성
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center gap-1">
+                      <ShieldCheck size={10} /> {profBadge || "공식 인증 전문 강사"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  {/* Instructor profile snippet */}
+                  <div className="flex items-center gap-3 p-2 bg-[#0b1329] rounded-xl border border-slate-800/80 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary-container to-brand-secondary flex items-center justify-center text-white font-bold text-lg shadow">
+                      {(userName || "김소현").charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-1">
+                        {userName || "김소현"}
+                        <ExternalLink size={11} className="text-slate-400" />
+                      </h4>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {profTitle || "대표 직함을 입력하세요"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Infographic Metric Grid */}
+                  <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                    <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
+                      <p className="text-[9px] font-mono text-slate-400">경력</p>
+                      <p className="text-sm font-bold text-white font-display mt-0.5">
+                        {profExpYears}년+
+                      </p>
+                    </div>
+                    <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
+                      <p className="text-[9px] font-mono text-slate-400">누적 수강생</p>
+                      <p className="text-sm font-bold text-brand-tertiary font-display mt-0.5">
+                        {((profileData?.totalStudents || 0) + Number(profExternalStudents || 0)).toLocaleString()}+
+                      </p>
+                    </div>
+                    <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
+                      <p className="text-[9px] font-mono text-slate-400">만족도</p>
+                      <p className="text-sm font-bold text-[#34d399] font-display mt-0.5">
+                        {profileData?.infographic?.satisfactionRate || 98}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Infographic Highlights */}
+                  <div className="space-y-2 text-[11px] text-slate-300 mb-4">
+                    {(profHighlights.length > 0 ? profHighlights : [
+                      "전) 글로벌 테크 유니콘 AI PM 리드",
+                      "다수 생성형 AI 프로덕트 런칭 및 IR 유치 총괄",
+                      "창업진흥원 및 주요 VC 공식 멘토",
+                    ]).map((highlight, hIdx) => (
+                      <div key={hIdx} className="flex items-start gap-1.5">
+                        <CheckCircle size={12} className="text-[#34d399] flex-shrink-0 mt-0.5" />
+                        <span>{highlight}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Keyword Badges */}
+                  <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-800/80">
+                    {(profKeywords.length > 0 ? profKeywords : ["AI 프로덕트", "실전 린스타트업", "1:1 밀착 코칭", "IR 피칭"]).map((kw, kwIdx) => (
+                      <span
+                        key={kwIdx}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-[#0b1329] text-slate-300 border border-slate-800/80"
+                      >
+                        #{kw}
+                      </span>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPreviewModal(true)}
+                    className="w-full mt-4 text-xs font-semibold py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors cursor-pointer border border-slate-700/60 flex items-center justify-center gap-1"
+                  >
+                    진행한 모든 강의 & 전체 리뷰 보기 →
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom Information Tip Card */}
+              <div className="p-4 rounded-xl bg-brand-surface-low border border-brand-border/40 text-xs text-brand-on-surface-variant space-y-1.5">
+                <div className="flex items-center gap-1.5 text-white font-bold">
+                  <ShieldCheck size={14} className="text-brand-primary" />
+                  실시간 연동 안내
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  여기서 저장하신 프로필 정보는 강사님이 개설하신 모든 강의 상세 페이지 사이드바 및 모달에 실시간으로 즉시 반영됩니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── Modal: Preview Modal for Instructor Detail ──────────────── */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-2xl w-full shadow-2xl max-h-[85vh] overflow-y-auto border border-brand-border">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-primary-container to-brand-tertiary flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  {(userName || "김소현").charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
+                    {userName || "김소현"}
+                    <span className="text-xs px-2 py-0.5 rounded bg-brand-primary/20 text-brand-primary font-semibold">
+                      대표 강사
+                    </span>
+                  </h3>
+                  <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                    {profTitle || "대표 직함"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="p-1 rounded-lg hover:bg-brand-surface-high text-brand-on-surface-variant hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Bio */}
+            <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/40 mb-5">
+              <h4 className="text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+                <Award size={14} className="text-brand-primary" /> 강사 소개
+              </h4>
+              <p className="text-xs text-brand-on-surface-variant leading-relaxed">
+                {profBio || `${userName || "김소현"} 강사는 실무 경험을 바탕으로 실전 창업 코칭을 제공합니다.`}
+              </p>
+            </div>
+
+            {/* Career History */}
+            {profHistory.length > 0 && (
+              <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/40 mb-5">
+                <h4 className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5">
+                  <Briefcase size={14} className="text-brand-secondary" />
+                  주요 경력 및 연혁
+                </h4>
+                <div className="space-y-2">
+                  {profHistory.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-secondary flex-shrink-0 mt-1.5" />
+                      <span className="text-brand-on-surface-variant leading-relaxed">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Course History Preview */}
+            <div className="mb-5">
+              <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-1.5">
+                <BookOpen size={14} className="text-brand-tertiary" />
+                개설 및 진행 강의 이력 ({myCourses.length}건)
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {myCourses.map((c) => (
+                  <div key={c.id} className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/40 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <span className="text-[9px] font-mono text-brand-on-surface-variant">{c.category}</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded badge-recruiting">{c.status}</span>
+                      </div>
+                      <p className="text-xs font-bold text-white mt-1 line-clamp-1">{c.title}</p>
+                    </div>
+                    <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-brand-border/20 text-[10px] text-brand-on-surface-variant">
+                      <span>{c.schedule?.startDate || "2026.03~"}</span>
+                      <div className="flex items-center gap-1">
+                        <Star size={10} className="star-filled" />
+                        <span className="text-white font-bold">{c.rating || 5.0}</span>
+                        <span>({c.studentCount || 0}명)</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer border border-slate-700/60 transition-colors"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── Modal: AI 약력 스마트 정리 도우미 ──────────────── */}
+      {showAiBioModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-surface/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="glass-panel-heavy rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-brand-border">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                <Sparkles size={16} className="text-brand-primary" />
+                AI 약력 스마트 정리 도우미
+              </h3>
+              <button
+                onClick={() => setShowAiBioModal(false)}
+                className="text-brand-on-surface-variant hover:text-white cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-brand-on-surface-variant mb-3 leading-relaxed">
+              기존에 작성해 두신 이력서, 링크드인 소개, 포트폴리오 텍스트를 자유롭게 붙여넣으세요. AI가 직함, 연차, 핵심 실적 3선, 전문 키워드를 자동으로 추출하여 폼에 채워드립니다.
+            </p>
+
+            <textarea
+              rows={6}
+              value={aiRawText}
+              onChange={(e) => setAiRawText(e.target.value)}
+              placeholder={`[예시 붙여넣기]\n네이버/카카오에서 10년간 풀스택 소프트웨어 아키텍트로 근무했습니다. 다수의 대규모 RAG 및 LLM 에이전트 시스템을 설계하고 운영했으며, 현재 스타트업 테크 리드로 창업팀 멘토링을 진행 중입니다.`}
+              className="w-full bg-brand-surface border border-brand-border rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors leading-relaxed mb-4"
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAiBioModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-brand-border text-slate-300 hover:bg-brand-surface-high text-xs font-semibold cursor-pointer transition-colors"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleRunAiBioExtraction}
+                disabled={isAiExtracting}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-primary to-brand-secondary text-white text-xs font-bold cursor-pointer transition-all shadow-md hover:opacity-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Sparkles size={13} />
+                {isAiExtracting ? "AI 분석 및 정리 중..." : "AI 스마트 채우기"}
+              </button>
+            </div>
           </div>
         </div>
       )}

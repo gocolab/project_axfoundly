@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Share2,
   Copy,
+  Briefcase,
 } from "lucide-react";
 import type { Course, UserRole } from "../../types";
 import { shareContent } from "../../utils/shareUtils";
@@ -867,7 +868,7 @@ export default function CourseDetailView({
                   강사 전문성
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center gap-1">
-                  <ShieldCheck size={10} /> 공식 인증
+                  <ShieldCheck size={10} /> {instructorProfile?.infographic?.certifiedBadge || "공식 인증 전문 강사"}
                 </span>
               </div>
             </div>
@@ -897,30 +898,33 @@ export default function CourseDetailView({
                 <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
                   <p className="text-[9px] font-mono text-slate-400">경력</p>
                   <p className="text-sm font-bold text-white font-display mt-0.5">
-                    {instructorProfile?.infographic.experienceYears || 10}년+
+                    {instructorProfile?.infographic?.experienceYears ?? 10}년+
                   </p>
                 </div>
                 <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
                   <p className="text-[9px] font-mono text-slate-400">누적 수강생</p>
                   <p className="text-sm font-bold text-brand-tertiary font-display mt-0.5">
-                    {(instructorProfile?.totalStudents || 3400).toLocaleString()}+
+                    {(instructorProfile?.totalStudents || instructorProfile?.infographic?.totalStudents || course.studentCount || 0).toLocaleString()}+
                   </p>
                 </div>
                 <div className="p-2.5 bg-[#0b1329] rounded-lg border border-slate-800/80">
                   <p className="text-[9px] font-mono text-slate-400">만족도</p>
                   <p className="text-sm font-bold text-[#34d399] font-display mt-0.5">
-                    {instructorProfile?.infographic.satisfactionRate || 98}%
+                    {instructorProfile?.infographic?.satisfactionRate ?? 98}%
                   </p>
                 </div>
               </div>
 
               {/* Infographic Highlights */}
               <div className="space-y-2 text-[11px] text-slate-300 mb-4">
-                {(instructorProfile?.infographic.careerHighlights || [
-                  "전) 글로벌 테크 유니콘 AI PM 리드",
-                  "다수 생성형 AI 프로덕트 런칭 및 IR 유치 총괄",
-                  "창업진흥원 및 주요 VC 공식 멘토",
-                ]).map((highlight, hIdx) => (
+                {(instructorProfile?.infographic?.careerHighlights?.length
+                  ? instructorProfile.infographic.careerHighlights
+                  : [
+                      "전) 글로벌 테크 유니콘 AI PM 리드",
+                      "다수 생성형 AI 프로덕트 런칭 및 IR 유치 총괄",
+                      "창업진흥원 및 주요 VC 공식 멘토",
+                    ]
+                ).map((highlight, hIdx) => (
                   <div key={hIdx} className="flex items-start gap-1.5">
                     <CheckCircle size={12} className="text-[#34d399] flex-shrink-0 mt-0.5" />
                     <span>{highlight}</span>
@@ -930,12 +934,10 @@ export default function CourseDetailView({
 
               {/* Keyword Badges */}
               <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-800/80">
-                {(instructorProfile?.infographic.topKeywords || [
-                  "AI 프로덕트",
-                  "실전 린스타트업",
-                  "1:1 밀착 코칭",
-                  "IR 피칭",
-                ]).map((kw, kwIdx) => (
+                {(instructorProfile?.infographic?.topKeywords?.length
+                  ? instructorProfile.infographic.topKeywords
+                  : course.tags?.slice(0, 4) || ["AI 프로덕트", "실전 린스타트업", "1:1 밀착 코칭", "IR 피칭"]
+                ).map((kw, kwIdx) => (
                   <span
                     key={kwIdx}
                     className="text-[10px] px-2 py-0.5 rounded-md bg-[#0b1329] text-slate-300 border border-slate-800/80"
@@ -996,6 +998,24 @@ export default function CourseDetailView({
               </p>
             </div>
 
+            {/* Career History Timeline */}
+            {instructorProfile?.careerHistory && instructorProfile.careerHistory.length > 0 && (
+              <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/40 mb-5">
+                <h4 className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5">
+                  <Briefcase size={14} className="text-brand-secondary" />
+                  주요 경력 및 연혁
+                </h4>
+                <div className="space-y-2">
+                  {instructorProfile.careerHistory.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-secondary flex-shrink-0 mt-1.5" />
+                      <span className="text-brand-on-surface-variant leading-relaxed">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Past and Current Courses List */}
             <div className="mb-5">
               <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-1.5">
@@ -1003,11 +1023,12 @@ export default function CourseDetailView({
                 진행했던 모든 강의 이력
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {(instructorProfile?.courses || [
-                  { id: "c1", title: course.title, category: course.category, period: "2025.09~", studentCount: course.studentCount, rating: course.rating, status: course.status },
-                  { id: "c-old1", title: "생성형 AI 비즈니스 모델 마스터클래스", category: "비즈니스 기획", period: "2024.11~2025.02", studentCount: 420, rating: 4.9, status: "종료" },
-                  { id: "c-old2", title: "LLM 에이전트 구축 실무 워크숍", category: "개발", period: "2025.03~2025.05", studentCount: 280, rating: 4.8, status: "종료" },
-                ]).map((courseItem) => (
+                {(instructorProfile?.courses && instructorProfile.courses.length > 0
+                  ? instructorProfile.courses
+                  : [
+                      { id: "c1", title: course.title, category: course.category, period: "2026.03~", studentCount: course.studentCount, rating: course.rating, status: course.status },
+                    ]
+                ).map((courseItem) => (
                   <div
                     key={courseItem.id}
                     className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/40 flex flex-col justify-between"
@@ -1043,28 +1064,13 @@ export default function CourseDetailView({
             <div>
               <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-1.5">
                 <MessageSquare size={14} className="text-brand-primary" />
-                수강생 전체 리뷰 모음 ({course.reviews.length + 2}건)
+                수강생 전체 리뷰 모음 ({(instructorProfile?.reviews?.length || course.reviews.length || 0)}건)
               </h4>
               <div className="flex flex-col gap-2.5">
-                {[
-                  ...course.reviews,
-                  {
-                    id: "r-prev-1",
-                    author: "강동원 (이전 수강생)",
-                    avatar: "",
-                    rating: 5,
-                    content: "강사님의 커리큘럼 구성과 징검다리 일정 관리가 너무 좋았습니다. 이론과 실습의 밸런스가 최고입니다.",
-                    date: "2025-06-18",
-                  },
-                  {
-                    id: "r-prev-2",
-                    author: "윤서아 (이전 수강생)",
-                    avatar: "",
-                    rating: 5,
-                    content: "질문 하나하나 꼼꼼하게 피드백해주시고 강의 후에도 실무 질문에 친절하게 답변해주셨습니다.",
-                    date: "2025-05-10",
-                  },
-                ].map((rev) => (
+                {(instructorProfile?.reviews && instructorProfile.reviews.length > 0
+                  ? instructorProfile.reviews
+                  : course.reviews
+                ).map((rev) => (
                   <div key={rev.id} className="p-3 bg-brand-surface-low rounded-xl border border-brand-border/30">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">

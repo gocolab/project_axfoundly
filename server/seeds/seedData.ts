@@ -25,6 +25,7 @@ import type {
   NotificationPreference,
   NotificationTemplate,
   NotificationLog,
+  InstructorProfile,
 } from "../../src/types";
 import type { DatabaseSchema } from "../db.js";
 
@@ -90,6 +91,133 @@ const SEED_MEMBERS: AdminMember[] = [
   { id: "m-v28", name: "오채린", email: "cr.oh@vclink.com", roles: ["member"], joinDate: "2026-06-25", lastLogin: "2026-08-25", status: "가상활성", courseCount: 1 },
   { id: "m-v29", name: "구자형", email: "jh.koo@solopreneur.kr", roles: ["member"], joinDate: "2026-07-02", lastLogin: "2026-09-02", status: "가상활성", courseCount: 2 },
   { id: "m-v30", name: "진가람", email: "gr.jin@voiceflow.ai", roles: ["member"], joinDate: "2026-07-15", lastLogin: "2026-09-05", status: "가상활성", courseCount: 2 },
+];
+
+// ─────────────────────────────────────────────────────────────
+// 1-2. 강사 프로필 및 이력 (Instructors - 독립 엔티티)
+// ─────────────────────────────────────────────────────────────
+
+const SEED_INSTRUCTORS: InstructorProfile[] = [
+  {
+    id: "inst-mahau",
+    name: "마하우",
+    title: "피지컬 AI 시스템 아키텍트 & 로보틱스 엔지니어",
+    bio: "12년간 산업용 로봇 제어기 및 에지 AI 컴퓨팅 파이프라인을 설계해 온 전문가입니다. 실전 프로젝트 중심으로 주니어 엔지니어가 현장에서 즉시 개발할 수 있는 역량을 전달합니다.",
+    avatar: "",
+    rating: 4.9,
+    reviewCount: 15,
+    totalStudents: 15,
+    externalStudentCount: 50,
+    infographic: {
+      experienceYears: 12,
+      totalStudents: 65,
+      satisfactionRate: 98,
+      topKeywords: ["Physical AI", "ROS2", "임베디드", "PBL", "자율주행"],
+      careerHighlights: [
+        "전) 첨단 자율로봇 연구소 수석 아키텍트",
+        "국내외 로봇 제어 특허 8건 보유",
+        "PBL 기반 주니어 양성 과정 100% 수료 달성",
+      ],
+      certifiedBadge: "피지컬 AI 최고 전문 강사",
+    },
+    careerHistory: [
+      "2023~현재: AX Foundly 로보틱스 & AI 시스템 총괄",
+      "2018~2023: 모빌리티 테크 수석 엔지니어",
+      "2014~2018: 산업용 로봇 제어 소프트웨어 개발팀장",
+    ],
+    courses: [],
+    reviews: [],
+  },
+  {
+    id: "inst-shoh",
+    name: "오승환",
+    title: "AX Foundly 대표 & 테크 리드",
+    bio: "10년 이상의 풀스택 아키텍처 설계 및 AI 에이전틱 시스템 구축 전문 강사입니다. 프로토타입부터 실제 상용화까지 이르는 End-to-End 창업 파이프라인을 직접 코칭합니다.",
+    avatar: "",
+    rating: 4.9,
+    reviewCount: 42,
+    totalStudents: 128,
+    externalStudentCount: 500,
+    infographic: {
+      experienceYears: 10,
+      totalStudents: 628,
+      satisfactionRate: 99,
+      topKeywords: ["AI 에이전트", "풀스택", "린스타트업", "하네스", "클라우드"],
+      careerHighlights: [
+        "현) AX Foundly 대표 & 테크 리드",
+        "전) 글로벌 유니콘 테크 기업 소프트웨어 아키텍트",
+        "AI 에이전틱 개발 자동화 파이프라인(Harness) 설계 총괄",
+      ],
+      certifiedBadge: "AI 풀스택 창업 공인 마스터",
+    },
+    careerHistory: [
+      "2024~현재: AX Foundly 대표 & AI 기술 총괄",
+      "2020~2024: 글로벌 테크 유니콘 시니어 소프트웨어 엔지니어",
+      "2016~2020: 클라우드 분산 시스템 아키텍트",
+    ],
+    courses: [],
+    reviews: [],
+  },
+  {
+    id: "inst-kdh",
+    name: "고동현",
+    title: "고성능 시스템 소프트웨어 아키텍트",
+    bio: "대규모 분산 컴퓨팅 및 저지연 AI 서빙 인프라 전문가입니다. 이론에 머무르지 않고 실제 수천만 트래픽을 견디는 프로덕션 아키텍처를 전수합니다.",
+    avatar: "",
+    rating: 4.8,
+    reviewCount: 28,
+    totalStudents: 95,
+    externalStudentCount: 200,
+    infographic: {
+      experienceYears: 11,
+      totalStudents: 295,
+      satisfactionRate: 97,
+      topKeywords: ["대규모 분산처리", "C++", "Rust", "AI 서빙", "성능최적화"],
+      careerHighlights: [
+        "전) 초대형 빅테크 인프라 코어 엔지니어",
+        "고성능 LLM 추론 가속화 오픈소스 메인테이너",
+        "글로벌 분산 데이터베이스 코어 아키텍처 설계",
+      ],
+      certifiedBadge: "고성능 시스템 소프트웨어 최고 전문가",
+    },
+    careerHistory: [
+      "2023~현재: 고성능 시스템 소프트웨어 컨설턴트",
+      "2019~2023: 대규모 데이터 플랫폼 코어 테크 리드",
+      "2015~2019: 시스템 성능 최적화 수석 연구원",
+    ],
+    courses: [],
+    reviews: [],
+  },
+  {
+    id: "inst-ksh",
+    name: "김소현",
+    title: "AI 비즈니스 & 스타트업 디렉터",
+    bio: "다년간의 실무 AI 프로덕트 런칭 및 스타트업 인큐베이팅 경험을 바탕으로, 수강생들이 실제 시장에서 작동하는 비즈니스를 만들 수 있도록 1:1 밀착 코칭을 제공합니다.",
+    avatar: "",
+    rating: 4.9,
+    reviewCount: 86,
+    totalStudents: 340,
+    externalStudentCount: 3000,
+    infographic: {
+      experienceYears: 9,
+      totalStudents: 3340,
+      satisfactionRate: 98,
+      topKeywords: ["AI 프로덕트", "실전 린스타트업", "1:1 밀착 코칭", "IR 피칭", "BM 설계"],
+      careerHighlights: [
+        "전) 글로벌 테크 유니콘 AI PM 리드",
+        "다수 생성형 AI 프로덕트 런칭 및 시리즈 A 투자 유치 총괄",
+        "창업진흥원 및 주요 액셀러레이터 공식 스타트업 멘토",
+      ],
+      certifiedBadge: "AI 린스타트업 최고 전문 디렉터",
+    },
+    careerHistory: [
+      "2023~현재: AI 스타트업 엑셀러레이팅 수석 디렉터",
+      "2020~2023: 글로벌 생성형 AI 서비스 PM 리드",
+      "2017~2020: 린스타트업 인큐베이터 시니어 컨설턴트",
+    ],
+    courses: [],
+    reviews: [],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -1797,6 +1925,7 @@ const SEED_COMMON_CODES: CommonCode[] = [
 export function buildSeedData(): DatabaseSchema {
   return {
     courses: SEED_COURSES,
+    instructors: SEED_INSTRUCTORS,
     courseStudents: SEED_COURSE_STUDENTS,
     courseRequests: SEED_COURSE_REQUESTS,
     courseProposals: SEED_COURSE_PROPOSALS,
