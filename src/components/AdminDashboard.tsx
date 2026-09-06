@@ -236,9 +236,29 @@ export default function AdminDashboard({
     }
   }, [selectedPanelItem?.type === "member" ? selectedPanelItem.data.id : null]);
 
+  // 회원 접근 권한 다중 변경 처리
+  const handleMemberRolesChange = (memberId: string, newRoles: UserRole[]) => {
+    if (!newRoles || newRoles.length === 0) {
+      toast.warning("접근 권한 설정", "최소 1개 이상의 접근 권한이 지정되어야 합니다.");
+      return;
+    }
+    onChangeRole(memberId, newRoles);
+    setLocalMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, roles: newRoles } : m))
+    );
+    if (selectedPanelItem?.type === "member" && selectedPanelItem.data.id === memberId) {
+      setSelectedPanelItem({
+        type: "member",
+        data: { ...selectedPanelItem.data, roles: newRoles },
+      });
+    }
+    toast.success("접근 권한 변경", `접근 권한이 [${newRoles.join(", ")}](으)로 변경되었습니다.`);
+  };
+
   // 회원 상태 변경 처리
   const handleMemberStatusChange = async (member: AdminMember, newStatus: MemberStatus) => {
     if (newStatus === "탈퇴") {
+      setSelectedPanelItem({ type: "member", data: member });
       setWithdrawTargetMember(member);
       setWithdrawReason("");
       setShowWithdrawModal(true);
@@ -602,13 +622,29 @@ export default function AdminDashboard({
               {/* Subtab 1: 기본 정보 */}
               {memberDetailTab === "info" && (
                 <div className="space-y-4 animate-fadeIn">
-                  <div className="w-16 h-16 rounded-full bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-2 border-2 border-brand-primary/30 shadow-inner">
-                    {selectedPanelItem.data.name.charAt(0)}
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-brand-surface-high flex items-center justify-center text-xl font-bold text-brand-primary mx-auto mb-2 border-2 border-brand-primary/30 shadow-inner">
+                    {selectedPanelItem.data.avatar ? (
+                      <img
+                        src={selectedPanelItem.data.avatar}
+                        alt={selectedPanelItem.data.name}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                          const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = "block";
+                        }}
+                      />
+                    ) : null}
+                    <span className={selectedPanelItem.data.avatar ? "hidden" : "block"}>
+                      {selectedPanelItem.data.name.charAt(0)}
+                    </span>
                   </div>
                   <div className="bg-brand-surface-low/60 rounded-xl p-3.5 space-y-2.5 border border-brand-border/30">
                     <p><span className="font-semibold text-white">이름:</span> {selectedPanelItem.data.name}</p>
                     <p><span className="font-semibold text-white">이메일:</span> {selectedPanelItem.data.email}</p>
-                    <p><span className="font-semibold text-white">가입일:</span> {selectedPanelItem.data.joinDate}</p>
+                    <p><span className="font-semibold text-white">최종 접속일:</span> <span className="font-mono text-cyan-300 font-medium">{selectedPanelItem.data.lastLogin || "접속 기록 없음"}</span></p>
+                    <p><span className="font-semibold text-white">가입일:</span> <span className="font-mono">{selectedPanelItem.data.joinDate}</span></p>
                     <div className="flex items-center justify-between pt-1">
                       <span className="font-semibold text-white">계정 상태:</span>
                       <select
@@ -630,30 +666,46 @@ export default function AdminDashboard({
                         <option value="탈퇴" className="bg-brand-surface text-white">탈퇴 (강제 탈퇴/사유 필수)</option>
                       </select>
                     </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="font-semibold text-white">권한:</span>
-                      <select
-                        value={
-                          selectedPanelItem.data.roles.includes("admin") && selectedPanelItem.data.roles.includes("member")
-                            ? "admin,member"
-                            : selectedPanelItem.data.roles.includes("admin")
-                            ? "admin"
-                            : "member"
-                        }
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === "admin,member") {
-                            onChangeRole(selectedPanelItem.data.id, ["admin", "member"]);
-                          } else {
-                            onChangeRole(selectedPanelItem.data.id, [val as UserRole]);
-                          }
-                        }}
-                        className="text-xs bg-brand-surface-low border border-brand-border rounded-lg px-2.5 py-1 text-white cursor-pointer focus:outline-none"
-                      >
-                        <option value="member" className="bg-brand-surface text-white">일반회원 (member)</option>
-                        <option value="admin" className="bg-brand-surface text-white">관리자 (admin)</option>
-                        <option value="admin,member" className="bg-brand-surface text-white">관리자+일반 (admin,member)</option>
-                      </select>
+                    
+                    {/* 접근 권한 다중 선택 (체크박스) */}
+                    <div className="pt-2 border-t border-brand-border/30 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-white text-xs">접근 권한 (다중 선택):</span>
+                        <span className="text-[10px] text-brand-on-surface-variant">최소 1개 선택 필수</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {(["member", "manager", "admin"] as const).map((r) => {
+                          const isChecked = selectedPanelItem.data.roles?.includes(r);
+                          const roleLabel = r === "member" ? "일반 (member)" : r === "manager" ? "매니저 (manager)" : "관리자 (admin)";
+                          return (
+                            <label
+                              key={r}
+                              className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer select-none transition-all ${
+                                isChecked
+                                  ? "bg-brand-primary/15 border-brand-primary/50 text-white font-semibold shadow-xs"
+                                  : "bg-brand-surface-low border-brand-border/40 text-brand-on-surface-variant hover:text-white"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const currentRoles = selectedPanelItem.data.roles || [];
+                                  let nextRoles: UserRole[];
+                                  if (e.target.checked) {
+                                    nextRoles = Array.from(new Set([...currentRoles, r]));
+                                  } else {
+                                    nextRoles = currentRoles.filter((existingRole) => existingRole !== r);
+                                  }
+                                  handleMemberRolesChange(selectedPanelItem.data.id, nextRoles);
+                                }}
+                                className="w-3.5 h-3.5 rounded text-brand-primary focus:ring-brand-primary cursor-pointer accent-brand-primary"
+                              />
+                              <span className="truncate">{roleLabel}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -1214,7 +1266,7 @@ export default function AdminDashboard({
                       <Users size={14} className="text-brand-primary" />
                       플랫폼 가입 회원 목록
                     </h2>
-                    <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 회원의 권한 및 계정 상태를 조회하고 변경합니다.</p>
+                    <p className="text-xs text-brand-on-surface-variant mt-0.5">전체 회원의 접근 권한 및 계정 상태를 조회하고 변경합니다.</p>
                   </div>
                   <div className="flex flex-col xl:flex-row items-end xl:items-center gap-3 w-full xl:w-auto shrink-0">
                     <SearchBar
@@ -1245,19 +1297,20 @@ export default function AdminDashboard({
                       {/* Header row */}
                       <div className="flex items-center px-5 py-2.5 bg-brand-surface-low border-b border-brand-border/30 text-[9px] font-mono text-brand-on-surface-variant uppercase tracking-wider gap-3">
                         <span className="flex-1 min-w-0">이름</span>
-                        <span className="w-16 shrink-0">역할</span>
+                        <span className="w-28 shrink-0">접근 권한</span>
                         <div
                           className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
                             selectedPanelItem
                               ? "w-0 opacity-0 pointer-events-none overflow-hidden"
-                              : "w-64 sm:w-80 opacity-100"
+                              : "w-80 sm:w-96 opacity-100"
                           }`}
                         >
                           <span className="flex-1 min-w-0">이메일</span>
+                          <span className="w-24 text-center font-mono">최종 접속일</span>
                           <span className="w-20 text-center font-mono">가입일</span>
-                          <span className="w-20 text-center">상태 (공통코드)</span>
+                          <span className="w-20 text-center">상태</span>
                         </div>
-                        <span className="w-16 text-right shrink-0">액션</span>
+                        <span className="w-16 text-right shrink-0">관리</span>
                       </div>
 
                       {paginatedMembers.map((member) => (
@@ -1272,8 +1325,23 @@ export default function AdminDashboard({
                         >
                           {/* Name & Avatar */}
                           <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-brand-surface-high flex items-center justify-center text-[9px] font-bold text-brand-primary flex-shrink-0">
-                              {member.name.charAt(0)}
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-brand-surface-high flex items-center justify-center text-[9px] font-bold text-brand-primary flex-shrink-0 border border-brand-border/40">
+                              {member.avatar ? (
+                                <img
+                                  src={member.avatar}
+                                  alt={member.name}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = "none";
+                                    const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = "block";
+                                  }}
+                                />
+                              ) : null}
+                              <span className={member.avatar ? "hidden" : "block"}>
+                                {member.name.charAt(0)}
+                              </span>
                             </div>
                             <div className="min-w-0">
                               <span className="text-xs text-white truncate block font-medium">
@@ -1287,30 +1355,22 @@ export default function AdminDashboard({
                             </div>
                           </div>
 
-                          {/* Role Select */}
-                          <div className="w-20 shrink-0" onClick={(e) => e.stopPropagation()}>
-                            <select
-                              value={
-                                member.roles.includes("admin") && member.roles.includes("member")
-                                  ? "admin,member"
-                                  : member.roles.includes("admin")
-                                  ? "admin"
-                                  : "member"
-                              }
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === "admin,member") {
-                                  onChangeRole(member.id, ["admin", "member"]);
-                                } else {
-                                  onChangeRole(member.id, [val as UserRole]);
-                                }
-                              }}
-                              className="text-[9px] bg-brand-surface-low border border-brand-border rounded px-1.5 py-0.5 text-brand-on-surface-variant cursor-pointer focus:outline-none"
-                            >
-                              <option value="member">member</option>
-                              <option value="admin">관리자</option>
-                              <option value="admin,member">관리자+member</option>
-                            </select>
+                          {/* Access Roles (Read-Only Badges) */}
+                          <div className="w-28 shrink-0 flex flex-wrap gap-1 items-center">
+                            {member.roles?.map((r) => (
+                              <span
+                                key={r}
+                                className={`text-[9px] font-mono px-1.5 py-0.5 rounded border leading-none ${
+                                  r === "admin"
+                                    ? "bg-brand-primary/15 text-brand-primary border-brand-primary/30 font-bold"
+                                    : r === "manager"
+                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                    : "bg-brand-surface-high text-brand-on-surface-variant border-brand-border/40"
+                                }`}
+                              >
+                                {r}
+                              </span>
+                            ))}
                           </div>
 
                           {/* Metadata Columns (Collapses smoothly) */}
@@ -1318,10 +1378,11 @@ export default function AdminDashboard({
                             className={`flex items-center gap-3 shrink-0 transition-all duration-300 ease-in-out ${
                               selectedPanelItem
                                 ? "w-0 opacity-0 pointer-events-none overflow-hidden"
-                                : "w-64 sm:w-80 opacity-100"
+                                : "w-80 sm:w-96 opacity-100"
                             }`}
                           >
                             <span className="flex-1 text-[10px] text-brand-on-surface-variant truncate">{member.email}</span>
+                            <span className="w-24 text-[10px] text-brand-on-surface-variant text-center font-mono truncate">{member.lastLogin || "-"}</span>
                             <span className="w-20 text-[10px] text-brand-on-surface-variant text-center font-mono">{member.joinDate}</span>
                             <div className="w-20 text-center shrink-0" onClick={(e) => e.stopPropagation()}>
                               <select
@@ -1359,12 +1420,13 @@ export default function AdminDashboard({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  setSelectedPanelItem({ type: 'member', data: member });
                                   setWithdrawTargetMember(member);
                                   setWithdrawReason("");
                                   setShowWithdrawModal(true);
                                 }}
                                 className="text-red-400 hover:text-red-300 cursor-pointer p-1 rounded hover:bg-red-500/20 transition-colors"
-                                title="직권 강제 탈퇴"
+                                title="상세에서 직권 강제 탈퇴"
                               >
                                 <AlertTriangle size={12} />
                               </button>

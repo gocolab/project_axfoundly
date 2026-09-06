@@ -21,6 +21,7 @@ interface GNBProps {
   isLoggedIn: boolean;
   userRoles: UserRole[];
   userName: string;
+  userAvatar?: string;
   onLoginClick: () => void;
   onLogout: () => void;
   notifications: Notification[];
@@ -33,6 +34,7 @@ export default function GNB({
   isLoggedIn,
   userRoles,
   userName,
+  userAvatar,
   onLoginClick,
   onLogout,
   notifications,
@@ -207,8 +209,23 @@ export default function GNB({
                     className="flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-full border border-brand-border/50 hover:border-brand-primary-container/40 transition-colors cursor-pointer"
                   >
 
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary-container to-brand-tertiary flex items-center justify-center text-white text-xs font-bold">
-                      {userName.charAt(0)}
+                    <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-brand-primary-container to-brand-tertiary flex items-center justify-center text-white text-xs font-bold flex-shrink-0 border border-brand-border/60">
+                      {userAvatar ? (
+                        <img
+                          src={userAvatar}
+                          alt={userName}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                            const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = "block";
+                          }}
+                        />
+                      ) : null}
+                      <span className={userAvatar ? "hidden" : "block"}>
+                        {userName.charAt(0)}
+                      </span>
                     </div>
                     <div className="hidden sm:block text-left">
                       <span className="text-xs font-semibold text-white block leading-tight">{userName}</span>

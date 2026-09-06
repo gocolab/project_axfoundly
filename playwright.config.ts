@@ -48,6 +48,7 @@ export default defineConfig({
     timeout: 120 * 1000,
     env: {
       PLAYWRIGHT_AUTH_METHOD: 'mock',
+      VITE_SHOW_DEMO_LOGIN: 'true',
     },
   },
 });

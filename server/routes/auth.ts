@@ -48,9 +48,10 @@ router.get("/google/callback", async (req, res) => {
   let userAvatar = "";
 
   // Playwright Mock 우회 처리
-  if (process.env.PLAYWRIGHT_AUTH_METHOD === "mock" && code === "mock_playwright_code") {
+  if (code === "mock_playwright_code" || (process.env.PLAYWRIGHT_AUTH_METHOD === "mock" && code === "mock_playwright_code")) {
     userEmail = "otter.oh@gmail.com";
     userName = "오승환";
+    userAvatar = "https://lh3.googleusercontent.com/a/default-user=s96-c";
   } else {
     try {
       // 1. Authorization Code로 Access Token 교환
@@ -102,7 +103,7 @@ router.get("/google/callback", async (req, res) => {
     : (existingMember && existingMember.roles && existingMember.roles.length > 0 ? existingMember.roles : ["member"]);
 
   if (existingMember) {
-    // 기존 회원 로그인 처리 (관리자 이메일이면 roles에 admin 자동 보장)
+    // 기존 회원 로그인 처리: 매 로그인 시마다 Google 프로필 이미지 링크 갱신
     const finalRoles = isAdminEmail
       ? Array.from(new Set<UserRole>(["admin", "member", ...(existingMember.roles || [])]))
       : assignedRoles;
@@ -110,18 +111,24 @@ router.get("/google/callback", async (req, res) => {
     db.update("members", (mList) =>
       mList.map((m) =>
         m.email.toLowerCase() === userEmail.toLowerCase()
-          ? { ...m, roles: finalRoles, lastLogin: today }
+          ? {
+              ...m,
+              roles: finalRoles,
+              lastLogin: today,
+              avatar: userAvatar || m.avatar || "",
+            }
           : m
       )
     );
     assignedRoles = finalRoles;
   } else {
-    // 신규 회원 자동 가입
+    // 신규 회원 자동 가입: Google 이미지 링크 저장
     const newMember: AdminMember = {
       id: `m-google-${Date.now()}`,
       name: userName,
       email: userEmail,
       roles: assignedRoles,
+      avatar: userAvatar || "",
       joinDate: today,
       lastLogin: today,
       status: "활성",
@@ -188,7 +195,7 @@ router.post("/login", (req, res) => {
     name: userName,
     email: userEmail,
     roles: userRoles,
-    avatar: "",
+    avatar: member?.avatar || "",
     joinDate: "2025-01-15",
   };
 
@@ -222,6 +229,7 @@ router.get("/me", (req, res) => {
           name: email.split("@")[0],
           email: email,
           roles: isAdminEmail ? ["admin", "member"] : ["member"],
+          avatar: "",
           joinDate: today,
           lastLogin: today,
           status: "활성",
@@ -242,7 +250,7 @@ router.get("/me", (req, res) => {
           name: member.name,
           email: member.email,
           roles: Array.isArray(member.roles) ? member.roles : ["member"],
-          avatar: "",
+          avatar: member.avatar || "",
           joinDate: member.joinDate,
         }
       });
@@ -258,7 +266,7 @@ router.get("/me", (req, res) => {
             name: member.name,
             email: member.email,
             roles: Array.isArray(member.roles) ? member.roles : ["member"],
-            avatar: "",
+            avatar: member.avatar || "",
             joinDate: member.joinDate,
           }
         });
@@ -286,7 +294,7 @@ router.get("/me", (req, res) => {
         name: member?.name || nameMap[roles[0]] || "회원",
         email: member?.email || targetEmail,
         roles: member && Array.isArray(member.roles) ? member.roles : roles,
-        avatar: "",
+        avatar: member?.avatar || "",
         joinDate: member?.joinDate || "2025-01-15",
       },
     });

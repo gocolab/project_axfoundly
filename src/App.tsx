@@ -41,19 +41,22 @@ export default function App() {
     }
   });
   const [userName, setUserName] = React.useState<string>(() => localStorage.getItem("user_name") || "게스트");
+  const [userAvatar, setUserAvatar] = React.useState<string>(() => localStorage.getItem("user_avatar") || "");
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const toast = useToast();
 
-  const saveSession = React.useCallback((token: string, user: { name: string; roles: UserRole[] }) => {
+  const saveSession = React.useCallback((token: string, user: { name: string; roles: UserRole[]; avatar?: string }) => {
     localStorage.setItem("auth_token", token);
     localStorage.setItem("user_name", user.name);
     localStorage.setItem("user_roles", JSON.stringify(user.roles));
+    localStorage.setItem("user_avatar", user.avatar || "");
   }, []);
 
   const clearSession = React.useCallback(() => {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_roles");
+    localStorage.removeItem("user_avatar");
   }, []);
 
   // Navigation & Selection (URL 동기화)
@@ -208,6 +211,7 @@ export default function App() {
           setIsLoggedIn(true);
           setUserName(res.user.name);
           setUserRoles(res.user.roles);
+          setUserAvatar(res.user.avatar || "");
           toast.success("로그인 성공", `${res.user.name}님 환영합니다!`);
         }
       }).catch(err => {
@@ -216,6 +220,7 @@ export default function App() {
         setIsLoggedIn(false);
         setUserName("게스트");
         setUserRoles(["member"]);
+        setUserAvatar("");
       });
     } else {
       // 새로고침 시 저장된 토큰으로 세션 검증
@@ -227,6 +232,7 @@ export default function App() {
             setIsLoggedIn(true);
             setUserName(res.user.name);
             setUserRoles(res.user.roles);
+            setUserAvatar(res.user.avatar || "");
           }
         }).catch(err => {
           console.warn("Saved token session invalid:", err);
@@ -234,6 +240,7 @@ export default function App() {
           setIsLoggedIn(false);
           setUserName("게스트");
           setUserRoles(["member"]);
+          setUserAvatar("");
         });
       }
     }
@@ -248,6 +255,7 @@ export default function App() {
       setIsLoggedIn(true);
       setUserName(res.user.name);
       setUserRoles(res.user.roles);
+      setUserAvatar(res.user.avatar || "");
       refreshData();
     } catch (error) {
       console.error("Login API call failed:", error);
@@ -259,6 +267,7 @@ export default function App() {
     setIsLoggedIn(false);
     setUserRoles(["member"]);
     setUserName("게스트");
+    setUserAvatar("");
     setCurrentPage("home");
   };
 
@@ -644,6 +653,7 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         userRoles={userRoles}
         userName={userName}
+        userAvatar={userAvatar}
         onLoginClick={() => setShowAuthModal(true)}
         onLogout={handleLogout}
         notifications={notifications}

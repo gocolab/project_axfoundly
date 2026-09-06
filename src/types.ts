@@ -544,6 +544,7 @@ export interface AdminMember {
   name: string;
   email: string;
   roles: UserRole[];
+  avatar?: string;
   joinDate: string;
   lastLogin: string;
   status: MemberStatus;

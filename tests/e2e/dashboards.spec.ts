@@ -167,7 +167,7 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     // 1. 관리자 로그인
     await page.goto('/');
     await page.getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('.glass-panel-heavy button', { hasText: '관리자' }).first().click();
+    await page.getByTestId('quick-login-관리자').click();
     await expect(page.locator('header button', { hasText: /(관리자|최관리)/ })).toBeVisible();
 
     // 2. 관리자 메뉴 이동
@@ -182,9 +182,20 @@ test.describe('TC-07: 4종 역할별 대시보드 종합 기능 및 데이터 �
     // 4. 회원 관리 탭 이동 및 검색
     await page.getByRole('button', { name: '회원 관리' }).click();
     await expect(page.locator('text=플랫폼 가입 회원 목록')).toBeVisible();
+    await expect(page.locator('text=접근 권한').first()).toBeVisible();
+    await expect(page.locator('text=최종 접속일').first()).toBeVisible();
+
     const memberSearch = page.getByPlaceholder('회원 검색...');
     await memberSearch.fill('김수강생');
     await expect(page.locator('text=student@mail.com')).toBeVisible();
+    await page.waitForTimeout(400);
+
+    // 상세 보기 클릭하여 상세 패널 열람
+    await page.getByTitle('상세 보기').first().click();
+    await expect(page.locator('h3', { hasText: '회원 상세 정보 & 활동 이력' })).toBeVisible();
+    await expect(page.locator('text=최종 접속일:').first()).toBeVisible();
+    await expect(page.locator('text=접근 권한 (다중 선택):').first()).toBeVisible();
+    await expect(page.locator('label', { hasText: '관리자 (admin)' })).toBeVisible();
 
     // 5. 강의 리스트 관리 탭 이동
     await page.getByRole('button', { name: '강의 리스트 관리' }).click();

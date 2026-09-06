@@ -125,4 +125,28 @@ test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근
     // 3. 로그인 버튼 원복 확인
     await expect(page.locator('header').getByRole('button', { name: '로그인', exact: true })).toBeVisible();
   });
+
+  test('Google OAuth 로그인 시 매번 최신 구글 프로필 이미지 링크가 갱신되고 GNB 및 회원정보에 반영된다', async ({ page }) => {
+    // 1. Google OAuth 로그인 콜백 호출 (Playwright Mock 우회)
+    await page.goto('/api/auth/google/callback?code=mock_playwright_code');
+    
+    // 2. 홈으로 리다이렉트 및 로그인 성공 확인
+    await expect(page.locator('header button', { hasText: '오승환' })).toBeVisible({ timeout: 15000 });
+
+    // 3. GNB 프로필 버튼에 구글 아바타 이미지가 렌더링되는지 확인
+    const profileImg = page.locator('[data-testid="user-profile-button"] img');
+    await expect(profileImg).toBeVisible();
+    await expect(profileImg).toHaveAttribute('src', /googleusercontent\.com/);
+
+    // 4. 로컬 스토리지에 user_avatar가 정상 저장되었는지 확인
+    const savedAvatar = await page.evaluate(() => localStorage.getItem('user_avatar'));
+    expect(savedAvatar).toContain('googleusercontent.com');
+
+    // 5. 관리자 대시보드 회원 목록에서 해당 회원의 프로필 이미지가 노출되는지 확인
+    await page.locator('[data-testid="user-profile-button"]').click();
+    await page.getByRole('button', { name: '관리자 대시보드' }).click();
+    await page.getByRole('button', { name: '회원 관리' }).click();
+    
+    await expect(page.locator('text=otter.oh@gmail.com')).toBeVisible();
+  });
 });
