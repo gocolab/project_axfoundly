@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { MongoClient, type Db, type Collection } from "mongodb";
-import { buildSeedData } from "./seeds/seedData.js";
 import type {
   Course,
   CourseStudent,
@@ -93,18 +92,63 @@ function getDocumentPrimaryKey(item: any): string | null {
   return null;
 }
 
+function createEmptySchema(): DatabaseSchema {
+  return {
+    courses: [],
+    courseStudents: [],
+    courseRequests: [],
+    courseProposals: [],
+    irProjects: [],
+    ideaRequests: [],
+    ideaProposals: [],
+    posts: [],
+    comments: [],
+    notifications: [],
+    notificationPreferences: [],
+    notificationTemplates: [],
+    notificationLogs: [],
+    teamRequests: [],
+    payments: [],
+    settlements: [],
+    proposals: [],
+    recommendations: [],
+    stats: {
+      dailySignups: 0,
+      monthlySignups: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      activeCourses: 0,
+      teamMatchCount: 0,
+      investmentMatchCount: 0,
+      courseRequestCount: 0,
+      courseMatchRate: 0,
+      ideaRequestCount: 0,
+      builderMatchRate: 0,
+      aiAutoFillCount: 0,
+    },
+    members: [],
+    boards: [],
+    crmMessages: [],
+    applications: [],
+    codeGroups: [],
+    commonCodes: [],
+    kakao_sessions: [],
+  };
+}
+
 class Database {
   private cache: DatabaseSchema;
   private initialized = false;
 
   constructor() {
-    // 초기값으로 시드 데이터 세팅 (initDb() 호출 전까지 폴백용)
-    this.cache = buildSeedData();
+    // 서버 초기화 전 기본 빈 캐시로 시작 (자동 시딩 방지)
+    this.cache = createEmptySchema();
   }
 
   /**
    * MongoDB 연결 및 데이터 로드.
-   * 서버 시작 전에 반드시 호출해야 합니다.
+   * 서버 시작 시 MongoDB에 존재하는 데이터를 순수 조회(Read-only)하여 캐시에 로드합니다.
+   * (데이터 초기화 및 시딩은 오직 명시적 명령어 `npm run db:reset` 실행 시에만 동작합니다.)
    */
   async init(): Promise<void> {
     try {
@@ -113,34 +157,45 @@ class Database {
       mongodb = client.db(MONGODB_DBNAME);
       console.log(`[DB] MongoDB connected: ${MONGODB_DBNAME}`);
 
-      // 각 컬렉션에서 데이터 로드 (비어있으면 시드 삽입)
-      const seedData = buildSeedData();
-      const keys = Object.keys(seedData) as Array<keyof DatabaseSchema>;
+      const keys: Array<keyof DatabaseSchema> = [
+        "courses",
+        "courseStudents",
+        "courseRequests",
+        "courseProposals",
+        "irProjects",
+        "ideaRequests",
+        "ideaProposals",
+        "posts",
+        "comments",
+        "notifications",
+        "notificationPreferences",
+        "notificationTemplates",
+        "notificationLogs",
+        "teamRequests",
+        "payments",
+        "settlements",
+        "proposals",
+        "recommendations",
+        "stats",
+        "members",
+        "boards",
+        "crmMessages",
+        "applications",
+        "codeGroups",
+        "commonCodes",
+        "kakao_sessions",
+      ];
 
       for (const key of keys) {
         const collection = mongodb.collection(key);
-        const count = await collection.countDocuments();
 
-        if (count === 0) {
-          // 시드 데이터 삽입
-          if (SINGLETON_KEYS.includes(key)) {
-            // 단일 문서 (stats 등)
-            await collection.insertOne({ _singleton: true, ...(seedData[key] as object) });
-          } else {
-            const arr = seedData[key] as unknown[];
-            if (arr.length > 0) {
-              await collection.insertMany(arr as any[]);
-            }
-          }
-          console.log(`[DB] Seeded collection: ${key} (${SINGLETON_KEYS.includes(key) ? 1 : (seedData[key] as unknown[]).length} docs)`);
-        }
-
-        // 캐시에 로드
         if (SINGLETON_KEYS.includes(key)) {
           const doc = await collection.findOne({ _singleton: true });
           if (doc) {
             const { _id, _singleton, ...rest } = doc as any;
             (this.cache as any)[key] = rest;
+          } else {
+            (this.cache as any)[key] = createEmptySchema()[key];
           }
         } else {
           const docs = await collection.find({}).toArray();
@@ -174,57 +229,11 @@ class Database {
         }
       }
 
-      // ── AI 메타데이터 자동 마이그레이션 (기존 레코드에 tags/aiSummary 자동 부여 - 백그라운드 실행) ──
-      (async () => {
-        try {
-          const { classifyContent } = await import("./services/aiClassifier.js");
-          
-          let coursesMigrated = false;
-          for (const c of (this.cache.courses || [])) {
-            if (!c.tags || c.tags.length === 0 || !c.aiSummary) {
-              const res = await classifyContent("course", {
-                title: c.title,
-                description: c.description,
-              });
-              c.tags = c.tags && c.tags.length > 0 ? c.tags : res.tags;
-              c.aiSummary = c.aiSummary || res.aiSummary;
-              coursesMigrated = true;
-            }
-          }
-          if (coursesMigrated) {
-            await this.syncToMongo("courses");
-            console.log("[DB Migration] Courses successfully enriched with AI tags and summary");
-          }
-
-          let irMigrated = false;
-          for (const p of (this.cache.irProjects || [])) {
-            if (!p.tags || p.tags.length === 0 || !p.aiSummary) {
-              const res = await classifyContent("ir", {
-                title: p.title,
-                description: p.description,
-                oneLiner: p.oneLiner,
-                problem: p.problem,
-                solution: p.solution,
-              });
-              p.tags = p.tags && p.tags.length > 0 ? p.tags : res.tags;
-              p.aiSummary = p.aiSummary || res.aiSummary;
-              irMigrated = true;
-            }
-          }
-          if (irMigrated) {
-            await this.syncToMongo("irProjects");
-            console.log("[DB Migration] IR projects successfully enriched with AI tags and summary");
-          }
-        } catch (migError) {
-          console.warn("[DB Migration] AI metadata migration skipped or encountered non-critical error:", migError);
-        }
-      })();
-
       this.initialized = true;
-      console.log("[DB] All collections loaded into cache");
+      console.log("[DB] All collections loaded into cache from MongoDB");
     } catch (error) {
-      console.error("[DB] MongoDB connection failed, using seed data as fallback:", error);
-      this.cache = buildSeedData();
+      console.error("[DB] MongoDB connection failed:", error);
+      this.cache = createEmptySchema();
       this.initialized = true;
     }
   }

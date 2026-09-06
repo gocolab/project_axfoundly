@@ -15,7 +15,9 @@
     "test:e2e:ui": "xvfb-run --auto-servernum playwright test --ui --host 0.0.0.0",
     "auth:google": "node scripts/generate-google-auth.mjs",
     "report": "playwright show-report --host 0.0.0.0 --port 9323",
-    "db:reset": "tsx scripts/reset-and-seed-db.ts"
+    "db:reset": "tsx scripts/reset-and-seed-db.ts",
+    "db:reset:dev": "MONGODB_DBNAME=ax_foundly_dev tsx scripts/reset-and-seed-db.ts",
+    "db:reset:prod": "MONGODB_DBNAME=ax_foundly_pro tsx scripts/reset-and-seed-db.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
