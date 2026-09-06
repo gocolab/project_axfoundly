@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Megaphone,
   Calendar as CalendarIcon,
+  BookOpen,
 } from "lucide-react";
 import type { Course, IRProject, BoardPost } from "../types";
 
@@ -31,7 +32,23 @@ export default function MainPage({
   onViewIR,
   onViewPost,
 }: MainPageProps) {
-  const activeCourses = courses.filter((c) => c.status === "모집중" || c.status === "진행중");
+  // 인기 추천 강의: 모집중/진행중 강의를 우선순위(평점/리뷰순)로 선별하고,
+  // 3개 미만인 경우 전체 강의 중 평점/리뷰 수가 높은 인기 강의로 Fallback 보충하여 항상 3개 카드 노출 보장
+  const recommendedCourses = React.useMemo(() => {
+    const active = courses
+      .filter((c) => c.status === "모집중" || c.status === "진행중")
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviewCount || 0) - (a.reviewCount || 0));
+
+    if (active.length >= 3) {
+      return active.slice(0, 3);
+    }
+
+    const remaining = courses
+      .filter((c) => !active.some((ac) => ac.id === c.id))
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviewCount || 0) - (a.reviewCount || 0));
+
+    return [...active, ...remaining].slice(0, 3);
+  }, [courses]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
@@ -74,103 +91,121 @@ export default function MainPage({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {activeCourses.slice(0, 3).map((course, idx) => {
-            const schedule = course.schedule;
-            return (
-              <div
-                key={course.id}
-                className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
-                style={{ animationDelay: `${idx * 80}ms` }}
-                onClick={() => onViewCourse(course.id)}
-              >
-                <div>
-                  {/* Thumbnail Header — 첨부 이미지 스타일 */}
-                  <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">
-                    <span className="text-3xl opacity-50 drop-shadow-md select-none">🎓</span>
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
-                          course.status === "모집중"
-                            ? "bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]"
-                            : course.status === "진행중"
-                            ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
-                            : "bg-slate-700/40 border-slate-600/50 text-slate-300"
-                        }`}
-                      >
-                        {course.status}
-                      </span>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
-                        {schedule?.totalSessions || 12}회차
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400 font-medium">{course.category}</span>
-                      {schedule && (
-                        <span className="text-xs font-semibold text-[#34d399] flex items-center gap-1.5">
-                          <CalendarIcon size={13} className="text-[#34d399]" />
-                          {schedule.startDate.slice(5)} ~ {schedule.endDate.slice(5)}
+        {recommendedCourses.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {recommendedCourses.map((course, idx) => {
+              const schedule = course.schedule;
+              return (
+                <div
+                  key={course.id}
+                  className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
+                  style={{ animationDelay: `${idx * 80}ms` }}
+                  onClick={() => onViewCourse(course.id)}
+                >
+                  <div>
+                    {/* Thumbnail Header */}
+                    <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">
+                      <span className="text-3xl opacity-50 drop-shadow-md select-none">🎓</span>
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                            course.status === "모집중"
+                              ? "bg-[#4f46e5]/30 border-[#6366f1]/60 text-[#a5b4fc]"
+                              : course.status === "진행중"
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                              : "bg-slate-700/40 border-slate-600/50 text-slate-300"
+                          }`}
+                        >
+                          {course.status}
                         </span>
-                      )}
-                    </div>
-
-                    <h3 className="font-display text-base font-bold text-white mt-2 group-hover:text-brand-primary transition-colors line-clamp-1 leading-snug">
-                      {course.title}
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                      {course.description}
-                    </p>
-
-                    {/* Schedule Details Badge */}
-                    {schedule && (
-                      <div className="mt-3.5 p-3 bg-[#0b1329]/90 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
-                        <span className="text-slate-300 font-medium">일정: 매주 {schedule.daysOfWeek.join("·")}</span>
-                        <span className="text-white font-mono font-bold tracking-wider">{schedule.timeSlot}</span>
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#030712]/70 text-white border border-white/10 backdrop-blur-md">
+                          {schedule?.totalSessions || 12}회차
+                        </span>
                       </div>
-                    )}
+                    </div>
 
-                    {/* Instructor */}
-                    <div className="flex items-center gap-2.5 mt-3.5">
-                      <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">
-                        {course.instructor.charAt(0)}
+                    <div className="p-5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-400 font-medium">{course.category}</span>
+                        {schedule && (
+                          <span className="text-xs font-semibold text-[#34d399] flex items-center gap-1.5">
+                            <CalendarIcon size={13} className="text-[#34d399]" />
+                            {schedule.startDate.slice(5)} ~ {schedule.endDate.slice(5)}
+                          </span>
+                        )}
                       </div>
-                      <span className="text-xs text-slate-300 font-medium">
-                        {course.instructor} 강사
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="p-5 pt-0">
-                  <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80">
-                    <div className="flex items-center gap-1.5">
-                      <Star size={14} className="text-amber-400 fill-amber-400" />
-                      <span className="text-xs text-white font-bold">{course.rating}</span>
-                      <span className="text-xs text-slate-400">({course.reviewCount})</span>
-                    </div>
-                    <div className="text-right">
-                      {course.discountedPrice ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500 line-through">
-                            ₩{course.price.toLocaleString()}
-                          </span>
-                          <span className="text-base font-bold text-[#34d399]">
-                            ₩{course.discountedPrice.toLocaleString()}
-                          </span>
+                      <h3 className="font-display text-base font-bold text-white mt-2 group-hover:text-brand-primary transition-colors line-clamp-1 leading-snug">
+                        {course.title}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                        {course.description}
+                      </p>
+
+                      {/* Schedule Details Badge */}
+                      {schedule && (
+                        <div className="mt-3.5 p-3 bg-[#0b1329]/90 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
+                          <span className="text-slate-300 font-medium">일정: 매주 {schedule.daysOfWeek.join("·")}</span>
+                          <span className="text-white font-mono font-bold tracking-wider">{schedule.timeSlot}</span>
                         </div>
-                      ) : (
-                        <span className="text-base font-bold text-[#34d399]">₩{course.price.toLocaleString()}</span>
                       )}
+
+                      {/* Instructor */}
+                      <div className="flex items-center gap-2.5 mt-3.5">
+                        <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">
+                          {course.instructor.charAt(0)}
+                        </div>
+                        <span className="text-xs text-slate-300 font-medium">
+                          {course.instructor} 강사
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5 pt-0">
+                    <div className="flex items-center justify-between pt-3.5 border-t border-slate-800/80">
+                      <div className="flex items-center gap-1.5">
+                        <Star size={14} className="text-amber-400 fill-amber-400" />
+                        <span className="text-xs text-white font-bold">{course.rating}</span>
+                        <span className="text-xs text-slate-400">({course.reviewCount})</span>
+                      </div>
+                      <div className="text-right">
+                        {course.discountedPrice ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-500 line-through">
+                              ₩{course.price.toLocaleString()}
+                            </span>
+                            <span className="text-base font-bold text-[#34d399]">
+                              ₩{course.discountedPrice.toLocaleString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-base font-bold text-[#34d399]">₩{course.price.toLocaleString()}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-10 rounded-2xl bg-[#0f172a] border border-slate-800/80 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto">
+              <BookOpen size={24} />
+            </div>
+            <h3 className="text-base font-bold text-white">추천 강의를 준비하고 있습니다</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              창업가와 예비 창업자를 위한 새로운 맞춤형 집중 과정이 곧 개설됩니다.
+            </p>
+            <button
+              onClick={() => onNavigate("courses")}
+              className="mt-2 text-xs px-4 py-2 rounded-lg bg-brand-primary text-white font-semibold hover:bg-brand-primary/90 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            >
+              전체 강의 둘러보기 <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ── 3. 주목받는 스타트업 ── */}
