@@ -24,6 +24,7 @@ import {
   Edit,
   Trash2,
   RotateCcw,
+  Share2,
 } from "lucide-react";
 import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
@@ -31,6 +32,7 @@ import SearchBar from "./common/SearchBar";
 import HighlightText from "./common/HighlightText";
 import { multiMatch } from "../utils/searchUtils";
 import { useUrlPagination } from "../hooks/useUrlQueryState";
+import { shareContent } from "../utils/shareUtils";
 import CourseCreateEditModal from "./CourseCreateEditModal";
 import { useToast } from "./common/Toast";
 import { api } from "../lib/api";
@@ -45,6 +47,7 @@ interface CoursePageProps {
   onSaveCourse?: (course: Course) => void;
   onDeleteCourse?: (courseId: string) => void;
   initialCourseId?: string | null;
+  onSelectCourse?: (courseId: string) => void;
   onClearSelectedCourse?: () => void;
 }
 
@@ -58,6 +61,7 @@ export default function CoursePage({
   onSaveCourse,
   onDeleteCourse,
   initialCourseId,
+  onSelectCourse,
   onClearSelectedCourse,
 }: CoursePageProps) {
   const toast = useToast();
@@ -71,18 +75,18 @@ export default function CoursePage({
   });
 
   React.useEffect(() => {
-    if (selectedCourse) {
-      const match = courses.find((c) => c.id === selectedCourse.id);
-      if (match && match !== selectedCourse) {
-        setSelectedCourse(match);
-      }
-    } else if (initialCourseId) {
+    if (initialCourseId) {
       const match = courses.find((c) => c.id === initialCourseId);
       if (match) {
         setSelectedCourse(match);
+      } else if (courses.length > 0) {
+        toast.error("강의를 찾을 수 없습니다", "존재하지 않거나 삭제된 강의입니다.");
+        onClearSelectedCourse?.();
       }
+    } else {
+      setSelectedCourse(null);
     }
-  }, [initialCourseId, courses]);
+  }, [initialCourseId, courses, onClearSelectedCourse]);
 
   const [activeCategory, setActiveCategory] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
@@ -315,27 +319,46 @@ export default function CoursePage({
             강의 목록으로
           </button>
 
-          {isLoggedIn && (selectedCourse.instructor === userName || userRoles?.includes("admin")) && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setEditingCourse(selectedCourse);
-                  setShowEditModal(true);
-                }}
-                className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary hover:opacity-90 text-white transition-all shadow-md cursor-pointer"
-              >
-                <Edit size={13} />
-                강의 수정
-              </button>
-              <button
-                onClick={() => handleDeleteCourseItem(selectedCourse.id)}
-                className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all shadow-md cursor-pointer"
-              >
-                <Trash2 size={13} />
-                강의 삭제
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                shareContent({
+                  title: `${selectedCourse.title} | AI로 창업하라`,
+                  text: `${selectedCourse.aiSummary || selectedCourse.description} (강사: ${selectedCourse.instructor})`,
+                  url: `${window.location.origin}/courses/${selectedCourse.id}`,
+                  onSuccess: () => toast.success("공유 링크 복사", "강의 상세 링크가 클립보드에 복사되었습니다."),
+                  onError: () => toast.error("복사 실패", "링크 복사 중 오류가 발생했습니다."),
+                });
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-white border border-slate-700 transition-all shadow-sm cursor-pointer"
+              title="강의 상세 링크 공유"
+            >
+              <Share2 size={13} className="text-brand-primary" />
+              <span>공유하기</span>
+            </button>
+
+            {isLoggedIn && (selectedCourse.instructor === userName || userRoles?.includes("admin")) && (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingCourse(selectedCourse);
+                    setShowEditModal(true);
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-primary-container to-brand-secondary hover:opacity-90 text-white transition-all shadow-md cursor-pointer"
+                >
+                  <Edit size={13} />
+                  강의 수정
+                </button>
+                <button
+                  onClick={() => handleDeleteCourseItem(selectedCourse.id)}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all shadow-md cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  강의 삭제
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1350,7 +1373,10 @@ export default function CoursePage({
                   data-testid="course-card"
                   className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
                   style={{ animationDelay: `${idx * 50}ms` }}
-                  onClick={() => setSelectedCourse(course)}
+                  onClick={() => {
+                    setSelectedCourse(course);
+                    onSelectCourse?.(course.id);
+                  }}
                 >
                   <div>
                     <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#2e1065] via-[#4338ca] to-[#3b0764] flex items-center justify-center">

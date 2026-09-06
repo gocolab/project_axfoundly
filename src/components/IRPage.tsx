@@ -33,6 +33,8 @@ import {
   CheckCircle2,
   Trash2,
   Edit3,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import type { IRProject, UserRole, HiringRoleDetail, InvestmentProposal, IdeaRequest, IdeaProposal } from "../types";
 import Pagination from "./common/Pagination";
@@ -40,6 +42,7 @@ import SearchBar from "./common/SearchBar";
 import HighlightText from "./common/HighlightText";
 import { multiMatch } from "../utils/searchUtils";
 import { useUrlPagination } from "../hooks/useUrlQueryState";
+import { shareContent } from "../utils/shareUtils";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
 import ProjectCreateEditModal, { convertToEmbedUrl } from "./ProjectCreateEditModal";
@@ -101,6 +104,7 @@ interface IRPageProps {
   onSendProposal?: (proposal: InvestmentProposal) => void;
   onSaveProject?: (project: IRProject) => void;
   initialProjectId?: string | null;
+  onSelectProject?: (projectId: string) => void;
   onClearSelectedProject?: () => void;
 }
 
@@ -114,6 +118,7 @@ export default function IRPage({
   onSendProposal,
   onSaveProject,
   initialProjectId,
+  onSelectProject,
   onClearSelectedProject,
 }: IRPageProps) {
   const toast = useToast();
@@ -136,9 +141,14 @@ export default function IRPage({
       const match = projects.find((p) => p.id === initialProjectId);
       if (match) {
         setSelectedProject(match);
+      } else if (projects.length > 0) {
+        toast.error("프로젝트를 찾을 수 없습니다", "존재하지 않거나 삭제된 스타트업 프로젝트입니다.");
+        onClearSelectedProject?.();
       }
+    } else {
+      setSelectedProject(null);
     }
-  }, [initialProjectId, projects]);
+  }, [initialProjectId, projects, onClearSelectedProject]);
 
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
@@ -264,6 +274,47 @@ export default function IRPage({
     } catch (err) {
       console.error("Delete project failed", err);
       toast.error("삭제 실패", "일시적인 오류가 발생했습니다.");
+    }
+  };
+
+  const handleToggleHiring = async (projectId: string, currentHiringState: boolean) => {
+    const targetState = !currentHiringState;
+    const actionName = targetState ? "채용 재개" : "채용 마감";
+    const confirmed = await toast.confirm({
+      title: `${actionName} 확인`,
+      message: targetState
+        ? "팀원 모집을 다시 시작하시겠습니까?\n프로젝트 목록과 상세 페이지에 '채용중' 배지가 표시되고 지원 접수가 활성화됩니다."
+        : "팀원 모집을 마감하시겠습니까?\n목록 및 상세 페이지에서 '채용 마감'으로 전환되며 신규 지원 접수가 제한됩니다.",
+      confirmText: actionName,
+      cancelText: "취소",
+      type: targetState ? "success" : "primary",
+    });
+    if (!confirmed) return;
+
+    try {
+      if (!selectedProject) return;
+      const updatedProject: IRProject = {
+        ...selectedProject,
+        isHiring: targetState,
+      };
+      const res = await api.saveIRProject(updatedProject);
+      const saved = res.project || updatedProject;
+
+      setSelectedProject(saved);
+      setLocalProjects((prev) =>
+        prev.map((p) => (p.id === saved.id ? saved : p))
+      );
+      if (onSaveProject) {
+        onSaveProject(saved);
+      }
+      if (targetState) {
+        toast.success("채용 재개 완료", "팀원 모집이 성공적으로 재개되었습니다.");
+      } else {
+        toast.info("채용 마감 완료", "팀원 채용 공고가 마감 처리되었습니다.");
+      }
+    } catch (err) {
+      console.error("Toggle hiring failed", err);
+      toast.error("상태 변경 실패", "채용 상태 변경 중 오류가 발생했습니다.");
     }
   };
 
@@ -461,17 +512,39 @@ export default function IRPage({
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fadeIn">
-        <button
-          onClick={() => {
-            setSelectedProject(null);
-            setProposalSent(false);
-            onClearSelectedProject?.();
-          }}
-          className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white mb-6 cursor-pointer transition-colors"
-        >
-          <ArrowLeft size={16} />
-          스타트업 목록으로
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => {
+              setSelectedProject(null);
+              setProposalSent(false);
+              onClearSelectedProject?.();
+            }}
+            className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white cursor-pointer transition-colors"
+          >
+            <ArrowLeft size={16} />
+            스타트업 목록으로
+          </button>
+
+          <button
+            onClick={() => {
+              const teamTitle = isAnonymousMode
+                ? selectedProject.anonymousTeamName || `${selectedProject.field} 스텔스 창업팀`
+                : selectedProject.teamName;
+              shareContent({
+                title: `[IR 프로젝트] ${selectedProject.title} (${teamTitle}) | AI로 창업하라`,
+                text: selectedProject.oneLiner || selectedProject.problem || selectedProject.title,
+                url: `${window.location.origin}/ir/${selectedProject.id}`,
+                onSuccess: () => toast.success("공유 링크 복사", "스타트업 프로젝트 링크가 클립보드에 복사되었습니다."),
+                onError: () => toast.error("복사 실패", "링크 복사 중 오류가 발생했습니다."),
+              });
+            }}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-white border border-slate-700 transition-all shadow-sm cursor-pointer"
+            title="스타트업 프로젝트 링크 공유"
+          >
+            <Share2 size={13} className="text-brand-primary" />
+            <span>공유하기</span>
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Project Details */}
@@ -503,10 +576,17 @@ export default function IRPage({
                       <Lock size={12} /> 스텔스(비실명) 모드
                     </span>
                   )}
-                  {selectedProject.isHiring && (
+                  {selectedProject.isHiring ? (
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 backdrop-blur-md">
                       🔥 팀원 모집 중
                     </span>
+                  ) : (
+                    ((selectedProject.hiringDetails && selectedProject.hiringDetails.length > 0) ||
+                      (selectedProject.hiringRoles && selectedProject.hiringRoles.length > 0)) && (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-700/60 border border-slate-600/50 text-slate-300 backdrop-blur-md">
+                        🔒 채용 마감
+                      </span>
+                    )
                   )}
                 </div>
               </div>
@@ -518,13 +598,32 @@ export default function IRPage({
                       <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
                         {currentTeamName}
                       </h1>
-                      {/* 작성자 / 관리자 수정·삭제 액션 버튼 */}
+                      {/* 작성자 / 관리자 수정·삭제·채용제어 액션 버튼 */}
                       {isLoggedIn &&
                         (selectedProject.authorName === userName ||
                           selectedProject.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
                           userRoles.includes("admin") ||
                           userRoles.includes("manager")) && (
-                          <div className="inline-flex items-center gap-1.5 ml-1">
+                          <div className="inline-flex items-center gap-1.5 ml-1 flex-wrap">
+                            {selectedProject.isHiring ? (
+                              <button
+                                onClick={() => handleToggleHiring(selectedProject.id, true)}
+                                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-colors cursor-pointer font-semibold shadow-sm"
+                                title="팀원 모집 마감하기"
+                              >
+                                <UserX size={12} />
+                                <span>채용 마감</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleToggleHiring(selectedProject.id, false)}
+                                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-colors cursor-pointer font-semibold shadow-sm"
+                                title="팀원 모집 다시 시작하기"
+                              >
+                                <UserCheck size={12} />
+                                <span>채용 재개</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setEditingProject(selectedProject);
@@ -707,23 +806,54 @@ export default function IRPage({
 
 
             {/* ── Hiring Roles with Option Inputs & Link Switching ── */}
-            {selectedProject.isHiring && (
+            {(selectedProject.isHiring || (hiringDetails && hiringDetails.length > 0)) && (
               <div className="bg-brand-card border border-brand-border/60 rounded-xl p-6 shadow-md">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                     <Briefcase size={18} className="text-brand-tertiary" />
                     구인/구직 공고 ({hiringDetails.length}개 포지션)
+                    {!selectedProject.isHiring && (
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-slate-700 text-slate-300 font-normal">
+                        마감됨
+                      </span>
+                    )}
                   </h2>
                   <span className="text-xs text-brand-tertiary font-semibold">
                     자체 지원 및 외부 채용 링크 지원
                   </span>
                 </div>
 
+                {/* 마감 상태 안내 배너 */}
+                {!selectedProject.isHiring && (
+                  <div className="mb-4 p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <Lock size={14} className="text-slate-400 shrink-0" />
+                      <span>현재 팀원 채용이 <strong>마감</strong>되었습니다. 등록된 포지션 내역을 열람 중입니다.</span>
+                    </div>
+                    {isLoggedIn &&
+                      (selectedProject.authorName === userName ||
+                        selectedProject.members?.some((m) => m.name === userName || m.anonymousName === userName) ||
+                        userRoles.includes("admin") ||
+                        userRoles.includes("manager")) && (
+                        <button
+                          onClick={() => handleToggleHiring(selectedProject.id, false)}
+                          className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <UserCheck size={12} /> 채용 재개하기
+                        </button>
+                      )}
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-3">
                   {hiringDetails.map((roleItem) => (
                     <div
                       key={roleItem.id}
-                      className="p-4 bg-brand-surface-low rounded-xl border border-brand-border/40 hover:border-brand-primary/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className={`p-4 bg-brand-surface-low rounded-xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                        selectedProject.isHiring
+                          ? "border-brand-border/40 hover:border-brand-primary/40"
+                          : "border-slate-800 opacity-80"
+                      }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -762,9 +892,17 @@ export default function IRPage({
                         </div>
                       </div>
 
-                      {/* Action Button: Internal Apply vs External Link */}
+                      {/* Action Button: Internal Apply vs External Link vs Closed */}
                       <div className="flex-shrink-0">
-                        {roleItem.applyMethod === "link" && roleItem.externalLink ? (
+                        {!selectedProject.isHiring ? (
+                          <button
+                            disabled
+                            className="text-xs bg-slate-800/80 text-slate-400 font-medium px-3.5 py-2 rounded-xl border border-slate-700/60 cursor-not-allowed flex items-center gap-1.5 shadow-none select-none"
+                            title="현재 채용이 마감된 포지션입니다."
+                          >
+                            <Lock size={12} /> 지원 마감
+                          </button>
+                        ) : roleItem.applyMethod === "link" && roleItem.externalLink ? (
                           <a
                             href={roleItem.externalLink}
                             target="_blank"
@@ -783,7 +921,6 @@ export default function IRPage({
                           >
                             지원하기
                           </button>
-
                         )}
                       </div>
                     </div>
@@ -1134,7 +1271,10 @@ export default function IRPage({
                 data-testid="project-card"
                 className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
                 style={{ animationDelay: `${idx * 50}ms` }}
-                onClick={() => setSelectedProject(project)}
+                onClick={() => {
+                  setSelectedProject(project);
+                  onSelectProject?.(project.id);
+                }}
               >
                 <div>
                   <div className="h-20 relative overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#0f766e] to-[#042f2e] flex items-center justify-center">
@@ -1796,7 +1936,10 @@ export default function IRPage({
                                     onClick={() => {
                                       setActiveTab("browse");
                                       const targetProj = projects.find((p) => p.id === prop.linkedProjectId);
-                                      if (targetProj) setSelectedProject(targetProj);
+                                      if (targetProj) {
+                                        setSelectedProject(targetProj);
+                                        onSelectProject?.(targetProj.id);
+                                      }
                                     }}
                                     className="ml-auto text-[11px] text-brand-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
                                   >

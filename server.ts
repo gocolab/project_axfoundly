@@ -18,6 +18,7 @@ import instructorRouter from "./server/routes/instructor.js";
 import adminRouter from "./server/routes/admin.js";
 import aiRouter from "./server/routes/ai.js";
 import commonRouter from "./server/routes/common.js";
+import { ogCrawlerMiddleware } from "./server/middlewares/ogCrawler.js";
 
 const getDirname = () => {
   try {
@@ -79,6 +80,9 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
   });
+
+  // Social media bot Open Graph crawler middleware
+  app.use(ogCrawlerMiddleware);
 
   // Serve static UI assets and handle hot reload in dev
   if (process.env.NODE_ENV !== "production") {

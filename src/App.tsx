@@ -71,7 +71,8 @@ export default function App() {
       return { page: "ir", courseId: null, projectId: match ? match[1] : null, postId: null };
     }
     if (path.startsWith("/community")) {
-      return { page: "community", courseId: null, projectId: null, postId: null };
+      const match = path.match(/^\/community\/([^/]+)/);
+      return { page: "community", courseId: null, projectId: null, postId: match ? match[1] : null };
     }
     if (path.startsWith("/mypage") || path.startsWith("/dashboard")) {
       return { page: "dashboard", courseId: null, projectId: null, postId: null };
@@ -91,6 +92,10 @@ export default function App() {
 
   const setCurrentPage = React.useCallback((page: string, pushHistory = true) => {
     setCurrentPageRaw(page);
+    if (page !== "courses") setSelectedCourseId(null);
+    if (page !== "ir") setSelectedProjectId(null);
+    if (page !== "community") setSelectedPostId(null);
+
     if (pushHistory) {
       const pathMap: Record<string, string> = {
         home: "/",
@@ -112,9 +117,9 @@ export default function App() {
     const handlePopState = () => {
       const route = getInitialRoute();
       setCurrentPageRaw(route.page);
-      if (route.courseId) setSelectedCourseId(route.courseId);
-      if (route.projectId) setSelectedProjectId(route.projectId);
-      if (route.postId) setSelectedPostId(route.postId);
+      setSelectedCourseId(route.courseId);
+      setSelectedProjectId(route.projectId);
+      setSelectedPostId(route.postId);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -487,17 +492,50 @@ export default function App() {
 
   const handleViewCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
-    setCurrentPage("courses");
+    setCurrentPageRaw("courses");
+    const targetPath = `/courses/${courseId}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ page: "courses", courseId }, "", targetPath);
+    }
+  };
+
+  const handleClearSelectedCourse = () => {
+    setSelectedCourseId(null);
+    if (window.location.pathname !== "/courses") {
+      window.history.pushState({ page: "courses" }, "", "/courses");
+    }
   };
 
   const handleViewIR = (projectId: string) => {
     setSelectedProjectId(projectId);
-    setCurrentPage("ir");
+    setCurrentPageRaw("ir");
+    const targetPath = `/ir/${projectId}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ page: "ir", projectId }, "", targetPath);
+    }
+  };
+
+  const handleClearSelectedProject = () => {
+    setSelectedProjectId(null);
+    if (window.location.pathname !== "/ir") {
+      window.history.pushState({ page: "ir" }, "", "/ir");
+    }
   };
 
   const handleViewPost = (postId: string) => {
     setSelectedPostId(postId);
-    setCurrentPage("community");
+    setCurrentPageRaw("community");
+    const targetPath = `/community/${postId}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ page: "community", postId }, "", targetPath);
+    }
+  };
+
+  const handleClearSelectedPost = () => {
+    setSelectedPostId(null);
+    if (window.location.pathname !== "/community") {
+      window.history.pushState({ page: "community" }, "", "/community");
+    }
   };
 
   // Pending courses for admin review
@@ -561,7 +599,8 @@ export default function App() {
             onSaveCourse={handleSaveCourse}
             onDeleteCourse={handleDeleteCourse}
             initialCourseId={selectedCourseId}
-            onClearSelectedCourse={() => setSelectedCourseId(null)}
+            onSelectCourse={handleViewCourse}
+            onClearSelectedCourse={handleClearSelectedCourse}
           />
         );
       case "ir":
@@ -576,7 +615,8 @@ export default function App() {
             onSendProposal={handleSendProposal}
             onSaveProject={handleSaveProject}
             initialProjectId={selectedProjectId}
-            onClearSelectedProject={() => setSelectedProjectId(null)}
+            onSelectProject={handleViewIR}
+            onClearSelectedProject={handleClearSelectedProject}
           />
         );
       case "community":
@@ -591,7 +631,8 @@ export default function App() {
             userName={userName}
             onLoginClick={() => setShowAuthModal(true)}
             initialPostId={selectedPostId}
-            onClearSelectedPost={() => setSelectedPostId(null)}
+            onSelectPost={handleViewPost}
+            onClearSelectedPost={handleClearSelectedPost}
             adminBoards={adminBoards}
           />
         );

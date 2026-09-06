@@ -34,6 +34,7 @@ interface CommunityPageProps {
   userName?: string;
   onLoginClick: () => void;
   initialPostId?: string | null;
+  onSelectPost?: (postId: string) => void;
   onClearSelectedPost?: () => void;
   adminBoards?: AdminBoard[];
 }
@@ -48,6 +49,7 @@ export default function CommunityPage({
   userName = "김수강생",
   onLoginClick,
   initialPostId,
+  onSelectPost,
   onClearSelectedPost,
   adminBoards = [],
 }: CommunityPageProps) {
@@ -76,9 +78,14 @@ export default function CommunityPage({
       const match = posts.find((p) => p.id === initialPostId);
       if (match) {
         setSelectedPost(match);
+      } else if (posts.length > 0) {
+        toast.error("게시글을 찾을 수 없습니다", "존재하지 않거나 삭제된 게시글입니다.");
+        if (onClearSelectedPost) onClearSelectedPost();
       }
+    } else {
+      setSelectedPost(null);
     }
-  }, [initialPostId, posts]);
+  }, [initialPostId, posts, onClearSelectedPost]);
 
   const [showWriteModal, setShowWriteModal] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState("");
@@ -203,15 +210,17 @@ export default function CommunityPage({
     if (selectedPost) {
       setSelectedPost(null);
       setIsClosing(false);
+      if (onClearSelectedPost) onClearSelectedPost();
     }
-  }, [activeBoard]);
+  }, [activeBoard, onClearSelectedPost]);
 
   React.useEffect(() => {
     if (selectedPost) {
       setSelectedPost(null);
       setIsClosing(false);
+      if (onClearSelectedPost) onClearSelectedPost();
     }
-  }, [currentPage]);
+  }, [currentPage, onClearSelectedPost]);
 
   const handleCloseDetail = () => {
     setIsClosing(true);
@@ -228,6 +237,7 @@ export default function CommunityPage({
     } else {
       setSelectedPost(post);
       setIsClosing(false);
+      onSelectPost?.(post.id);
     }
   };
 
