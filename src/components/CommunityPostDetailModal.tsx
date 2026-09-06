@@ -11,12 +11,10 @@ import {
   Pin,
   Trash2,
   Edit,
-  Share2,
 } from "lucide-react";
 import type { BoardPost, Comment, UserRole } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
-import { shareContent } from "../utils/shareUtils";
 
 interface CommunityPostDetailModalProps {
   key?: React.Key;
@@ -207,22 +205,6 @@ export default function CommunityPostDetailModal({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                shareContent({
-                  title: `[${post.boardType}] ${post.title} | AI로 창업하라`,
-                  text: (post.content || "").slice(0, 100),
-                  url: `${window.location.origin}/community/${post.id}`,
-                  onSuccess: () => toast.success("공유 링크 복사", "게시글 링크가 클립보드에 복사되었습니다."),
-                  onError: () => toast.error("복사 실패", "링크 복사 중 오류가 발생했습니다."),
-                });
-              }}
-              className="p-1 px-2 rounded-lg text-brand-on-surface hover:text-white hover:bg-white/10 transition-colors cursor-pointer text-xs flex items-center gap-1 border border-white/20"
-              title="게시글 상세 링크 공유"
-            >
-              <Share2 size={13} className="text-brand-primary" />
-              <span className="text-[11px] font-semibold">공유</span>
-            </button>
             {canEditPost && (
               <button
                 onClick={() => onEditPost && onEditPost(post)}

@@ -42,7 +42,6 @@ import SearchBar from "./common/SearchBar";
 import HighlightText from "./common/HighlightText";
 import { multiMatch } from "../utils/searchUtils";
 import { useUrlPagination } from "../hooks/useUrlQueryState";
-import { shareContent } from "../utils/shareUtils";
 import InvestmentProposalModal from "./InvestmentProposalModal";
 import JobApplicationModal from "./JobApplicationModal";
 import ProjectCreateEditModal, { convertToEmbedUrl } from "./ProjectCreateEditModal";
@@ -512,39 +511,17 @@ export default function IRPage({
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fadeIn">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => {
-              setSelectedProject(null);
-              setProposalSent(false);
-              onClearSelectedProject?.();
-            }}
-            className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white cursor-pointer transition-colors"
-          >
-            <ArrowLeft size={16} />
-            스타트업 목록으로
-          </button>
-
-          <button
-            onClick={() => {
-              const teamTitle = isAnonymousMode
-                ? selectedProject.anonymousTeamName || `${selectedProject.field} 스텔스 창업팀`
-                : selectedProject.teamName;
-              shareContent({
-                title: `[IR 프로젝트] ${selectedProject.title} (${teamTitle}) | AI로 창업하라`,
-                text: selectedProject.oneLiner || selectedProject.problem || selectedProject.title,
-                url: `${window.location.origin}/ir/${selectedProject.id}`,
-                onSuccess: () => toast.success("공유 링크 복사", "스타트업 프로젝트 링크가 클립보드에 복사되었습니다."),
-                onError: () => toast.error("복사 실패", "링크 복사 중 오류가 발생했습니다."),
-              });
-            }}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-white border border-slate-700 transition-all shadow-sm cursor-pointer"
-            title="스타트업 프로젝트 링크 공유"
-          >
-            <Share2 size={13} className="text-brand-primary" />
-            <span>공유하기</span>
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            setSelectedProject(null);
+            setProposalSent(false);
+            onClearSelectedProject?.();
+          }}
+          className="flex items-center gap-1.5 text-sm text-brand-on-surface-variant hover:text-white mb-6 cursor-pointer transition-colors"
+        >
+          <ArrowLeft size={16} />
+          스타트업 목록으로
+        </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Project Details */}

@@ -60,9 +60,8 @@ test.describe("상세 정보 화면 공유 링크 및 딥링크 E2E 검증", () 
     await expect(shareBtn).toBeVisible();
   });
 
-  test("3. IR 프로젝트 상세 URL 동기화, 공유 버튼, 목록 복귀 검증", async ({ page }) => {
+  test("3. IR 프로젝트 상세 진입 및 목록 복귀 검증 (공유 버튼 미노출)", async ({ page }) => {
     await page.goto("/ir");
-
 
     // 프로젝트 카드 확인
     const projectCard = page.locator('[data-testid="project-card"]').first();
@@ -74,13 +73,9 @@ test.describe("상세 정보 화면 공유 링크 및 딥링크 E2E 검증", () 
     // URL이 /ir/<id> 형식으로 변경되었는지 확인
     await expect(page).toHaveURL(/\/ir\/.+/);
 
-    // 상세 헤더에 공유하기 버튼 확인 및 클릭
+    // 상세 헤더에 공유하기 버튼이 없음을 확인 (교육/강의만 공유하기 정책)
     const shareBtn = page.getByRole("button", { name: /공유하기/i });
-    await expect(shareBtn).toBeVisible();
-    await shareBtn.click();
-
-    // 토스트 알림 확인
-    await expect(page.locator("text=공유 링크 복사")).toBeVisible({ timeout: 5000 });
+    await expect(shareBtn).not.toBeVisible();
 
     // 스타트업 목록으로 복귀
     const backBtn = page.getByRole("button", { name: /스타트업 목록으로/i });
@@ -91,9 +86,8 @@ test.describe("상세 정보 화면 공유 링크 및 딥링크 E2E 검증", () 
     await expect(projectCard).toBeVisible();
   });
 
-  test("4. 커뮤니티 게시글 상세 URL 동기화 및 공유 버튼 검증", async ({ page }) => {
+  test("4. 커뮤니티 게시글 상세 뷰 진입 및 공유 버튼 미노출 검증", async ({ page }) => {
     await page.goto("/community");
-
 
     // 게시글 행 클릭
     const postRow = page.locator("tbody tr, div[data-testid='post-card']").first();
@@ -103,13 +97,9 @@ test.describe("상세 정보 화면 공유 링크 및 딥링크 E2E 검증", () 
       // URL이 /community/<id>로 변경되었는지 확인
       await expect(page).toHaveURL(/\/community\/.+/);
 
-      // 공유 버튼 확인
-      const shareBtn = page.getByRole("button", { name: /공유/i }).first();
-      await expect(shareBtn).toBeVisible();
-      await shareBtn.click();
-
-      // 토스트 알림 확인
-      await expect(page.locator("text=공유 링크 복사")).toBeVisible({ timeout: 5000 });
+      // 공유 버튼이 모달에 노출되지 않음을 확인
+      const shareBtn = page.getByRole("button", { name: /공유/i });
+      await expect(shareBtn).not.toBeVisible();
     }
   });
 });
