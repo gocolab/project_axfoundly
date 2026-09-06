@@ -6,6 +6,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
+  reporter: [['list']],
   use: {
     baseURL: 'http://localhost:3010',
     trace: 'off',
