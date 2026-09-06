@@ -1,63 +1,56 @@
 # 03. 프론트엔드 설계 규칙
 
-> 문서 상태: ❓ 인터뷰 진행 중
-> biz_flows.md 제안: React (혹은 Next.js Export 모드), Tailwind CSS. 직관적이고 단순한 사용성을 갖춘 모던 스타일.
+> 문서 상태: ✅ 결정 완료
+> React 19 + Vite 6 + Tailwind CSS v4 기반 프론트엔드 아키텍처 규칙
 
 ## 1. 기본 구조
 
 ### 렌더링 방식
-- 상태: ❓ 미결정
+- 상태: ✅ 결정
 - 선택지: SPA(CSR) / SSR / SSG / 하이브리드(Next.js)
-- 결정:
-- 이유:
-- 결정일:
+- 결정: **SPA (Client-Side Rendering)**
+- 이유: 데스크톱 및 모바일 반응형 웹 앱으로서 빠른 화면 전환 및 인터랙티브 모달/대시보드 지원
+- 결정일: 2026-08-20
 
 ### 라우팅 규칙
-- 상태: ❓ 미결정
-- 결정: (biz_flows.md 기반 예상 라우트)
-  - `/` — 메인 랜딩
-  - `/courses` — 강의 목록·검색
-  - `/courses/:id` — 강의 상세·수강 신청
-  - `/dashboard/student` — 수강생 대시보드
-  - `/dashboard/instructor` — 강사 대시보드 (강의 관리·정산)
-  - `/dashboard/investor` — 투자자 대시보드
-  - `/projects` — 프로젝트(팀빌딩) 목록
-  - `/projects/:id` — 프로젝트 상세·팀원 매칭
-  - `/investments` — 투자 유치 공고 목록
-  - `/board/:boardId` — 멀티 게시판
-  - `/login`, `/signup` — 인증
-- 결정일:
+- 상태: ✅ 결정
+- 결정:
+  - `/` — 메인 홈 (히어로 배너, 인기 강의, 주목받는 스타트업)
+  - `/courses` — 교육/강의 목록 및 검색
+  - `/courses/:id` — 강의 상세, 수강 신청, 회차별 달력
+  - `/ir` — 스타트업 & IR 탐색 / 아이디어 제작 요청소
+  - `/ir/:id` — IR 상세, 팀원 모집, 투자 제안
+  - `/community` — 멀티 게시판 (공지사항, 팀빌딩, QnA, 수강생 역제안)
+  - `/community/:id` — 게시글 상세
+  - `/mypage` 또는 `/dashboard` — 통합 마이페이지
+  - `/admin` — 최고 관리자 콘솔
+- 결정일: 2026-08-20
 
 ### 폴더 구조
-- 상태: ❓ 미결정
+- 상태: ✅ 결정
 - 결정:
 ```
 src/
-├── app/              # main · providers · router
-├── pages/            # 라우트별 페이지
-├── components/
-│   ├── layout/       # Header · Sidebar · Footer · PageLayout
-│   └── ui/           # Button · Card · Table · Modal 등 공통 UI
-├── features/
-│   ├── auth/         # 로그인·회원가입 — components/ api/ types/
-│   ├── course/       # 강의 목록·상세·수강 (동일 하위 구조)
-│   ├── team/         # 팀빌딩·프로젝트
-│   ├── investment/   # 투자 유치·IR
-│   ├── board/        # 멀티 게시판
-│   └── payment/      # 결제·정산
-├── lib/              # API 클라이언트 · 유틸
-├── types/            # 공통 타입
-└── styles/           # 전역 CSS · Tailwind 설정
+├── components/       # 페이지 뷰 및 모달 컴포넌트
+│   ├── common/       # AITutorWidget, Pagination, SearchBar, Toast
+│   ├── GNB.tsx       # 글로벌 내비게이션 바
+│   ├── Footer.tsx    # 푸터
+│   └── ...           # 도메인별 뷰 및 모달
+├── hooks/            # 커스텀 훅 (useCommonCodes, useUrlQueryState)
+├── lib/              # api.ts (타입 안전한 fetcher 클라이언트)
+├── utils/            # idGenerator, searchUtils, shareUtils
+├── types.ts          # 도메인 타입 정의
+├── index.css         # Tailwind v4 전역 스타일 및 애니메이션
+└── App.tsx           # 최상위 셸 (라우팅, 세션 복원, 전역 모달)
 ```
-- 결정일:
+- 결정일: 2026-08-20
 
 ## 2. 상태 관리
 
 ### 서버 상태 (API 데이터)
-- 상태: ❓ 미결정
-- 선택지: TanStack Query / SWR / 직접 fetch
-- 결정:
-- 이유:
+- 상태: ✅ 결정
+- 결정: `src/lib/api.ts`를 통한 직접 fetch 및 로컬 React State (`useState`, `useCallback`)
+- 결정일: 2026-08-20
 - 결정일:
 
 ### 클라이언트 상태 (UI 상태)

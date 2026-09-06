@@ -84,6 +84,15 @@ let mongodb: Db;
 // stats는 단일 문서이므로 별도 처리가 필요한 키 목록
 const SINGLETON_KEYS: Array<keyof DatabaseSchema> = ["stats"];
 
+function getDocumentPrimaryKey(item: any): string | null {
+  if (!item || typeof item !== "object") return null;
+  if ("id" in item && item.id != null) return "id";
+  if ("userId" in item && item.userId != null) return "userId";
+  if ("groupCode" in item && item.groupCode != null) return "groupCode";
+  if ("tid" in item && item.tid != null) return "tid";
+  return null;
+}
+
 class Database {
   private cache: DatabaseSchema;
   private initialized = false;
@@ -221,7 +230,7 @@ class Database {
   }
 
   /**
-   * MongoDB 컬렉션에 캐시 내용을 영속화 (전체 교체 방식)
+   * MongoDB 컬렉션에 캐시 내용을 안전하게 영속화 (Bulk Upsert & Cleanup)
    */
   private async syncToMongo<K extends keyof DatabaseSchema>(key: K): Promise<void> {
     if (!mongodb) return;
@@ -241,8 +250,32 @@ class Database {
           const { _id, ...rest } = item || {};
           return rest;
         });
-        await collection.deleteMany({});
-        if (arr.length > 0) {
+
+        if (arr.length === 0) {
+          await collection.deleteMany({});
+          return;
+        }
+
+        // 고유 식별자가 있는 문서는 deleteMany 없이 안전하게 Bulk Upsert 수행하여 데이터 유실 및 빈 컬렉션 갭 차단
+        const pk = getDocumentPrimaryKey(arr[0]);
+        if (pk) {
+          const operations = arr.map((item: any) => ({
+            replaceOne: {
+              filter: { [pk]: item[pk] },
+              replacement: item,
+              upsert: true,
+            },
+          }));
+
+          await collection.bulkWrite(operations, { ordered: false });
+
+          // 현재 캐시에 없는 삭제된 항목만 안전하게 정리
+          const currentIds = arr.map((item: any) => item[pk]).filter(Boolean);
+          if (currentIds.length > 0) {
+            await collection.deleteMany({ [pk]: { $nin: currentIds } });
+          }
+        } else {
+          await collection.deleteMany({});
           await collection.insertMany(arr);
         }
       }
