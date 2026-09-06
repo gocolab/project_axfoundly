@@ -252,7 +252,7 @@ class NotificationService {
                         🚀 AI로 창업하라
                       </div>
                       <div style="font-size: 11px; color: #e0e7ff; margin-top: 2px; letter-spacing: 1px; font-family: monospace;">
-                        LAUNCH WITH AI
+                        FOUND WITH AI
                       </div>
                     </a>
                   </td>

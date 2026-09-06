@@ -90,7 +90,7 @@ export default function GNB({
                 AI로 창업하라
               </span>
               <span className="block text-[10px] text-brand-on-surface-variant -mt-0.5 font-mono tracking-wider">
-                LAUNCH WITH AI
+                FOUND WITH AI
               </span>
             </div>
           </button>
