@@ -323,6 +323,21 @@ export default function App() {
     }
   };
 
+  const handleDuplicateCourse = async (courseId: string) => {
+    try {
+      const res = await api.duplicateCourse(courseId);
+      if (res.course) {
+        setCourses((prev) => [res.course, ...prev]);
+        refreshData();
+        toast.success("강의 복제 완료", `'${res.course.title}' 강의가 성공적으로 등록되었습니다.`);
+        return res.course;
+      }
+    } catch (error) {
+      console.error("Duplicate course failed:", error);
+      toast.error("강의 복제 실패", "강의를 복제하는 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleToggleBookmark = async (projectId: string) => {
     try {
       const res = await api.toggleBookmark(projectId);
@@ -566,6 +581,7 @@ export default function App() {
         handleSaveCourse={handleSaveCourse}
         handleSendCRMMessage={handleSendCRMMessage}
         handleToggleBookmark={handleToggleBookmark}
+        handleDuplicateCourse={handleDuplicateCourse}
       />
     );
   };
@@ -598,6 +614,7 @@ export default function App() {
             onLoginClick={() => setShowAuthModal(true)}
             onSaveCourse={handleSaveCourse}
             onDeleteCourse={handleDeleteCourse}
+            onDuplicateCourse={handleDuplicateCourse}
             initialCourseId={selectedCourseId}
             onSelectCourse={handleViewCourse}
             onClearSelectedCourse={handleClearSelectedCourse}

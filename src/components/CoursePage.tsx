@@ -25,6 +25,7 @@ import {
   Trash2,
   RotateCcw,
   Share2,
+  Copy,
 } from "lucide-react";
 import type { Course, InstructorProfile, Review } from "../types";
 import Pagination from "./common/Pagination";
@@ -46,6 +47,7 @@ interface CoursePageProps {
   onLoginClick: () => void;
   onSaveCourse?: (course: Course) => void;
   onDeleteCourse?: (courseId: string) => void;
+  onDuplicateCourse?: (courseId: string) => Promise<Course | undefined> | void;
   initialCourseId?: string | null;
   onSelectCourse?: (courseId: string) => void;
   onClearSelectedCourse?: () => void;
@@ -60,6 +62,7 @@ export default function CoursePage({
   onLoginClick,
   onSaveCourse,
   onDeleteCourse,
+  onDuplicateCourse,
   initialCourseId,
   onSelectCourse,
   onClearSelectedCourse,
@@ -113,6 +116,7 @@ export default function CoursePage({
   const [reviewHoverRating, setReviewHoverRating] = React.useState<number>(0);
   const [reviewContent, setReviewContent] = React.useState<string>("");
   const [isSubmittingReview, setIsSubmittingReview] = React.useState<boolean>(false);
+  const [isDuplicating, setIsDuplicating] = React.useState<boolean>(false);
 
   const handleDeleteCourseItem = async (courseId: string) => {
     const confirmed = await toast.confirm({
@@ -137,6 +141,33 @@ export default function CoursePage({
     } catch (err) {
       console.error("Delete course failed:", err);
       toast.error("강의 삭제 실패", "강의를 삭제하는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDuplicateCourseItem = async (courseId: string) => {
+    if (isDuplicating) return;
+    try {
+      setIsDuplicating(true);
+      if (onDuplicateCourse) {
+        const newCourse = await onDuplicateCourse(courseId);
+        if (newCourse) {
+          setSelectedCourse(newCourse);
+          onSelectCourse?.(newCourse.id);
+        }
+      } else {
+        const res = await api.duplicateCourse(courseId);
+        if (res.course) {
+          if (onSaveCourse) onSaveCourse(res.course);
+          setSelectedCourse(res.course);
+          onSelectCourse?.(res.course.id);
+          toast.success("강의 복제 완료", `'${res.course.title}' 강의가 성공적으로 등록되었습니다.`);
+        }
+      }
+    } catch (err: any) {
+      console.error("Duplicate course failed:", err);
+      toast.error("강의 복제 실패", err?.message || "강의를 복제하는 중 오류가 발생했습니다.");
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -339,6 +370,15 @@ export default function CoursePage({
 
             {isLoggedIn && (selectedCourse.instructor === userName || userRoles?.includes("admin")) && (
               <>
+                <button
+                  onClick={() => handleDuplicateCourseItem(selectedCourse.id)}
+                  disabled={isDuplicating}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  title="기존 강의 설정을 복사하여 새 기수 강의를 즉시 등록합니다"
+                >
+                  <Copy size={13} />
+                  <span>{isDuplicating ? "복사 중..." : "강의 복사"}</span>
+                </button>
                 <button
                   onClick={() => {
                     setEditingCourse(selectedCourse);
@@ -1465,17 +1505,28 @@ export default function CoursePage({
                           </span>
                         </div>
                         {isAuthor && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingCourse(course);
-                              setShowEditModal(true);
-                            }}
-                            className="px-2.5 py-1 text-xs rounded-lg bg-brand-primary-container/20 hover:bg-brand-primary-container/40 text-brand-primary border border-brand-primary/40 font-semibold transition-colors cursor-pointer"
-                          >
-                            수정
-                          </button>
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateCourseItem(course.id)}
+                              disabled={isDuplicating}
+                              className="px-2 py-1 text-xs rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-semibold transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                              title="기존 강의 복사 등록"
+                            >
+                              <Copy size={11} />
+                              복사
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCourse(course);
+                                setShowEditModal(true);
+                              }}
+                              className="px-2.5 py-1 text-xs rounded-lg bg-brand-primary-container/20 hover:bg-brand-primary-container/40 text-brand-primary border border-brand-primary/40 font-semibold transition-colors cursor-pointer"
+                            >
+                              수정
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>

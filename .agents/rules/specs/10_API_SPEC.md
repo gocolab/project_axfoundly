@@ -15,6 +15,7 @@
 | API-CRS-05 | PATCH | `/api/courses/:id/approve` | 강의 승인 | Courses | 관리자 | ✅ 완료 |
 | API-CRS-06 | PATCH | `/api/courses/:id/reject` | 강의 반려 | Courses | 관리자 | ✅ 완료 |
 | API-CRS-07 | DELETE | `/api/courses/:id` | 강의 삭제 | Courses | 강사/관리자 | ✅ 완료 |
+| API-CRS-08 | POST | `/api/courses/:id/duplicate` | 기존 강의 복제 (새 기수 신규 등록) | Courses | 강사/관리자 | ✅ 완료 |
 | API-REV-CRS-01 | GET | `/api/courses/requests` | 수강생 개강 요청 목록 조회 | Courses | 불필요 | ✅ 완료 |
 | API-REV-CRS-02 | POST | `/api/courses/requests` | 신규 개강 요청 등록 (AI 분류) | Courses | 수강생 | ✅ 완료 |
 | API-REV-CRS-03 | POST | `/api/courses/requests/:id/upvote` | 개강 요청 공감 투표 토글 | Courses | 수강생 | ✅ 완료 |

@@ -74,6 +74,7 @@ interface MyPageProps {
   handleSaveCourse: (course: Course) => void;
   handleSendCRMMessage: (msg: any) => void;
   handleToggleBookmark: (id: string) => void;
+  handleDuplicateCourse?: (courseId: string) => Promise<Course | undefined> | void;
 }
 
 export default function MyPage({
@@ -98,6 +99,7 @@ export default function MyPage({
   handleSaveCourse,
   handleSendCRMMessage,
   handleToggleBookmark,
+  handleDuplicateCourse,
 }: MyPageProps) {
   const getInitialTab = (): MyPageTabId => {
     const params = new URLSearchParams(window.location.search);

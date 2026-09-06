@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   CheckSquare,
   Square,
+  Copy,
 } from "lucide-react";
 import type {
   Course,
@@ -46,6 +47,7 @@ interface InstructorDashboardProps {
   onSaveCourse?: (course: Course) => void;
   onSendCRMMessage?: (msg: Omit<CRMMessage, "id" | "sentAt">) => void;
   onViewCourse?: (courseId: string) => void;
+  onDuplicateCourse?: (courseId: string) => Promise<Course | undefined> | void;
   isModalOpenExternal?: boolean;
   onCloseModalExternal?: () => void;
 }
@@ -57,6 +59,7 @@ export default function InstructorDashboard({
   onSaveCourse,
   onSendCRMMessage,
   onViewCourse,
+  onDuplicateCourse,
   isModalOpenExternal,
   onCloseModalExternal,
 }: InstructorDashboardProps) {
@@ -97,6 +100,29 @@ export default function InstructorDashboard({
       setShowCourseModal(true);
     }
   }, [isModalOpenExternal]);
+
+  const [isDuplicatingCourse, setIsDuplicatingCourse] = React.useState(false);
+
+  const handleDuplicateCourseItem = async (courseId: string) => {
+    if (isDuplicatingCourse) return;
+    try {
+      setIsDuplicatingCourse(true);
+      if (onDuplicateCourse) {
+        await onDuplicateCourse(courseId);
+      } else {
+        const res = await api.duplicateCourse(courseId);
+        if (res.course) {
+          if (onSaveCourse) onSaveCourse(res.course);
+          toast.success("강의 복제 완료", `'${res.course.title}' 강의가 성공적으로 등록되었습니다.`);
+        }
+      }
+    } catch (err: any) {
+      console.error("Duplicate course failed:", err);
+      toast.error("강의 복제 실패", err?.message || "강의를 복제하는 중 오류가 발생했습니다.");
+    } finally {
+      setIsDuplicatingCourse(false);
+    }
+  };
 
   // Refund Modal State
   const [showRefundModal, setShowRefundModal] = React.useState(false);
@@ -637,6 +663,14 @@ export default function InstructorDashboard({
                       className="text-xs bg-brand-surface-low text-brand-on-surface-variant py-2 px-3 rounded-lg border border-brand-border/30 hover:text-white hover:border-brand-primary/40 transition-colors cursor-pointer flex items-center gap-1"
                     >
                       <Edit size={12} /> 수정 / 달력 설정
+                    </button>
+                    <button
+                      onClick={() => handleDuplicateCourseItem(course.id)}
+                      disabled={isDuplicatingCourse}
+                      className="text-xs bg-indigo-500/20 text-indigo-300 py-2 px-3 rounded-lg border border-indigo-500/30 hover:bg-indigo-500/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-medium disabled:opacity-50"
+                      title="이 강의를 복사하여 새 기수로 즉시 등록"
+                    >
+                      <Copy size={12} /> {isDuplicatingCourse ? "복사 중..." : "복사"}
                     </button>
                   </div>
                 </div>

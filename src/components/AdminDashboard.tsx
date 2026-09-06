@@ -29,6 +29,7 @@ import {
   Sparkles,
   Lightbulb,
   Check,
+  Copy,
 } from "lucide-react";
 import type {
   DashboardStats,
@@ -40,7 +41,6 @@ import type {
   Course,
   IRProject,
   IdeaRequest,
-  IdeaProposal,
   InvestmentProposal,
   AdminCategoryInsight,
   CodeGroup,
@@ -62,6 +62,7 @@ interface AdminDashboardProps {
   onRejectCourse?: (courseId: string) => void;
   onForceDeleteCourse?: (courseId: string) => void;
   onViewCourse?: (courseId: string) => void;
+  onDuplicateCourse?: (courseId: string) => Promise<Course | undefined> | void;
   onBoardCreated?: (board: AdminBoard) => void;
   onBoardDeleted?: (boardId: string) => void;
   onRefresh?: () => void;
@@ -78,6 +79,7 @@ export default function AdminDashboard({
   onRejectCourse,
   onForceDeleteCourse,
   onViewCourse,
+  onDuplicateCourse,
   onBoardCreated,
   onBoardDeleted,
   onRefresh,
@@ -355,6 +357,33 @@ export default function AdminDashboard({
     } catch (err) {
       console.error("Failed to delete course:", err);
       toast.error("강의 삭제 실패", "강의 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const [isDuplicatingCourse, setIsDuplicatingCourse] = React.useState(false);
+
+  const handleDuplicateCourseAdmin = async (courseId: string) => {
+    if (isDuplicatingCourse) return;
+    try {
+      setIsDuplicatingCourse(true);
+      if (onDuplicateCourse) {
+        const newCourse = await onDuplicateCourse(courseId);
+        if (newCourse) {
+          setLocalCourses((prev) => [newCourse, ...prev]);
+        }
+      } else {
+        const res = await api.duplicateCourse(courseId);
+        if (res.course) {
+          setLocalCourses((prev) => [res.course, ...prev]);
+          toast.success("강의 복제 완료", `'${res.course.title}' 강의가 성공적으로 복제되었습니다.`);
+          onRefresh?.();
+        }
+      }
+    } catch (err: any) {
+      console.error("Duplicate course failed:", err);
+      toast.error("강의 복제 실패", err?.message || "강의 복제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDuplicatingCourse(false);
     }
   };
 
@@ -948,10 +977,18 @@ export default function AdminDashboard({
               <div className="flex gap-2 mt-4">
                 <button
                   type="button"
-                  onClick={() => handleForceDeleteCourse(selectedPanelItem.data.id, selectedPanelItem.data.title)}
-                  className="w-full py-2.5 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                  onClick={() => handleDuplicateCourseAdmin(selectedPanelItem.data.id)}
+                  disabled={isDuplicatingCourse}
+                  className="flex-1 py-2.5 bg-indigo-500/20 text-indigo-300 font-bold rounded-xl border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Trash2 size={13} /> 강의 직권 강제 삭제
+                  <Copy size={13} /> {isDuplicatingCourse ? "복제 중..." : "강의 복제"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleForceDeleteCourse(selectedPanelItem.data.id, selectedPanelItem.data.title)}
+                  className="flex-1 py-2.5 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 size={13} /> 강의 직권 삭제
                 </button>
               </div>
             </div>
@@ -1523,6 +1560,15 @@ export default function AdminDashboard({
                                   className="text-[10px] bg-brand-surface-low text-brand-on-surface-variant py-1 px-2.5 rounded-lg border border-brand-border/30 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                                 >
                                   <Eye size={11} /> 상세
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDuplicateCourseAdmin(course.id)}
+                                  disabled={isDuplicatingCourse}
+                                  className="text-[10px] bg-indigo-500/15 text-indigo-300 py-1 px-2.5 rounded-lg border border-indigo-500/30 hover:bg-indigo-500/25 transition-colors cursor-pointer flex items-center gap-1 font-bold disabled:opacity-50"
+                                  title="강의 복제"
+                                >
+                                  <Copy size={11} /> {isDuplicatingCourse ? "복제 중..." : "복제"}
                                 </button>
                                 <button
                                   type="button"

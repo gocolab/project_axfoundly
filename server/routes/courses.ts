@@ -799,6 +799,108 @@ router.post("/:id/reviews", (req, res) => {
   res.status(201).json({ review: newReview });
 });
 
+// POST /api/courses/:id/duplicate (Duplicate Course / New Batch)
+router.post("/:id/duplicate", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title: customTitle } = req.body || {};
+    const courses = (db.get("courses") || []) as Course[];
+    const originalCourse = courses.find((c) => c.id === id);
+
+    if (!originalCourse) {
+      return res.status(404).json({ error: "복제할 대상 강의를 찾을 수 없습니다." });
+    }
+
+    // 1. 새 강의 고유 식별자 생성
+    const newCourseId = generateUniqueCourseId();
+
+    // 2. 강의 제목 결정
+    let newTitle = customTitle;
+    if (!newTitle) {
+      // 기수 감지 및 자동 증가 처리 (예: "AI 프로덕트 1기" -> "AI 프로덕트 2기", 없으면 "... (새 기수)")
+      const matchBatch = originalCourse.title.match(/(.*?)(\d+)기(.*)/);
+      if (matchBatch) {
+        const nextNum = parseInt(matchBatch[2], 10) + 1;
+        newTitle = `${matchBatch[1]}${nextNum}기${matchBatch[3]}`.trim();
+      } else if (originalCourse.title.includes("(새 기수)")) {
+        newTitle = originalCourse.title.replace("(새 기수)", "(차기 기수)");
+      } else {
+        newTitle = `${originalCourse.title} (새 기수)`;
+      }
+    }
+
+    // 3. 개강 일정 및 회차별 일정 자동 시프트 (과거 일시 방지)
+    const now = new Date();
+    const newStartDateObj = new Date(now.getTime() + 7 * 86400000); // 7일 후 개강 제안
+    const newStartDateStr = newStartDateObj.toISOString().split("T")[0];
+
+    // 기존 총 소요 기간 유지 (없으면 기본 35일)
+    let durationMs = 35 * 86400000;
+    const origStartMs = originalCourse.schedule?.startDate ? new Date(originalCourse.schedule.startDate).getTime() : 0;
+    const origEndMs = originalCourse.schedule?.endDate ? new Date(originalCourse.schedule.endDate).getTime() : 0;
+    if (origStartMs && origEndMs && origEndMs > origStartMs) {
+      durationMs = origEndMs - origStartMs;
+    }
+    const newEndDateStr = new Date(newStartDateObj.getTime() + durationMs).toISOString().split("T")[0];
+
+    // 개별 회차 날짜 시프트
+    const timeShiftMs = origStartMs ? (newStartDateObj.getTime() - origStartMs) : 0;
+    const updatedCurriculum = (originalCourse.curriculum || []).map((item) => {
+      let nextDate = item.date;
+      if (item.date && origStartMs) {
+        const origItemDateMs = new Date(item.date).getTime();
+        if (!isNaN(origItemDateMs)) {
+          nextDate = new Date(origItemDateMs + timeShiftMs).toISOString().split("T")[0];
+        }
+      }
+      return {
+        ...item,
+        date: nextDate,
+      };
+    });
+
+    // 4. 복제된 강의 객체 구성 (수강생, 평점, 리뷰 등 완전 리셋)
+    const newCourse: Course = {
+      ...originalCourse,
+      id: newCourseId,
+      title: newTitle,
+      status: "모집중",
+      studentCount: 0,
+      rating: 5.0,
+      reviewCount: 0,
+      reviews: [],
+      isEnrolled: false,
+      progress: 0,
+      liveMeetingUrl: "", // 화상 회의 링크 리셋 (보안)
+      schedule: {
+        ...originalCourse.schedule,
+        startDate: newStartDateStr,
+        endDate: newEndDateStr,
+        totalSessions: updatedCurriculum.length > 0 ? updatedCurriculum.length : (originalCourse.schedule?.totalSessions || 8),
+      },
+      curriculum: updatedCurriculum,
+    };
+
+    // 5. DB 저장
+    db.update("courses", (coursesList) => [newCourse, ...coursesList]);
+
+    // 6. 통계 업데이트
+    db.update("stats", (stats) => ({
+      ...stats,
+      activeCourses: (stats?.activeCourses || 0) + 1,
+    }));
+
+    res.status(201).json({
+      success: true,
+      course: newCourse,
+      message: `'${newCourse.title}' 강의가 성공적으로 복제되었습니다.`,
+    });
+  } catch (error: any) {
+    console.error("[Course API] POST /:id/duplicate error:", error);
+    res.status(500).json({ error: "강의 복제 중 오류가 발생했습니다." });
+  }
+});
+
 // DELETE /api/courses/:id
 router.delete("/:id", (req, res) => {
   const { id } = req.params;

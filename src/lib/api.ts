@@ -110,6 +110,16 @@ export const api = {
     });
   },
 
+  duplicateCourse: async (id: string, title?: string) => {
+    return fetchJson<{ success: boolean; course: Course; message: string }>(
+      `/api/courses/${id}/duplicate`,
+      {
+        method: "POST",
+        body: JSON.stringify({ title }),
+      }
+    );
+  },
+
   enrollCourse: async (id: string, paymentMethod: "카카오페이" = "카카오페이") => {
     return fetchJson<{ success: boolean; course: Course; payment: PaymentRecord }>(
       `/api/courses/${id}/enroll`,
