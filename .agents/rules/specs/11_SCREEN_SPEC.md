@@ -114,12 +114,24 @@ flowchart LR
 - **마이페이지 연동**: `내 스타트업` 탭의 IR 프로젝트 카드에 `[수정]`, `[삭제]` 버튼 연동, `의뢰한 아이디어` 탭에 `[삭제]` 버튼 연동 및 실시간 목록 제거.
 - **최고 관리자 검수 패널**: `스타트업 & IR 관리` 탭 2단 스플릿 뷰에서 비정상 프로젝트 또는 아이디어 의뢰 건에 대해 `[영구 삭제]` 액션 지원.
 
-### 3.11. 상세 정보 화면 공유 링크(Deep-linking) 및 소셜 메타태그 연동
-- **RESTful 딥링크 URL 표준화**: 강의 상세(`/courses/:id`), 스타트업 IR 상세(`/ir/:id`), 커뮤니티 게시글 상세(`/community/:id`)로 표준화.
-- **양방향 History 동기화**: 상세 뷰 열람 시 `window.history.pushState`로 브라우저 주소창 실시간 업데이트, '목록으로' 또는 브라우저 뒤로가기(`popstate`) 시 목록 화면 복귀 및 URL 리셋.
-- **스마트 공유 UI/UX**: 상세 화면 툴바에 통일된 `[공유하기]` 버튼 배치. 모바일은 `navigator.share` 네이티브 공유창 호출, 데스크톱은 `navigator.clipboard.writeText` 클립보드 복사 및 Toast 피드백 표시.
-- **소셜 크롤러 Open Graph 메타태그 응답**: 카카오톡(`kakaotalk-scrap`), 슬랙(`Slackbot`), 페이스북(`facebookexternalhit`) 등의 봇 감지 시 해당 항목의 동적 제목, 설명, 썸네일이 포함된 Open Graph 메타태그 HTML을 응답하여 메신저 카드 미리보기 완비.
-- **404 폴백**: 존재하지 않거나 삭제된 ID 접근 시 안내 Toast 표시 및 자연스러운 목록 화면 리다이렉트.
+### 3.11. 상세 정보 화면 공유 링크(Deep-linking) 및 순수 8자리 ID 체계
+- **교육/강의(Course) 전용 공유하기 버튼 집중**: 
+  - 학습자 간 강의 공유 및 추천 유즈케이스에 집중하기 위해 상세 화면의 `[공유하기]` 버튼은 **교육/강의 상세 화면**(`CoursePage.tsx`)에만 전용 배치.
+  - IR 및 커뮤니티 상세 화면에서는 불필요한 공유 버튼을 배제하여 핵심 액션(투자 제안, 댓글/소통)에 집중.
+- **순수 8자리 Base62 고유 ID 표준화**:
+  - 신규 강의 생성(`POST /api/courses`, 개강 역제안 채택, 강사 등록 모달) 시 암호학적 난수 기반의 **순수 8자리 Base62 영숫자(`[a-zA-Z0-9]{8}`, 예: `/courses/7x9k2m4b`)** ID를 발급.
+  - DB 중복 체크(`generateUniqueCourseId()`) 루프를 통해 ID 충돌을 원천 차단(조합 수 62^8 ≈ 218조 개).
+  - 기존 등록된 레거시 ID(`c-...`) 역시 정상 조회 및 딥링크가 가능하도록 100% 하위 호환성 보장.
+- **RESTful 딥링크 URL 표준화 및 양방향 History 동기화**:
+  - 강의 상세(`/courses/:id`), 스타트업 IR 상세(`/ir/:id`), 커뮤니티 게시글 상세(`/community/:id`)로 표준화.
+  - 상세 뷰 열람 시 `window.history.pushState`로 브라우저 주소창 실시간 업데이트, '목록으로' 또는 브라우저 뒤로가기(`popstate`) 시 목록 화면 복귀 및 URL 리셋.
+- **스마트 공유 UI/UX (`shareUtils.ts`)**:
+  - 강의 상세 화면 헤더 툴바에 스마트 `[공유하기]` 버튼 배치.
+  - 모바일 기기는 `navigator.share` 네이티브 공유창(카카오톡, 메시지 등) 호출, 데스크톱은 `navigator.clipboard.writeText` 클립보드 복사 및 Toast 피드백 표시.
+- **소셜 크롤러 Open Graph 메타태그 응답 (`ogCrawler.ts`)**:
+  - 카카오톡(`kakaotalk-scrap`), 슬랙(`Slackbot`), 페이스북(`facebookexternalhit`) 등의 봇 감지 시 해당 항목의 동적 제목, 설명, 썸네일이 포함된 Open Graph 메타태그 HTML을 응답하여 메신저 카드 미리보기 완비.
+- **404 폴백**: 
+  - 존재하지 않거나 삭제된 ID 접근 시 안내 Toast 표시 및 자연스러운 목록 화면 리다이렉트.
 
 
 

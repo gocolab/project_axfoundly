@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "../db.js";
 import { classifyContent } from "../services/aiClassifier.js";
 import { notificationService } from "../services/notificationService.js";
+import { generateUniqueCourseId } from "../utils/idGenerator.js";
 import type { Course, PaymentRecord, Notification, Review, CourseRequest, CourseProposal } from "../../src/types.js";
 
 const router = Router();
@@ -292,7 +293,7 @@ router.post("/requests/:id/accept-proposal", (req, res) => {
     })
   );
 
-  const newCourseId = `c-rev-${Date.now()}`;
+  const newCourseId = generateUniqueCourseId();
   const curriculumItems = (proposal.curriculumDraft || []).map((c, idx) => ({
     week: idx + 1,
     sessionNumber: idx + 1,
@@ -456,7 +457,7 @@ router.post("/", async (req, res) => {
     });
 
     const newCourse: Course = {
-      id: newCourseData.id || `c-${Date.now()}`,
+      id: newCourseData.id || generateUniqueCourseId(),
       title: newCourseData.title,
       description: newCourseData.description || "",
       category: aiResult.category, // AI 자동 분류 카테고리

@@ -17,6 +17,7 @@ import {
 import type { Course, CurriculumItem } from "../types";
 import { api } from "../lib/api";
 import { useToast } from "./common/Toast";
+import { generateShortId } from "../utils/idGenerator";
 
 interface CourseCreateEditModalProps {
   isOpen: boolean;
@@ -658,7 +659,7 @@ export default function CourseCreateEditModal({
       return;
     }
     const coursePayload: Course = {
-      id: initialCourse?.id || `c-${Date.now()}`,
+      id: initialCourse?.id || generateShortId(8),
       title: courseTitle,
       description: courseDesc || "실전 AI 창업 집중 코스",
       category: courseCategory,

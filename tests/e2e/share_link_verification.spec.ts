@@ -102,4 +102,34 @@ test.describe("상세 정보 화면 공유 링크 및 딥링크 E2E 검증", () 
       await expect(shareBtn).not.toBeVisible();
     }
   });
+
+  test("5. 신규 강의 개설 시 순수 8자리 ID 발급 및 8자리 URL 딥링크/공유하기 검증", async ({ request, page }) => {
+    // 백엔드 API로 신규 강의 생성
+    const res = await request.post("/api/courses", {
+      data: {
+        title: "순수 8자리 ID 테스트 실전 강의",
+        description: "8자리 고유 식별자 테스트 강의 설명입니다.",
+        category: "AI 모델링",
+        instructor: "김소현",
+        price: 300000,
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    const courseId = data.course.id;
+
+    // 순수 8자리 영숫자(Base62) 정규식 검증
+    expect(courseId).toMatch(/^[a-zA-Z0-9]{8}$/);
+
+    // 8자리 ID로 딥링크 직접 접근 (/courses/<8자리>)
+    await page.goto(`/courses/${courseId}`);
+    const backBtn = page.getByRole("button", { name: /강의 목록으로/i });
+    await expect(backBtn).toBeVisible({ timeout: 15000 });
+
+    // 공유하기 버튼 클릭 및 복사 링크 확인
+    const shareBtn = page.getByRole("button", { name: /공유하기/i });
+    await expect(shareBtn).toBeVisible();
+    await shareBtn.click();
+    await expect(page.locator("text=공유 링크 복사")).toBeVisible({ timeout: 5000 });
+  });
 });
