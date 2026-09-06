@@ -23,9 +23,9 @@ router.post("/ready", async (req, res) => {
         quantity: 1,
         total_amount: totalAmount || 1000,
         tax_free_amount: 0,
-        approval_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3005'}/api/payments/success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3005'}/api/payments/cancel`,
-        fail_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3005'}/api/payments/fail`,
+        approval_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3010'}/api/payments/success`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3010'}/api/payments/cancel`,
+        fail_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3010'}/api/payments/fail`,
       })
     });
     

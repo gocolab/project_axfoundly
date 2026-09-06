@@ -50,7 +50,7 @@
 
 | 항목 | 설정값 |
 |---|---|
-| 테스트 URL | `http://localhost:3005` |
+| 테스트 URL | `http://localhost:3010` |
 | 브라우저 | Chrome 최신 / Firefox / Safari (크로스브라우저) |
 | 뷰포트 (데스크탑) | 1440 × 900 |
 | 뷰포트 (태블릿) | 768 × 1024 |
@@ -60,8 +60,8 @@
 
 ### 0.6. 사전 조건 체크리스트
 
-- [ ] `npm run dev` 실행 → `localhost:3005` 정상 응답 확인
-- [ ] MongoDB 연결 상태 (`launch_bizs_dev` DB, Seed 데이터 로드)
+- [ ] `npm run dev` 실행 → `localhost:3010` 정상 응답 확인
+- [ ] MongoDB 연결 상태 (`ax_foundly_dev` DB, Seed 데이터 로드)
 - [ ] `GET /api/ir/projects` → IR 프로젝트 5건 이상 확인
 - [ ] `GET /api/ir/idea-requests` → 아이디어 의뢰 2건 이상 확인
 - [ ] `GET /api/admin/stats` → 관리자 통계 정상 응답

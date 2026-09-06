@@ -11,13 +11,13 @@ services:
     environment:
       - CI=true
       - NODE_ENV=test
-      - PORT=3005
+      - PORT=3010
       - PLAYWRIGHT_AUTH_METHOD=mock
     volumes:
       # 테스트 결과물(스크린샷, 비디오, 트레이스, HTML 리포트) 호스트 디렉터리 동기화
       - ./test-results:/app/test-results
       - ./playwright-report:/app/playwright-report
     ports:
-      - "3005:3005" # 앱 서버 포트
+      - "3010:3010" # 앱 서버 포트
       - "9323:9323" # Playwright HTML Report 뷰어 포트
     command: npm run test:anomaly

@@ -196,7 +196,7 @@ class NotificationService {
    * Base URL 조회 (환경변수 기반)
    */
   public getBaseUrl(): string {
-    return process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3005";
+    return process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3010";
   }
 
   /**

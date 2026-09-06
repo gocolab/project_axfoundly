@@ -26,7 +26,7 @@ const storageState = {
   cookies: [],
   origins: [
     {
-      origin: 'http://localhost:3005',
+      origin: 'http://localhost:3010',
       localStorage: [
         {
           name: 'auth_token',

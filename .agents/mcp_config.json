@@ -17,9 +17,9 @@
         "mongodb-mcp-server"
       ],
       "env": {
-        "MDB_MCP_CONNECTION_STRING": "mongodb://host.docker.internal:27017/launch_bizs_dev",
+        "MDB_MCP_CONNECTION_STRING": "mongodb://host.docker.internal:27017/ax_foundly_dev",
         "MONGODB_URI": "mongodb://host.docker.internal:27017",
-        "MONGODB_DBNAME": "launch_bizs_dev"
+        "MONGODB_DBNAME": "ax_foundly_dev"
       }
     }
   }

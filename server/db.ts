@@ -69,7 +69,9 @@ export interface DatabaseSchema {
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb://mahaumaster:!Mahaumaster2515@localhost:27017/?authSource=admin";
-const MONGODB_DBNAME = process.env.MONGODB_DBNAME || "launch_bizs_dev";
+const MONGODB_DBNAME =
+  process.env.MONGODB_DBNAME ||
+  (process.env.NODE_ENV === "production" ? "ax_foundly_pro" : "ax_foundly_dev");
 
 let client: MongoClient;
 let mongodb: Db;

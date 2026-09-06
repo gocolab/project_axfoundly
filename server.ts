@@ -34,7 +34,7 @@ async function startServer() {
   await initDb();
 
   const app = express();
-  const PORT = Number(process.env.PORT) || 3005;
+  const PORT = Number(process.env.PORT) || 3010;
 
   // CORS 설정
   const allowedOrigins = process.env.ALLOWED_ORIGINS || "*";

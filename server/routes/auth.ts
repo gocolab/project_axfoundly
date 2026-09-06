@@ -22,7 +22,7 @@ let currentUser = {
 // GET /api/auth/google/url
 router.get("/google/url", (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID || "mock-google-client-id";
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3005/api/auth/google/callback";
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3010/api/auth/google/callback";
   
   // E2E Mock Bypass URL
   if (process.env.PLAYWRIGHT_AUTH_METHOD === "mock") {
@@ -36,8 +36,8 @@ router.get("/google/url", (req, res) => {
 // GET /api/auth/google/callback (Google OAuth 콜백 처리)
 router.get("/google/callback", async (req, res) => {
   const { code } = req.query;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3005/api/auth/google/callback";
-  const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3005";
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3010/api/auth/google/callback";
+  const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3010";
 
   if (!code) {
     return res.redirect(`${frontendUrl}/?error=no_code`);

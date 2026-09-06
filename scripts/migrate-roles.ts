@@ -4,7 +4,7 @@ import { MongoClient } from "mongodb";
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb://mahaumaster:!Mahaumaster2515@localhost:27017/?authSource=admin";
-const MONGODB_DBNAME = process.env.MONGODB_DBNAME || "launch_bizs_dev";
+const MONGODB_DBNAME = process.env.MONGODB_DBNAME || "ax_foundly_dev";
 
 async function main() {
   const client = new MongoClient(MONGODB_URI);

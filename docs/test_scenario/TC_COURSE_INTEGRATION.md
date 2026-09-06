@@ -52,7 +52,7 @@
 
 | 항목 | 설정값 |
 |---|---|
-| 테스트 URL | `http://localhost:3005` |
+| 테스트 URL | `http://localhost:3010` |
 | 브라우저 | Chrome 최신 / Firefox / Safari (크로스브라우저) |
 | 뷰포트 (데스크탑) | 1440 × 900 |
 | 뷰포트 (모바일) | 375 × 812 (iPhone SE 기준) |
@@ -62,8 +62,8 @@
 
 ### 0.6. 사전 조건 체크리스트
 
-- [ ] `npm run dev` 실행 → `localhost:3005` 정상 응답 확인
-- [ ] MongoDB 연결 상태 (`launch_bizs_dev` DB, Seed 데이터 로드)
+- [ ] `npm run dev` 실행 → `localhost:3010` 정상 응답 확인
+- [ ] MongoDB 연결 상태 (`ax_foundly_dev` DB, Seed 데이터 로드)
 - [ ] 카카오페이 테스트 CID: `TC0ONETIME`, `KAKAO_PAY_SECRET_KEY` 환경변수 설정
 - [ ] `GET /api/courses` → 강의 6건 이상 확인
 - [ ] `GET /api/admin/stats` → 관리자 통계 정상 응답
@@ -959,7 +959,7 @@ flowchart TD
 - **심각도:** Critical / Major / Minor / Trivial
 - **테스트 케이스:** TC-XXX-YYY Step Z
 - **담당 테스터:** T1(김수강생) / T2(김소현) / T3(최관리)
-- **환경:** Chrome 130 / localhost:3005 / 1440px
+- **환경:** Chrome 130 / localhost:3010 / 1440px
 - **재현 단계:**
   1. ...
   2. ...

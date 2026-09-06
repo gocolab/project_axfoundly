@@ -23,7 +23,7 @@ setup('Google OAuth Storage State 준비 및 세션 확인', async () => {
       cookies: [],
       origins: [
         {
-          origin: 'http://localhost:3005',
+          origin: 'http://localhost:3010',
           localStorage: [
             { name: 'auth_token', value: token },
             { name: 'user_name', value: testName },
