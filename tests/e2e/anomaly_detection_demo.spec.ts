@@ -75,13 +75,16 @@ test.describe('프론트엔드 동작 및 이상 여부 판단 통합 테스트'
     // 브라우저 내부에서 콘솔 에러 및 비동기 미처리 예외(Uncaught Exception) 발생 시뮬레이션
     await page.evaluate(() => {
       console.error('[테스트 시뮬레이션] React 컴포넌트 렌더링 경고/에러 발생');
-      setTimeout(() => {
-        throw new Error('Uncaught TypeError: Cannot read properties of undefined (reading "title")');
-      }, 50);
+      const err = new Error('Uncaught TypeError: Cannot read properties of undefined (reading "title")');
+      if (typeof window.reportError === 'function') {
+        window.reportError(err);
+      } else {
+        setTimeout(() => { throw err; }, 0);
+      }
     });
 
     // 에러 수집 대기
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
 
     const logs = tracker.getLogs();
     

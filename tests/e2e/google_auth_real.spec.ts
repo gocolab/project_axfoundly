@@ -11,7 +11,7 @@ test.describe('TC-Google-Real: 실제 구글 OAuth 회원(mahau.master@gmail.com
 
     const profileButton = page.getByTestId('user-profile-button');
     await expect(profileButton).toBeVisible();
-    await expect(profileButton).toContainText('수강생');
+    await expect(profileButton).toContainText('마하우');
 
     // 2) 프로필 드롭다운 열기
     await profileButton.click();

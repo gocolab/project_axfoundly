@@ -12,10 +12,10 @@ test.describe('TC-04: 교육 / 강의 탐색, 필터링, 검색, 달력, 인포�
     await expect(page.locator('h1', { hasText: '교육 / 강의' })).toBeVisible();
 
     // 카테고리 필터 버튼 존재 확인
-    await expect(page.getByRole('button', { name: '전체' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'AI 모델링' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '비즈니스 기획' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '마케팅' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '전체', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'AI 모델링', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '비즈니스 기획', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '마케팅', exact: true })).toBeVisible();
   });
 
   test('카테고리 필터 클릭 시 해당하는 강의만 필터링된다', async ({ page }) => {

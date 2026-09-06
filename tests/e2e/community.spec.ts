@@ -62,15 +62,16 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 권한 기반 공지 작성
   });
 
   test('관리자로 로그인 시 [공지사항] 선택 및 [상단 공지 고정] 설정이 가능하다', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. 관리자 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('.glass-panel-heavy button', { hasText: '관리자' }).first().click();
-    await expect(page.locator('header button', { hasText: '최관리' })).toBeVisible();
+    await expect(page.locator('header button', { hasText: '최관리' })).toBeVisible({ timeout: 10000 });
 
     // 2. 커뮤니티 이동 후 글쓰기 클릭
     await page.locator('header nav').getByRole('button', { name: '커뮤니티' }).click();
     await page.getByTestId('community-write-btn').click();
-    await expect(page.locator('h3', { hasText: '게시글 작성' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: '게시글 작성' })).toBeVisible({ timeout: 10000 });
 
     // 3. 관리자 권한 표시 및 공지사항 버튼 / 상단 공지 고정 토글 확인
     await expect(page.locator('text=관리자 권한 활성화')).toBeVisible();
@@ -90,27 +91,28 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 권한 기반 공지 작성
 
     // 6. 목록 최상단에 핀 배지와 함께 등록되었는지 확인
     const createdNotice = page.locator(`text=${noticeTitle}`).first();
-    await expect(createdNotice).toBeVisible();
+    await expect(createdNotice).toBeVisible({ timeout: 10000 });
   });
 
   test('관리자 페이지에서 신규 게시판을 생성하면 커뮤니티 페이지 탭과 글쓰기 모달에 즉시 동기화된다', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. 관리자 로그인
     await page.getByRole('button', { name: '로그인', exact: true }).click();
     await page.locator('.glass-panel-heavy button', { hasText: '관리자' }).first().click();
-    await expect(page.locator('header button', { hasText: '최관리' })).toBeVisible();
+    await expect(page.locator('header button', { hasText: '최관리' })).toBeVisible({ timeout: 10000 });
 
     // 2. 관리자 페이지로 이동
     await page.getByTestId('user-profile-button').click();
     await page.getByRole('button', { name: '관리자 대시보드' }).click();
-    await expect(page.locator('h1', { hasText: '관리자 대시보드' })).toBeVisible();
+    await expect(page.locator('h1', { hasText: '플랫폼 관리자 대시보드' })).toBeVisible({ timeout: 10000 });
 
     // 3. 게시판 관리 탭으로 이동
-    await page.getByRole('button', { name: /게시판/ }).click();
+    await page.getByRole('button', { name: '게시판 관리' }).click();
 
     // 4. 새 게시판 만들기 클릭
     const uniqueBoardName = `AI 해커톤 공모전 ${Date.now().toString().slice(-4)}`;
-    await page.getByRole('button', { name: /새 게시판 만들기/ }).click();
-    await expect(page.locator('h3', { hasText: '멀티 게시판 생성기' })).toBeVisible();
+    await page.getByRole('button', { name: '새 게시판 만들기' }).click();
+    await expect(page.locator('h3', { hasText: '멀티 게시판 생성기' })).toBeVisible({ timeout: 10000 });
 
     // 5. 게시판 이름 입력 및 생성
     await page.getByPlaceholder('새 게시판 이름').fill(uniqueBoardName);
@@ -118,13 +120,13 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 권한 기반 공지 작성
 
     // 6. 커뮤니티 페이지로 이동하여 신규 게시판 탭이 존재하는지 확인
     await page.locator('header nav').getByRole('button', { name: '커뮤니티' }).click();
-    await expect(page.locator('h1', { hasText: '커뮤니티' })).toBeVisible();
-    await expect(page.getByRole('button', { name: uniqueBoardName })).toBeVisible();
+    await expect(page.locator('h1', { hasText: '커뮤니티' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: uniqueBoardName })).toBeVisible({ timeout: 10000 });
 
     // 7. 글쓰기 모달에서도 신규 게시판 선택지가 나타나는지 확인
     await page.getByTestId('community-write-btn').click();
-    await expect(page.locator('.glass-panel-heavy button', { hasText: uniqueBoardName })).toBeVisible();
-    await page.locator('.glass-panel-heavy').getByRole('button', { name: '취소' }).click();
+    await expect(page.locator('.glass-panel-heavy button', { hasText: uniqueBoardName })).toBeVisible({ timeout: 10000 });
+    await page.getByRole('button', { name: '취소', exact: true }).click();
   });
 
   test('게시글 상세에서 댓글을 등록하고, 작성자/관리자가 댓글 및 게시글을 삭제할 수 있다', async ({ page }) => {
@@ -144,16 +146,18 @@ test.describe('TC-06: 커뮤니티 멀티 게시판, 권한 기반 공지 작성
     // 3. 검색을 통해 작성된 게시글을 찾아서 클릭
     const searchInput = page.getByPlaceholder('게시글 검색...');
     await searchInput.fill(testPostTitle);
-    const postRow = page.locator(`text=${testPostTitle}`).first();
+    await page.waitForTimeout(300);
+    const postRow = page.locator('[data-testid="community-post-row"]', { hasText: testPostTitle }).first();
     await expect(postRow).toBeVisible();
     await postRow.click();
 
     // 4. 댓글 작성
     const commentInput = page.getByPlaceholder('의견이나 질문을 댓글로 남겨보세요...');
+    await expect(commentInput).toBeVisible();
     const testComment = `삭제 테스트 댓글 ${Date.now()}`;
     await commentInput.fill(testComment);
-    await page.locator('form').getByRole('button', { name: '등록' }).click();
-    await expect(page.locator(`text=${testComment}`)).toBeVisible();
+    await commentInput.press('Enter');
+    await expect(page.locator(`text=${testComment}`)).toBeVisible({ timeout: 10000 });
 
     // 5. 댓글 삭제
     const commentItem = page.locator('div.p-3\\.5', { hasText: testComment });

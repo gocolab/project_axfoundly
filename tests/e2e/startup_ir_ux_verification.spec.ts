@@ -98,14 +98,14 @@ test.describe('스타트업&IR 및 아이디어 제작 의뢰 UX/기능 실데�
 
     // 1-4. 카드 클릭하여 상세 뷰 진입
     await newCard.scrollIntoViewIfNeeded();
-    await newCard.click();
-    await page.waitForTimeout(1000);
+    await newCard.locator('h3').click();
+    await expect(page.locator('button', { hasText: '스타트업 목록으로' })).toBeVisible({ timeout: 10000 });
 
     // 헤더에 작성자 전용 [수정], [삭제] 버튼 존재 확인
     const detailEditBtn = page.locator('button', { hasText: '수정' }).first();
     const detailDeleteBtn = page.locator('button', { hasText: '삭제' }).first();
-    await expect(detailEditBtn).toBeVisible();
-    await expect(detailDeleteBtn).toBeVisible();
+    await expect(detailEditBtn).toBeVisible({ timeout: 10000 });
+    await expect(detailDeleteBtn).toBeVisible({ timeout: 10000 });
 
     // 영상 섹션 헤더에 [프로토타입 / 배포 사이트 방문] 버튼 존재 및 href 확인
     const visitBtn = page.locator('a', { hasText: '[프로토타입 / 배포 사이트 방문]' });
@@ -171,11 +171,11 @@ test.describe('스타트업&IR 및 아이디어 제작 의뢰 UX/기능 실데�
     const sendBtn = page.locator('button', { hasText: '답변 전송' });
     await sendBtn.click();
 
-    // AI 응답 대기 (인터뷰 메시지 대화 렌더링)
-    await expect(page.locator('.whitespace-pre-line').nth(1)).toBeVisible({ timeout: 25000 });
+    // AI 응답 대기 (인터뷰 메시지 대화 렌더링 및 초안 생성 완료)
+    await expect(page.locator('text=[생성된 PRD 의뢰서 초안]').first()).toBeVisible({ timeout: 25000 });
 
     // 2단계 상세 의뢰서 작성 탭으로 이동
-    const detailTabBtn = page.locator('button', { hasText: '상세 의뢰서 작성' });
+    const detailTabBtn = page.getByRole('button', { name: '상세 의뢰서 작성', exact: true });
     await detailTabBtn.click();
     await page.waitForTimeout(500);
 

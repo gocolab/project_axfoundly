@@ -27,11 +27,20 @@ interface CourseCreateEditModalProps {
   instructorName?: string;
 }
 
+const getFutureDateStr = (daysAhead: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 const DEFAULT_CURRICULUM: CurriculumItem[] = [
-  { week: 1, sessionNumber: 1, title: "오리엔테이션 & 시장 가설 검증", description: "강의 로드맵 및 개발/실습 환경 구축", duration: "2시간", date: "2025-09-02", dayOfWeek: "화", time: "19:30 ~ 21:30", deliveryType: "online" },
-  { week: 1, sessionNumber: 2, title: "실전 프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 아키텍처 설계", duration: "2시간", date: "2025-09-04", dayOfWeek: "목", time: "19:30 ~ 21:30", deliveryType: "online" },
-  { week: 2, sessionNumber: 3, title: "멀티에이전트 오케스트레이션", description: "LangGraph 기반 자율 에이전트 협업 실습", duration: "2시간", date: "2025-09-09", dayOfWeek: "화", time: "19:30 ~ 21:30", deliveryType: "online" },
-  { week: 2, sessionNumber: 4, title: "클라우드 상용 배포 및 비즈니스 연동", description: "서버 인프라 구축, 결제 연동 및 운영 모니터링", duration: "2시간", date: "2025-09-11", dayOfWeek: "목", time: "19:30 ~ 21:30", deliveryType: "online" },
+  { week: 1, sessionNumber: 1, title: "오리엔테이션 & 시장 가설 검증", description: "강의 로드맵 및 개발/실습 환경 구축", duration: "2시간", date: getFutureDateStr(14), dayOfWeek: "화", time: "19:30 ~ 21:30", deliveryType: "online" },
+  { week: 1, sessionNumber: 2, title: "실전 프롬프트 체인 & RAG 파이프라인", description: "실시간 검색 증강 생성 아키텍처 설계", duration: "2시간", date: getFutureDateStr(16), dayOfWeek: "목", time: "19:30 ~ 21:30", deliveryType: "online" },
+  { week: 2, sessionNumber: 3, title: "멀티에이전트 오케스트레이션", description: "LangGraph 기반 자율 에이전트 협업 실습", duration: "2시간", date: getFutureDateStr(21), dayOfWeek: "화", time: "19:30 ~ 21:30", deliveryType: "online" },
+  { week: 2, sessionNumber: 4, title: "클라우드 상용 배포 및 비즈니스 연동", description: "서버 인프라 구축, 결제 연동 및 운영 모니터링", duration: "2시간", date: getFutureDateStr(23), dayOfWeek: "목", time: "19:30 ~ 21:30", deliveryType: "online" },
 ];
 
 const INITIAL_AI_MESSAGE = {
@@ -74,14 +83,12 @@ export default function CourseCreateEditModal({
       ? initialCourse.deliveryType
       : "online"
   );
-  const [courseLocation, setCourseLocation] = React.useState(initialCourse?.location || "");
-  const [liveMeetingUrl, setLiveMeetingUrl] = React.useState(initialCourse?.liveMeetingUrl || "");
   const [courseTags, setCourseTags] = React.useState<string[]>(
     initialCourse?.tags || ["AI창업", "프롬프트", "에이전트", "실전실습"]
   );
   const [tagInput, setTagInput] = React.useState("");
-  const [startDate, setStartDate] = React.useState(initialCourse?.schedule?.startDate || "2025-09-02");
-  const [endDate, setEndDate] = React.useState(initialCourse?.schedule?.endDate || "2025-10-14");
+  const [startDate, setStartDate] = React.useState(initialCourse?.schedule?.startDate || getFutureDateStr(14));
+  const [endDate, setEndDate] = React.useState(initialCourse?.schedule?.endDate || getFutureDateStr(42));
   const [recruitmentEndDate, setRecruitmentEndDate] = React.useState(
     (initialCourse?.schedule as any)?.recruitmentEndDate || ""
   );
@@ -127,12 +134,10 @@ export default function CourseCreateEditModal({
           ? initialCourse.deliveryType
           : "online"
       );
-      setCourseLocation(initialCourse.location || "");
-      setLiveMeetingUrl(initialCourse.liveMeetingUrl || "");
       setCourseTags(initialCourse.tags || ["AI창업", "실전실습"]);
       if (initialCourse.schedule) {
-        setStartDate(initialCourse.schedule.startDate || "2025-09-02");
-        setEndDate(initialCourse.schedule.endDate || "2025-10-14");
+        setStartDate(initialCourse.schedule.startDate || getFutureDateStr(14));
+        setEndDate(initialCourse.schedule.endDate || getFutureDateStr(42));
         setRecruitmentEndDate((initialCourse.schedule as any)?.recruitmentEndDate || "");
         setSelectedDays(initialCourse.schedule.daysOfWeek || ["화", "목"]);
         setTimeSlot(initialCourse.schedule.timeSlot || "19:30 ~ 21:30");
@@ -158,11 +163,9 @@ export default function CourseCreateEditModal({
       setCoursePrice(590000);
       setCourseDiscountedPrice(390000);
       setDeliveryType("online");
-      setCourseLocation("");
-      setLiveMeetingUrl("");
       setCourseTags(["AI창업", "프롬프트", "에이전트"]);
-      setStartDate("2025-09-02");
-      setEndDate("2025-10-14");
+      setStartDate(getFutureDateStr(14));
+      setEndDate(getFutureDateStr(42));
       setRecruitmentEndDate("");
       setSelectedDays(["화", "목"]);
       setTimeSlot("19:30 ~ 21:30");
@@ -231,23 +234,31 @@ export default function CourseCreateEditModal({
 
       const res = await api.aiAutoFill({
         type: "course",
-        prompt: `[강의 기획 인터뷰 진행 단계: ${interviewStep}단계]\n누적 대화 맥락:\n${fullConversation}\n\n사용자 최신 입력: ${userText}\n\n위 내용을 분석하여 스타트업/AI 실전 강의 커리큘럼 초안을 완성하세요. deliveryType(online/offline/hybrid), 희망 요일(daysOfWeek: string[]), 시작일(startDate: YYYY-MM-DD 형식), 강의시간(timeSlot)이 대화에 언급됐으면 반드시 포함하세요.`,
+        prompt: `[강의 기획 인터뷰 진행 단계: ${interviewStep}단계]\n누적 대화 맥락:\n${fullConversation}\n\n사용자 최신 입력: ${userText}\n\n[강의 기획 필수 지침]:\n위 전체 대화 맥락을 면밀히 분석하여 강의 제목(refinedTitle), 자연어 분야(naturalCategory), 상세 소개문(description), 수강료(price, discountedPrice), 추천 태그(tags), 진행방식(deliveryType: online/offline/hybrid), 희망 요일(daysOfWeek: string[]), 시작일(startDate: YYYY-MM-DD), 강의시간(timeSlot), 그리고 대화에서 파악된 총 회차 수에 맞춘 체계적인 실전 커리큘럼(curriculum)을 JSON으로 완성하세요.\n절대 대화 내용을 그대로 복사하지 말고, 각 항목의 성격에 맞게 전문적 콘텐츠로 변환하세요.\ncurriculum 각 항목은 반드시 구체적인 챕터 제목(title)과 2~3문장의 상세 실습/학습 내용(description)을 포함해야 합니다.`,
       });
 
       const draft = res?.result || {};
 
       // ── 즉시 폼 상태에 반영 (draft → state 동기화) ──
+      const cleanUserPrompt = userText
+        .split(/[,.]|\n/)[0]
+        .replace(/^\[.*?\]\s*/, "")
+        .replace(/^(나에게|우리의|새로운|내|실전)\s*/, "")
+        .replace(/매주\s*[월화수목금토일\s/,~:0-9]+(저녁|오전|오후)?/g, "")
+        .replace(/\d+\s*회차.*$/g, "")
+        .replace(/(실시간\s*)?(온라인|오프라인|혼합)\s*(과정|방식|강의)?.*$/g, "")
+        .replace(/하고\s*싶어요|하고\s*싶어|만들어줘|기획해줘|해줘|원해|필요해|입니다|해요/g, "")
+        .trim();
       const resolvedTitle =
         draft.refinedTitle ||
-        (courseTitle.trim() ? courseTitle : `[실전] ${userText.slice(0, 18)} 마스터클래스`);
+        (courseTitle.trim() ? courseTitle : `[실전] ${cleanUserPrompt.slice(0, 18) || "AI 비즈니스"} 마스터클래스`);
       const resolvedCategory = (draft.naturalCategory as Course["category"]) || courseCategory || "실전 AI 모델링 / LLM";
       const resolvedDesc =
         draft.description ||
-        (courseDesc.trim() ? courseDesc : `${userText} 핵심 역량 집중 실전 코스`);
+        (courseDesc.trim() ? courseDesc : `${cleanUserPrompt || "AI 스타트업"} 핵심 이론부터 실무 비즈니스 파이프라인 연동까지 실전으로 완성하는 마스터클래스입니다.`);
       const resolvedPrice = draft.price || coursePrice;
       const resolvedDiscounted = draft.discountedPrice || courseDiscountedPrice;
       const resolvedDeliveryType = draft.deliveryType === "offline" ? "offline" : draft.deliveryType === "hybrid" ? "hybrid" : (deliveryType as "online" | "offline" | "hybrid");
-      const resolvedLocation = draft.location || courseLocation;
       const resolvedTags = draft.tags && draft.tags.length > 0 ? draft.tags : courseTags;
       const resolvedStartDate = draft.startDate || draft.schedule?.startDate || startDate;
       const resolvedDays: string[] = (draft.daysOfWeek || draft.schedule?.daysOfWeek || selectedDays);
@@ -259,6 +270,10 @@ export default function CourseCreateEditModal({
             const dayNameToNum: Record<string, number> = { 일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6 };
             const targetDayNums = resolvedDays.map((d) => dayNameToNum[d]).filter((n) => n !== undefined);
             let cursor = new Date(resolvedStartDate);
+            if (isNaN(cursor.getTime())) {
+              cursor = new Date();
+              cursor.setDate(cursor.getDate() + 14);
+            }
             const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
             return draft.curriculum.map((c: any, i: number) => {
               if (targetDayNums.length > 0) {
@@ -275,11 +290,11 @@ export default function CourseCreateEditModal({
               return {
                 week: c.week || Math.ceil((i + 1) / (resolvedDays.length || 2)),
                 sessionNumber: i + 1,
-                title: c.title || `실전 세션 ${i + 1}`,
-                description: c.description || "실무 집중 실습",
+                title: c.title || `${i + 1}회차: 핵심 실전 실습`,
+                description: c.description || "실무 역량 강화를 위한 핵심 파이프라인 구축 및 실전 실습",
                 duration: c.duration || "2시간",
-                date: assignedDate,
-                dayOfWeek: assignedDay,
+                date: c.date || assignedDate,
+                dayOfWeek: c.dayOfWeek || assignedDay,
                 time: resolvedTimeSlot,
                 deliveryType: resolvedDeliveryType === "hybrid" ? (c.deliveryType === "offline" ? "offline" : "online") : resolvedDeliveryType,
               } as CurriculumItem;
@@ -294,7 +309,6 @@ export default function CourseCreateEditModal({
       setCoursePrice(resolvedPrice);
       setCourseDiscountedPrice(resolvedDiscounted);
       setDeliveryType(resolvedDeliveryType);
-      if (resolvedLocation) setCourseLocation(resolvedLocation);
       setCourseTags(resolvedTags);
       setStartDate(resolvedStartDate);
       setSelectedDays(resolvedDays);
@@ -308,8 +322,6 @@ export default function CourseCreateEditModal({
         price: resolvedPrice,
         discountedPrice: resolvedDiscounted,
         deliveryType: resolvedDeliveryType,
-        location: resolvedLocation,
-        liveMeetingUrl: draft.liveMeetingUrl || "",
         tags: resolvedTags,
         schedule: {
           startDate: resolvedStartDate,
@@ -330,7 +342,7 @@ export default function CourseCreateEditModal({
         nextStepGuidance = `\n\n**[2단계: 교육 기간 & 회차 설계]**\n주제를 바탕으로 멋진 강의 방향이 잡혔습니다! 희망하시는 전체 회차 수(예: 4회차, 8회차)와 선호 요일(예: 매주 화/목 저녁)이 있으신가요?`;
         setInterviewStep(2);
       } else if (interviewStep === 2) {
-        nextStepGuidance = `\n\n**[3단계: 강의 진행 방식 & 장소]**\n일정 구상을 확인했습니다. 실시간 온라인(Zoom/Meet), 현장 오프라인(강의장 대면), 또는 온·오프라인 혼합 중 어떤 방식으로 진행하시겠습니까? 오프라인인 경우 희망 지역/강의장도 알려주세요.`;
+        nextStepGuidance = `\n\n**[3단계: 강의 진행 방식]**\n일정 구상을 확인했습니다. 실시간 온라인(Zoom/Meet), 현장 오프라인(강의장 대면), 또는 온·오프라인 혼합 중 어떤 방식으로 진행하시겠습니까?`;
         setInterviewStep(3);
       } else {
         nextStepGuidance = `\n\n**[4단계: 인터뷰 완료 및 초벌 준비]**\n입력해 주신 모든 요구사항을 종합하여 완성형 커리큘럼 초안이 상세 탭에 자동 반영되었습니다! \n아래 카드의 **[상세 편집기로 적용 & 달력 설정]** 버튼을 클릭하거나 상단 탭을 눌러 내용을 확인하고 수정하세요.`;
@@ -363,8 +375,6 @@ export default function CourseCreateEditModal({
     if (draft.deliveryType && draft.deliveryType !== "vod") {
       setDeliveryType(draft.deliveryType as "online" | "offline" | "hybrid");
     }
-    if (draft.location) setCourseLocation(draft.location);
-    if (draft.liveMeetingUrl) setLiveMeetingUrl(draft.liveMeetingUrl);
     if (draft.tags) setCourseTags(draft.tags);
     if (draft.schedule?.startDate) setStartDate(draft.schedule.startDate);
     if (draft.schedule?.endDate) setEndDate(draft.schedule.endDate);
@@ -399,12 +409,23 @@ export default function CourseCreateEditModal({
           .join("\n");
         const res = await api.aiAutoFill({
           type: "course",
-          prompt: `사용자와의 인터뷰 대화 전체 맥락:\n${fullConversation}\n\n위 전체 대화 맥락을 면밀히 분석하여 강의 제목(refinedTitle), 자연어 분야(naturalCategory), 상세 소개(description), 수강료(price, discountedPrice), 추천 태그(tags), 진행방식(deliveryType: online/offline/hybrid), 희망 요일(daysOfWeek), 시작일(startDate: YYYY-MM-DD), 시간대(timeSlot), 4회차 이상의 체계적인 실전 커리큘럼(curriculum)을 JSON으로 매칭 생성하세요.`,
+          prompt: `사용자와의 강의 기획 인터뷰 대화 전체 맥락:\n${fullConversation}\n\n[핵심 요구사항]:\n위 전체 대화 맥락을 면밀히 분석하여 강의 제목(refinedTitle), 자연어 분야(naturalCategory), 상세 소개문(description), 수강료(price, discountedPrice), 추천 태그(tags), 진행방식(deliveryType: online/offline/hybrid), 희망 요일(daysOfWeek: string[]), 시작일(startDate: YYYY-MM-DD), 시간대(timeSlot), 그리고 대화에서 파악된 총 회차 수에 맞춘 체계적인 실전 커리큘럼(curriculum)을 JSON으로 완성하세요.\n절대 대화 내용을 그대로 복사하지 말고, 각 항목의 성격에 맞게 전문적 콘텐츠로 변환하세요.\ncurriculum 각 항목은 반드시 구체적인 챕터 제목(title)과 2~3문장의 상세 실습/학습 내용(description)을 포함해야 합니다.`,
         });
 
         const draft = res?.result || {};
         if (draft.refinedTitle) setCourseTitle(draft.refinedTitle);
-        else if (!courseTitle.trim()) setCourseTitle(`[실전] ${userInputs[0]?.slice(0, 16) || "맞춤형"} 마스터클래스`);
+        else if (!courseTitle.trim()) {
+          const firstTopic = (userInputs[0] || "")
+            .split(/[,.]|\n/)[0]
+            .replace(/^\[.*?\]\s*/, "")
+            .replace(/^(나에게|우리의|새로운|내|실전)\s*/, "")
+            .replace(/매주\s*[월화수목금토일\s/,~:0-9]+(저녁|오전|오후)?/g, "")
+            .replace(/\d+\s*회차.*$/g, "")
+            .replace(/(실시간\s*)?(온라인|오프라인|혼합)\s*(과정|방식|강의)?.*$/g, "")
+            .replace(/하고\s*싶어요|하고\s*싶어|만들어줘|기획해줘|해줘|원해|필요해|입니다|해요/g, "")
+            .trim();
+          setCourseTitle(`[실전] ${firstTopic.slice(0, 18) || "AI 비즈니스"} 마스터클래스`);
+        }
 
         if (draft.naturalCategory) setCourseCategory(draft.naturalCategory as Course["category"]);
         if (draft.description) setCourseDesc(draft.description);
@@ -414,7 +435,6 @@ export default function CourseCreateEditModal({
         if (draft.deliveryType && draft.deliveryType !== "vod") {
           setDeliveryType(draft.deliveryType as "online" | "offline" | "hybrid");
         }
-        if (draft.location) setCourseLocation(draft.location);
         if (draft.startDate || draft.schedule?.startDate) setStartDate(draft.startDate || draft.schedule.startDate);
         if (draft.daysOfWeek || draft.schedule?.daysOfWeek) setSelectedDays(draft.daysOfWeek || draft.schedule.daysOfWeek);
         if (draft.timeSlot || draft.schedule?.timeSlot) setTimeSlot(draft.timeSlot || draft.schedule.timeSlot);
@@ -425,34 +445,40 @@ export default function CourseCreateEditModal({
           const dayNameToNum2: Record<string, number> = { 일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6 };
           const targetNums2 = tDays.map((d: string) => dayNameToNum2[d]).filter((n: number) => !isNaN(n));
           let cursor2 = new Date(tStart);
+          if (isNaN(cursor2.getTime())) {
+            cursor2 = new Date();
+            cursor2.setDate(cursor2.getDate() + 14);
+          }
           const dNames = ["일", "월", "화", "수", "목", "금", "토"];
           const tSlot = draft.timeSlot || draft.schedule?.timeSlot || timeSlot;
-          setCurriculumDraft(
-            draft.curriculum.map((c: any, i: number) => {
-              if (targetNums2.length > 0) {
-                while (!targetNums2.includes(cursor2.getDay())) {
-                  cursor2.setDate(cursor2.getDate() + 1);
-                }
+          const assignedCurriculum = draft.curriculum.map((c: any, i: number) => {
+            if (targetNums2.length > 0) {
+              while (!targetNums2.includes(cursor2.getDay())) {
+                cursor2.setDate(cursor2.getDate() + 1);
               }
-              const yyyy = cursor2.getFullYear();
-              const mm = String(cursor2.getMonth() + 1).padStart(2, "0");
-              const dd = String(cursor2.getDate()).padStart(2, "0");
-              const assignedDate = `${yyyy}-${mm}-${dd}`;
-              const assignedDay = dNames[cursor2.getDay()];
-              cursor2.setDate(cursor2.getDate() + 1);
-              return {
-                week: c.week || Math.ceil((i + 1) / (tDays.length || 2)),
-                sessionNumber: i + 1,
-                title: c.title || `실전 세션 ${i + 1}`,
-                description: c.description || "실무 집중 실습",
-                duration: c.duration || "2시간",
-                date: assignedDate,
-                dayOfWeek: assignedDay,
-                time: tSlot,
-                deliveryType: c.deliveryType === "offline" ? "offline" : "online",
-              } as CurriculumItem;
-            })
-          );
+            }
+            const yyyy = cursor2.getFullYear();
+            const mm = String(cursor2.getMonth() + 1).padStart(2, "0");
+            const dd = String(cursor2.getDate()).padStart(2, "0");
+            const assignedDate = `${yyyy}-${mm}-${dd}`;
+            const assignedDay = dNames[cursor2.getDay()];
+            cursor2.setDate(cursor2.getDate() + 1);
+            return {
+              week: c.week || Math.ceil((i + 1) / (tDays.length || 2)),
+              sessionNumber: i + 1,
+              title: c.title || `${i + 1}회차: 핵심 실전 실습`,
+              description: c.description || "실무 역량 강화를 위한 핵심 파이프라인 구축 및 실전 실습",
+              duration: c.duration || "2시간",
+              date: c.date || assignedDate,
+              dayOfWeek: c.dayOfWeek || assignedDay,
+              time: tSlot,
+              deliveryType: c.deliveryType === "offline" ? "offline" : "online",
+            } as CurriculumItem;
+          });
+          setCurriculumDraft(assignedCurriculum);
+          if (assignedCurriculum.length > 0 && assignedCurriculum[assignedCurriculum.length - 1].date) {
+            setEndDate(assignedCurriculum[assignedCurriculum.length - 1].date!);
+          }
         }
         toast.success("AI 자동 매칭 완료", "대화 내용에 맞춰 상세 및 달력 설정이 자동으로 채워졌습니다.");
       } catch (err) {
@@ -664,8 +690,8 @@ export default function CourseCreateEditModal({
       description: courseDesc || "실전 AI 창업 집중 코스",
       category: courseCategory,
       deliveryType,
-      location: (deliveryType === "offline" || deliveryType === "hybrid") ? courseLocation : undefined,
-      liveMeetingUrl: (deliveryType === "online" || deliveryType === "hybrid") ? liveMeetingUrl : undefined,
+      location: initialCourse?.location || undefined,
+      liveMeetingUrl: initialCourse?.liveMeetingUrl || undefined,
       instructor: initialCourse?.instructor || instructorName,
       instructorAvatar: initialCourse?.instructorAvatar || "",
       price: coursePrice,
@@ -1024,38 +1050,6 @@ export default function CourseCreateEditModal({
                 </div>
               </div>
             </div>
-
-            {/* Delivery Details (Location for Offline/Hybrid, Live Meeting URL for Online/Hybrid) */}
-            {(deliveryType === "offline" || deliveryType === "hybrid") && (
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-fadeIn">
-                <label className="text-[11px] font-bold text-amber-300 block mb-1">
-                  🏢 오프라인 강의장 주소 / 장소 안내 *
-                </label>
-                <input
-                  type="text"
-                  value={courseLocation}
-                  onChange={(e) => setCourseLocation(e.target.value)}
-                  placeholder="예: 서울시 강남구 테헤란로 152 강남파이낸스센터 18층 세미나홀"
-                  className="w-full bg-brand-card border border-amber-500/40 rounded-lg py-1.5 px-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-            )}
-
-            {(deliveryType === "online" || deliveryType === "hybrid") && (
-              <div className="p-3 bg-brand-primary/10 border border-brand-primary/30 rounded-xl animate-fadeIn">
-                <label className="text-[11px] font-bold text-brand-primary block mb-1">
-                  💻 실시간 화상 회의(Zoom / Google Meet) 링크
-                </label>
-                <input
-                  type="text"
-                  value={liveMeetingUrl}
-                  onChange={(e) => setLiveMeetingUrl(e.target.value)}
-                  placeholder="예: https://zoom.us/j/123456789 (수강생 결제 후 강의실에서 공개)"
-                  className="w-full bg-brand-card border border-brand-primary/40 rounded-lg py-1.5 px-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-primary"
-                />
-              </div>
-            )}
-
             {/* Stepping-Stone Calendar Settings Section */}
             <div className="p-4 bg-brand-surface-low rounded-xl border border-brand-primary/30 space-y-3.5">
               <div>

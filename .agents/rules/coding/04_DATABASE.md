@@ -1,53 +1,48 @@
 # 04. 데이터베이스 설계
 
-> 문서 상태: ❓ 인터뷰 진행 중
-> biz_flows.md 제안: PostgreSQL + pgvector (AI 텍스트 임베딩 유사도 매칭)
-> ERD·테이블 정의서는 산출물로 개발하며 갱신
+> 문서 상태: ✅ 결정 완료
+> MongoDB 7.5 기반 컬렉션 모델 및 스키마 명세
 
 ## 1. 기본 규칙
 
 ### DBMS / 버전
-- 상태: ❓ 미결정 (biz_flows.md 제안: PostgreSQL + pgvector)
+- 상태: ✅ 결정
 - 선택지 예: PostgreSQL 17 / PostgreSQL 16 / MySQL 8.4 / MongoDB 8
-- 결정:
-- 이유:
-- 결정일:
+- 결정: MongoDB 7.5.x (공식 드라이버 `mongodb: ^7.5.0`)
+- 데이터베이스명: 개발 `ax_foundly_dev` / 운영 `ax_foundly_pro`
+- 결정일: 2026-08-24
 
 ### ORM / 데이터 접근 방식
-- 상태: ❓ 미결정
-- 선택지 예: Prisma / TypeORM / Drizzle / Sequelize / Knex.js / 순수 SQL
-- 결정:
-- 이유:
-- 결정일:
+- 상태: ✅ 결정
+- 결정: MongoDB Native Driver (`MongoClient`, `Db`, `Collection<T>`) + TypeScript 인터페이스(`DatabaseSchema`)
+- 이유: 고성능 BSON 직렬화 및 유연한 문서 모델링, 중첩 서브도큐먼트(커리큘럼, 팀원배열 등) 직접 저장
+- 결정일: 2026-08-24
 
 ### 마이그레이션 도구
-- 상태: ❓ 미결정
-- 선택지 예: Prisma Migrate / TypeORM migrations / Knex migrations / dbmate
-- 결정:
-- 결정일:
+- 상태: ✅ 결정
+- 결정: 서버 부트스트랩 시 `server/db.ts` 내장 자동 마이그레이션 (AI 태그/요약 누락분 자동 백그라운드 인리치먼트 등)
+- 결정일: 2026-08-24
 
 ## 2. 네이밍 및 공통 규칙
 
 ### 네이밍 규칙
-- 상태: ❓ 미결정
-- 결정:
-- 결정일:
+- 컬렉션명: `camelCase` 복수형 (예: `courses`, `irProjects`, `ideaRequests`, `commonCodes`)
+- 필드명: `camelCase`
+- 공통 코드 그룹: 대문자 `SNAKE_CASE` (예: `COURSE_CATEGORY`, `IR_FIELD`)
 
 ### 공통 필드
-- 상태: ❓ 미결정
-- 결정: (예: 전 테이블 `id`, `created_at`, `updated_at`)
-- 결정일:
+- 고유 식별자: `id` (문자열)
+- 생성/수정일시: `createdAt` (ISO 8601 UTC 문자열), `updatedAt` (선택적)
 
 ### ID 전략
-- 상태: ❓ 미결정
-- 선택지: Auto Increment / UUID / ULID / CUID
-- 결정:
-- 결정일:
+- 상태: ✅ 결정
+- 결정: 도메인 식별자 (순수 8자리 Base62 또는 접두사+식별자, `idGenerator.ts`)
+- 결정일: 2026-08-24
 
 ### 트랜잭션 / 동시성 방침
-- 상태: ❓ 미결정
-- 결정: (결제·정산 트랜잭션 처리 방식)
-- 결정일:
+- 상태: ✅ 결정
+- 결정: 카카오페이 결제 승인 및 세션 매칭 시 개별 문서 Atomic 연산 적용
+- 결정일: 2026-08-24
 
 ## 3. ERD 구조도 (산출물 — 개발하며 갱신)
 

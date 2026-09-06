@@ -193,7 +193,7 @@ export default function AITutorWidget({ currentPage, onNavigate }: AITutorWidget
         </div>
       )}
 
-      {/* ── Floating Toggle Button ── */}
+      {/* ── Floating Toggle Button 
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="group relative flex items-center gap-2.5 bg-gradient-to-r from-brand-primary-container via-purple-600 to-brand-tertiary hover:opacity-95 text-white font-display font-bold px-4 py-3 rounded-full shadow-2xl transition-all transform hover:scale-105 cursor-pointer"
@@ -207,6 +207,7 @@ export default function AITutorWidget({ currentPage, onNavigate }: AITutorWidget
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
         </span>
       </button>
+      ── */}
     </div>
   );
 }

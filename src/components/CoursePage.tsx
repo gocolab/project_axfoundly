@@ -77,8 +77,12 @@ export default function CoursePage({
     return null;
   });
 
+  const prevInitialCourseIdRef = React.useRef(initialCourseId);
   React.useEffect(() => {
     if (initialCourseId) {
+      if (selectedCourse?.id === initialCourseId) {
+        return;
+      }
       const match = courses.find((c) => c.id === initialCourseId);
       if (match) {
         setSelectedCourse(match);
@@ -86,9 +90,10 @@ export default function CoursePage({
         toast.error("강의를 찾을 수 없습니다", "존재하지 않거나 삭제된 강의입니다.");
         onClearSelectedCourse?.();
       }
-    } else {
+    } else if (prevInitialCourseIdRef.current && !initialCourseId) {
       setSelectedCourse(null);
     }
+    prevInitialCourseIdRef.current = initialCourseId;
   }, [initialCourseId, courses, onClearSelectedCourse]);
 
   const [activeCategory, setActiveCategory] = React.useState<string>("전체");
@@ -1414,6 +1419,7 @@ export default function CoursePage({
                   className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
                   style={{ animationDelay: `${idx * 50}ms` }}
                   onClick={() => {
+                    prevInitialCourseIdRef.current = course.id;
                     setSelectedCourse(course);
                     onSelectCourse?.(course.id);
                   }}

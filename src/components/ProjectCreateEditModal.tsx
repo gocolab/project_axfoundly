@@ -31,6 +31,7 @@ interface ProjectCreateEditModalProps {
   onClose: () => void;
   initialProject?: IRProject | null;
   onSave: (project: IRProject) => void;
+  userName?: string;
 }
 
 export default function ProjectCreateEditModal({
@@ -38,6 +39,7 @@ export default function ProjectCreateEditModal({
   onClose,
   initialProject,
   onSave,
+  userName,
 }: ProjectCreateEditModalProps) {
   const toast = useToast();
   const { getCodesByGroup } = useCommonCodes(["INVESTMENT_STAGE", "EMPLOYMENT_TYPE"]);
@@ -215,6 +217,8 @@ export default function ProjectCreateEditModal({
             };
           });
 
+      const effectiveAuthor = initialProject?.authorName || userName || (typeof window !== "undefined" ? localStorage.getItem("user_name") || "김수강생" : "김수강생");
+
       const projectPayload: Partial<IRProject> = {
         id: initialProject?.id,
         teamName,
@@ -227,6 +231,7 @@ export default function ProjectCreateEditModal({
         demoVideoUrl: convertToEmbedUrl(demoVideoUrl),
         prototypeUrl: prototypeUrl.trim(),
         isAnonymous,
+        authorName: effectiveAuthor,
         businessModel: businessModel || "B2B SaaS 구독 모델",
         problem: problem || "시장 내 페인포인트",
         solution: solution || "자체 AI 엔진 기반 해결책",
@@ -235,7 +240,7 @@ export default function ProjectCreateEditModal({
         hiringDetails: isHiring ? finalHiringDetails : [],
         members: initialProject?.members || [
           {
-            name: "김수강생",
+            name: effectiveAuthor,
             role: "Founder / CEO",
             avatar: "",
             anonymousName: "⚡ 캡틴 AI",

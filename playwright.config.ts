@@ -2,21 +2,18 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: [
-    ['html', { host: '0.0.0.0', port: 9323, open: 'never' }]
-  ],
+  retries: 0,
+  workers: 1,
   use: {
     baseURL: 'http://localhost:3010',
-    trace: 'on-first-retry',
+    trace: 'off',
     screenshot: 'only-on-failure',
     launchOptions: {
       args: [
         '--no-sandbox',
-        '--disable-dev-shm-usage', // Docker 컨테이너의 64MB /dev/shm 제한 대응 (메모리 크래시 방지)
+        '--disable-dev-shm-usage',
         '--disable-gpu',
       ],
     },
@@ -41,14 +38,4 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3010',
-    reuseExistingServer: true,
-    timeout: 120 * 1000,
-    env: {
-      PLAYWRIGHT_AUTH_METHOD: 'mock',
-      VITE_SHOW_DEMO_LOGIN: 'true',
-    },
-  },
 });

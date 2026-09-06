@@ -459,24 +459,17 @@ export default function App() {
     }
   };
 
-  const handleSaveProject = async (project: IRProject) => {
-    try {
-      const res = await api.saveIRProject(project);
-      setIrProjects((prev) => {
-        const idx = prev.findIndex((p) => p.id === res.project.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = res.project;
-          return updated;
-        }
-        return [res.project, ...prev];
-      });
-      refreshData();
-      toast.success("저장 완료", "스타트업 프로젝트가 성공적으로 저장되었습니다.");
-    } catch (error) {
-      console.error("Save project failed:", error);
-      toast.error("저장 실패", "프로젝트 저장에 실패했습니다.");
-    }
+  const handleSaveProject = (project: IRProject) => {
+    setIrProjects((prev) => {
+      const idx = prev.findIndex((p) => p.id === project.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = project;
+        return updated;
+      }
+      return [project, ...prev];
+    });
+    refreshData();
   };
 
   const handleRefundPayment = (updatedPayment: PaymentRecord) => {
@@ -505,53 +498,53 @@ export default function App() {
     }
   };
 
-  const handleViewCourse = (courseId: string) => {
+  const handleViewCourse = React.useCallback((courseId: string) => {
     setSelectedCourseId(courseId);
     setCurrentPageRaw("courses");
     const targetPath = `/courses/${courseId}`;
     if (window.location.pathname !== targetPath) {
       window.history.pushState({ page: "courses", courseId }, "", targetPath);
     }
-  };
+  }, []);
 
-  const handleClearSelectedCourse = () => {
+  const handleClearSelectedCourse = React.useCallback(() => {
     setSelectedCourseId(null);
     if (window.location.pathname !== "/courses") {
       window.history.pushState({ page: "courses" }, "", "/courses");
     }
-  };
+  }, []);
 
-  const handleViewIR = (projectId: string) => {
+  const handleViewIR = React.useCallback((projectId: string) => {
     setSelectedProjectId(projectId);
     setCurrentPageRaw("ir");
     const targetPath = `/ir/${projectId}`;
     if (window.location.pathname !== targetPath) {
       window.history.pushState({ page: "ir", projectId }, "", targetPath);
     }
-  };
+  }, []);
 
-  const handleClearSelectedProject = () => {
+  const handleClearSelectedProject = React.useCallback(() => {
     setSelectedProjectId(null);
     if (window.location.pathname !== "/ir") {
       window.history.pushState({ page: "ir" }, "", "/ir");
     }
-  };
+  }, []);
 
-  const handleViewPost = (postId: string) => {
+  const handleViewPost = React.useCallback((postId: string) => {
     setSelectedPostId(postId);
     setCurrentPageRaw("community");
     const targetPath = `/community/${postId}`;
     if (window.location.pathname !== targetPath) {
       window.history.pushState({ page: "community", postId }, "", targetPath);
     }
-  };
+  }, []);
 
-  const handleClearSelectedPost = () => {
+  const handleClearSelectedPost = React.useCallback(() => {
     setSelectedPostId(null);
     if (window.location.pathname !== "/community") {
       window.history.pushState({ page: "community" }, "", "/community");
     }
-  };
+  }, []);
 
   // Pending courses for admin review
   const pendingCourses = courses.filter((c) => c.status === "종료" || c.status === "모집중");

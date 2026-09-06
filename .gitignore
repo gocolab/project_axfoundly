@@ -46,6 +46,9 @@ lerna-debug.log*
 .stylelintcache
 *.tmp
 *.temp
+scratch/
+data/
+server.js
 
 # Testing & Coverage
 coverage/

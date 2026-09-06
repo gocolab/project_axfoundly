@@ -165,6 +165,19 @@ export default function IdeaRequestModal({
 
       setCurrentDraftState(updatedDraft);
 
+      // 상세 의뢰서 폼 상태와도 동기화 (단, 사용자가 이미 상세 탭에서 직접 작성 중인 경우 덮어쓰지 않음)
+      setTitle((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.refinedTitle || prev));
+      setCategory((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.naturalCategory || prev));
+      setProblem((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.problem || prev));
+      setSolutionConcept((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.solutionConcept || prev));
+      setRewardType((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.rewardType || prev));
+      setRewardDetail((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.rewardDetail || prev));
+      setSubmissionDeadline((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.submissionDeadline || prev));
+      setSelectionDate((prev) => (prev && createStep === "detail_edit" ? prev : updatedDraft.selectionDate || prev));
+      if (updatedDraft.tags && Array.isArray(updatedDraft.tags)) {
+        setTags((prev) => (prev.length > 0 && createStep === "detail_edit" ? prev : Array.from(new Set(updatedDraft.tags))));
+      }
+
       setAiChatMessages((prev) => [
         ...prev,
         {
@@ -189,6 +202,17 @@ export default function IdeaRequestModal({
         requiredRoles: ["풀스택 개발자", "AI 엔지니어"],
       };
       setCurrentDraftState(fallbackDraft);
+
+      // 상세 의뢰서 폼 상태와도 동기화 (단, 사용자가 이미 상세 탭에서 직접 작성 중인 경우 덮어쓰지 않음)
+      setTitle((prev) => (prev && createStep === "detail_edit" ? prev : fallbackDraft.refinedTitle || prev));
+      setCategory((prev) => (prev && createStep === "detail_edit" ? prev : fallbackDraft.naturalCategory || prev));
+      setProblem((prev) => (prev && createStep === "detail_edit" ? prev : fallbackDraft.problem || prev));
+      setSolutionConcept((prev) => (prev && createStep === "detail_edit" ? prev : fallbackDraft.solutionConcept || prev));
+      setRewardType((prev) => (prev && createStep === "detail_edit" ? prev : fallbackDraft.rewardType || prev));
+      setRewardDetail((prev) => (prev && createStep === "detail_edit" ? prev : fallbackDraft.rewardDetail || prev));
+      if (fallbackDraft.tags) {
+        setTags((prev) => (prev.length > 0 && createStep === "detail_edit" ? prev : Array.from(new Set(fallbackDraft.tags))));
+      }
 
       setAiChatMessages((prev) => [
         ...prev,
@@ -224,6 +248,25 @@ export default function IdeaRequestModal({
     );
   };
 
+  // ── Switch Step to Detail Edit with Draft Applied ──
+  const handleSwitchToDetail = () => {
+    if (currentDraftState) {
+      setTitle((prev) => (prev.trim() ? prev : currentDraftState.refinedTitle || prev));
+      setCategory((prev) => (prev.trim() ? prev : currentDraftState.naturalCategory || prev));
+      setProblem((prev) => (prev.trim() ? prev : currentDraftState.problem || prev));
+      setSolutionConcept((prev) => (prev.trim() ? prev : currentDraftState.solutionConcept || prev));
+      setRewardType((prev) => (prev ? prev : currentDraftState.rewardType || prev));
+      setRewardDetail((prev) => (prev ? prev : currentDraftState.rewardDetail || prev));
+      setSubmissionDeadline((prev) => (prev ? prev : currentDraftState.submissionDeadline || prev));
+      setSelectionDate((prev) => (prev ? prev : currentDraftState.selectionDate || prev));
+      if (currentDraftState.tags && Array.isArray(currentDraftState.tags)) {
+        setTags((prev) => (prev.length > 0 ? prev : Array.from(new Set(currentDraftState.tags))));
+      }
+      toast.info("AI 초안 반영", "AI와 대화한 내용이 상세 의뢰서 작성 폼에 적용되었습니다.");
+    }
+    setCreateStep("detail_edit");
+  };
+
   // ── Detail Form AI Refine Assist ──
   const handleAIAssistInForm = async () => {
     if (!title.trim()) {
@@ -250,6 +293,7 @@ export default function IdeaRequestModal({
         if (r.tags && Array.isArray(r.tags)) {
           setTags(Array.from(new Set([...tags, ...r.tags])));
         }
+        if (r.rewardType) setRewardType(r.rewardType);
         if (r.rewardDetail) setRewardDetail(r.rewardDetail);
 
         toast.success(
@@ -457,7 +501,7 @@ export default function IdeaRequestModal({
               </button>
               <button
                 type="button"
-                onClick={() => setCreateStep("detail_edit")}
+                onClick={handleSwitchToDetail}
                 className={`px-3 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
                   createStep === "detail_edit"
                     ? "bg-blue-600 text-white font-bold shadow"
@@ -587,10 +631,10 @@ export default function IdeaRequestModal({
               <span>💡 자연어로 핵심 아이디어만 편하게 작성해도 AI가 의뢰서 형태로 다듬어줍니다.</span>
               <button
                 type="button"
-                onClick={() => setCreateStep("detail_edit")}
+                onClick={handleSwitchToDetail}
                 className="text-blue-400 hover:underline cursor-pointer font-medium"
               >
-                AI 초벌 없이 직접 상세 작성하기 →
+                {currentDraftState ? "상세 의뢰서 작성으로 이동 →" : "AI 초벌 없이 직접 상세 작성하기 →"}
               </button>
             </div>
           </div>

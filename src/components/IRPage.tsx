@@ -135,19 +135,24 @@ export default function IRPage({
     return null;
   });
 
+  const prevInitialProjectIdRef = React.useRef(initialProjectId);
   React.useEffect(() => {
     if (initialProjectId) {
-      const match = projects.find((p) => p.id === initialProjectId);
+      if (selectedProject?.id === initialProjectId) {
+        return;
+      }
+      const match = projects.find((p) => p.id === initialProjectId) || localProjects.find((p) => p.id === initialProjectId);
       if (match) {
         setSelectedProject(match);
       } else if (projects.length > 0) {
         toast.error("프로젝트를 찾을 수 없습니다", "존재하지 않거나 삭제된 스타트업 프로젝트입니다.");
         onClearSelectedProject?.();
       }
-    } else {
+    } else if (prevInitialProjectIdRef.current && !initialProjectId) {
       setSelectedProject(null);
     }
-  }, [initialProjectId, projects, onClearSelectedProject]);
+    prevInitialProjectIdRef.current = initialProjectId;
+  }, [initialProjectId, projects, localProjects, onClearSelectedProject]);
 
   const [activeField, setActiveField] = React.useState<string>("전체");
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
@@ -1249,6 +1254,7 @@ export default function IRPage({
                 className="bg-[#0f172a] border border-slate-800/80 rounded-2xl overflow-hidden card-hover cursor-pointer group animate-slideUp flex flex-col justify-between shadow-lg"
                 style={{ animationDelay: `${idx * 50}ms` }}
                 onClick={() => {
+                  prevInitialProjectIdRef.current = project.id;
                   setSelectedProject(project);
                   onSelectProject?.(project.id);
                 }}
@@ -1975,6 +1981,7 @@ export default function IRPage({
       <ProjectCreateEditModal
         isOpen={showCreateProjectModal}
         initialProject={editingProject || undefined}
+        userName={userName}
         onClose={() => {
           setShowCreateProjectModal(false);
           setEditingProject(null);

@@ -200,27 +200,29 @@ export default function CommunityPage({
     currentPage * itemsPerPage
   );
 
-  const isFirstCommunityRender = React.useRef(true);
-  React.useEffect(() => {
-    if (isFirstCommunityRender.current) {
-      isFirstCommunityRender.current = false;
-      return;
-    }
-    setCurrentPage(1);
-    if (selectedPost) {
-      setSelectedPost(null);
-      setIsClosing(false);
-      if (onClearSelectedPost) onClearSelectedPost();
-    }
-  }, [activeBoard, onClearSelectedPost]);
+  const onClearSelectedPostRef = React.useRef(onClearSelectedPost);
+  onClearSelectedPostRef.current = onClearSelectedPost;
 
+  const prevBoardRef = React.useRef(activeBoard);
   React.useEffect(() => {
-    if (selectedPost) {
+    if (prevBoardRef.current !== activeBoard) {
+      prevBoardRef.current = activeBoard;
+      setCurrentPage(1);
       setSelectedPost(null);
       setIsClosing(false);
-      if (onClearSelectedPost) onClearSelectedPost();
+      onClearSelectedPostRef.current?.();
     }
-  }, [currentPage, onClearSelectedPost]);
+  }, [activeBoard]);
+
+  const prevPageRef = React.useRef(currentPage);
+  React.useEffect(() => {
+    if (prevPageRef.current !== currentPage) {
+      prevPageRef.current = currentPage;
+      setSelectedPost(null);
+      setIsClosing(false);
+      onClearSelectedPostRef.current?.();
+    }
+  }, [currentPage]);
 
   const handleCloseDetail = () => {
     setIsClosing(true);

@@ -2,9 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('TC-03: 인증(Auth), Google OAuth 및 회원 권한 기반 접근 제어(RBAC) E2E 테스트', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.clear());
     await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
-    await page.reload();
   });
 
   test('로그인 모달 열기 및 닫기 토글 확인', async ({ page }) => {
